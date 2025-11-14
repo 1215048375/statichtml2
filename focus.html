@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focused Search Navigator</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23667eea'/%3E%3Ccircle cx='50' cy='50' r='35' fill='%23764ba2'/%3E%3Ccircle cx='50' cy='50' r='25' fill='%23667eea'/%3E%3Ccircle cx='50' cy='50' r='15' fill='%23fff'/%3E%3Ccircle cx='50' cy='50' r='8' fill='%23764ba2'/%3E%3C/svg%3E">
+    <style>
+        :root {
+            --bg-gradient-start: #667eea;
+            --bg-gradient-end: #764ba2;
+            --container-bg: #ffffff;
+            --text-primary: #333333;
+            --text-secondary: #555555;
+            --text-muted: #6c757d;
+            --border-color: #e9ecef;
+            --input-border: #667eea;
+            --section-bg: #f8f9fa;
+            --history-item-bg: #ffffff;
+            --footer-bg: #f8f9fa;
+        }
+
+        body.dark-mode {
+            --bg-gradient-start: #1a1a2e;
+            --bg-gradient-end: #16213e;
+            --container-bg: #0f3460;
+            --text-primary: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --text-muted: #888888;
+            --border-color: #1a1a2e;
+            --input-border: #667eea;
+            --section-bg: #16213e;
+            --history-item-bg: #1a1a2e;
+            --footer-bg: #16213e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            transition: background 0.3s ease;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--container-bg);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            transition: background 0.3s ease;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px 15px;
+            text-align: center;
+            position: relative;
+        }
+
+        .dark-mode-toggle {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .dark-mode-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            opacity: 0.9;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+        }
+
+        .selected-sites-display {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+            min-height: 24px;
+            align-items: center;
+        }
+
+        .selected-site-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .selected-site-badge-remove {
+            cursor: pointer;
+            margin-left: 2px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .selected-site-badge-remove:hover {
+            opacity: 1;
+        }
+
+        .selected-sites-empty {
+            font-size: 0.75rem;
+            opacity: 0.6;
+            font-style: italic;
+        }
+
+        main {
+            padding: 40px 30px;
+        }
+
+        /* Search Section */
+        .search-section {
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            flex: 1;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            border: 3px solid var(--input-border);
+            border-radius: 10px;
+            outline: none;
+            transition: all 0.3s ease;
+            background: var(--container-bg);
+            color: var(--text-primary);
+        }
+
+        #searchInput:focus {
+            border-color: #764ba2;
+            box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1);
+        }
+
+        .search-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn-clear-input {
+            padding: 0;
+            width: 36px;
+            height: 36px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-clear-input:hover {
+            background: #5a6268;
+        }
+
+        .btn-clear-all {
+            padding: 0;
+            width: 36px;
+            height: 36px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-clear-all:hover {
+            background: #c82333;
+        }
+
+        /* Autocomplete */
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--container-bg);
+            border: 2px solid var(--input-border);
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            margin-top: -3px;
+        }
+
+        .autocomplete-dropdown.active {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.selected {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Multi-select controls */
+        .multi-select-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-multi-search {
+            height: 36px;
+            padding: 0 14px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-multi-search:hover {
+            background: #218838;
+        }
+
+        .btn-multi-search:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .select-all-label {
+            height: 36px;
+            padding: 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            color: var(--text-primary);
+            background: var(--section-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .select-all-label:hover {
+            background: var(--border-color);
+        }
+
+        .select-all-label input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        /* Category sections */
+        .site-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .category-card {
+            background: var(--section-bg);
+            border-radius: 8px;
+            padding: 8px;
+            min-width: 200px;
+            flex: 1 1 auto;
+            transition: all 0.2s ease;
+        }
+
+        .category-header {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            padding: 4px 6px;
+            border-bottom: 2px solid var(--border-color);
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+            border-radius: 4px;
+        }
+
+        .category-header:hover {
+            background: var(--border-color);
+        }
+
+        .category-header:active {
+            transform: scale(0.98);
+        }
+
+        .category-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            gap: 6px;
+        }
+
+        .site-btn-wrapper {
+            position: relative;
+        }
+
+        .site-btn-wrapper.selected .site-btn {
+            border: 3px solid #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+        }
+
+        .site-favorite {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.7rem;
+            z-index: 10;
+            transition: all 0.2s ease;
+        }
+
+        .site-favorite:hover {
+            transform: scale(1.1);
+        }
+
+        .site-favorite.active {
+            background: #ffc107;
+        }
+
+        .site-btn {
+            padding: 8px 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: white;
+            border: 2px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            background-clip: padding-box;
+        }
+
+        .site-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .site-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .site-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Management Section */
+        .management-section {
+            border-top: 2px solid #f0f0f0;
+            padding-top: 30px;
+        }
+
+        .toggle-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 1rem;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn:hover {
+            background: #e9ecef;
+        }
+
+        .management-panel {
+            margin-top: 20px;
+            padding: 25px;
+            background: var(--section-bg);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .management-panel.hidden {
+            display: none;
+        }
+
+        .management-panel h2 {
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .management-panel h3 {
+            margin-bottom: 15px;
+            color: var(--text-secondary);
+        }
+
+        .sync-section {
+            background: var(--container-bg);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+
+        .sync-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .site-form {
+            background: var(--container-bg);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-group input[type="text"],
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            background: var(--container-bg);
+            color: var(--text-primary);
+        }
+
+        .form-group input[type="text"]:focus,
+        .form-group select:focus {
+            border-color: #667eea;
+        }
+
+        .form-group input[type="color"] {
+            width: 100px;
+            height: 40px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .form-group input[type="file"] {
+            display: none;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-add {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-add:hover {
+            background: #218838;
+        }
+
+        .btn-export {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-export:hover {
+            background: #0056b3;
+        }
+
+        .btn-import {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-import:hover {
+            background: #138496;
+        }
+
+        .sites-list {
+            background: var(--container-bg);
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .site-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: var(--section-bg);
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .site-info {
+            flex: 1;
+        }
+
+        .site-info strong {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-primary);
+        }
+
+        .site-info small {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            word-break: break-all;
+        }
+
+        .site-info .site-meta {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .site-badge {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: #6c757d;
+            color: white;
+        }
+
+        .site-badge.favorite {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .site-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-edit {
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-edit:hover {
+            background: #0056b3;
+        }
+
+        .btn-delete {
+            padding: 8px 16px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-delete:hover {
+            background: #c82333;
+        }
+
+        footer {
+            background: var(--footer-bg);
+            padding: 20px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .empty-state p {
+            font-size: 1.1rem;
+        }
+
+        .sync-info {
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+
+        .sync-info p {
+            margin-bottom: 10px;
+            color: #004085;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .sync-info p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* History Section */
+        .history-section {
+            background: var(--section-bg);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .history-header h3 {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .btn-clear-history {
+            padding: 4px 10px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-clear-history:hover {
+            background: #5a6268;
+        }
+
+        .history-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .history-item {
+            padding: 6px 26px 6px 10px;
+            background: var(--history-item-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .history-item:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .history-item-delete {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(220, 53, 69, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .history-item:hover .history-item-delete {
+            display: flex;
+        }
+
+        .history-item-delete:hover {
+            background: #dc3545;
+        }
+
+        .history-empty {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            padding: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 1.2rem;
+            }
+
+            .subtitle {
+                font-size: 0.75rem;
+            }
+
+            .search-box {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-controls {
+                justify-content: space-between;
+            }
+
+            .category-card {
+                min-width: 100%;
+            }
+
+            .category-buttons {
+                grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+            }
+
+            .container {
+                border-radius: 0;
+            }
+
+            .sync-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button id="darkModeToggle" class="dark-mode-toggle" title="Toggle Dark Mode">🌙</button>
+            <h1>🎯 Focused Search Navigator</h1>
+            <p class="subtitle">Search with purpose, stay focused</p>
+            <div class="selected-sites-display" id="selectedSitesDisplay">
+                <span class="selected-sites-empty">No sites selected</span>
+            </div>
+        </header>
+
+        <main>
+            <!-- Search Section -->
+            <section class="search-section">
+                <div class="search-box">
+                    <div class="search-input-wrapper">
+                        <input
+                            type="text"
+                            id="searchInput"
+                            placeholder="Enter your search keyword..."
+                            autocomplete="off"
+                        >
+                        <div id="autocompleteDropdown" class="autocomplete-dropdown"></div>
+                    </div>
+                    <div class="search-controls">
+                        <button id="clearInputBtn" class="btn-clear-input" title="Clear input">✕</button>
+                        <button id="clearAllBtn" class="btn-clear-all" title="Clear input and all selections">⊗</button>
+                        <button id="searchSelectedBtn" class="btn-multi-search" disabled>
+                            Search Selected
+                        </button>
+                        <label class="select-all-label">
+                            <input type="checkbox" id="selectAllCheckbox">
+                            <span>All</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="siteButtons" class="site-buttons">
+                    <!-- Site buttons will be dynamically generated here -->
+                </div>
+
+                <!-- History Section -->
+                <div class="history-section" id="historySection">
+                    <div class="history-header">
+                        <h3>🕐 Recent Searches</h3>
+                        <button id="clearHistoryBtn" class="btn-clear-history">Clear</button>
+                    </div>
+                    <div class="history-items" id="historyItems">
+                        <!-- History items will be dynamically generated here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Management Section -->
+            <section class="management-section">
+                <button id="toggleManagement" class="toggle-btn">⚙️ Manage Sites</button>
+
+                <div id="managementPanel" class="management-panel hidden">
+                    <h2>Manage Search Sites</h2>
+
+                    <!-- Sync Section -->
+                    <div class="sync-section">
+                        <h3>💾 Save & Load Configuration</h3>
+                        <div class="sync-info">
+                            <p><strong>How it works:</strong></p>
+                            <p>• <strong>Export:</strong> Download your config as a JSON file</p>
+                            <p>• Save the file to Google Drive, Dropbox, or any cloud storage</p>
+                            <p>• <strong>Import:</strong> Load the config on any device/browser</p>
+                            <p>• Your sites sync across all devices this way!</p>
+                        </div>
+                        <div class="sync-buttons">
+                            <button id="exportBtn" class="btn btn-export">📥 Export Config</button>
+                            <button id="importBtn" class="btn btn-import">📤 Import Config</button>
+                            <input type="file" id="importFile" accept=".json">
+                        </div>
+                    </div>
+
+                    <form id="addSiteForm" class="site-form">
+                        <h3>➕ Add New Site</h3>
+                        <div class="form-group">
+                            <label for="siteName">Site Name:</label>
+                            <input
+                                type="text"
+                                id="siteName"
+                                placeholder="e.g., YouTube"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="siteUrl">Search URL Template:</label>
+                            <input
+                                type="text"
+                                id="siteUrl"
+                                placeholder="e.g., https://www.youtube.com/results?search_query={$keyword}"
+                                required
+                            >
+                            <small>Use {$keyword} as placeholder for search term</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="siteCategory">Category:</label>
+                            <select id="siteCategory">
+                                <option value="">No Category</option>
+                                <option value="Video">Video</option>
+                                <option value="Shopping">Shopping</option>
+                                <option value="Social">Social</option>
+                                <option value="Search">Search</option>
+                                <option value="News">News</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <small>Or type a new category name</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="siteColor">Button Color:</label>
+                            <input
+                                type="color"
+                                id="siteColor"
+                                value="#ff0000"
+                            >
+                        </div>
+
+                        <div style="display: flex; gap: 10px;">
+                            <button type="submit" class="btn btn-add" style="flex: 1;">Add Site</button>
+                            <button type="button" id="cancelEditBtn" class="btn" style="background: #6c757d; color: white; display: none;">Cancel</button>
+                        </div>
+                    </form>
+
+                    <div class="sites-list">
+                        <h3>📋 Your Sites</h3>
+                        <div id="sitesList">
+                            <!-- Site management items will be generated here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Stay focused on your search goals!</p>
+        </footer>
+    </div>
+
+    <script>
+        // Storage keys for localStorage
+        const STORAGE_KEY = 'focusedSearchSites';
+        const HISTORY_STORAGE_KEY = 'focusedSearchHistory';
+        const DARK_MODE_KEY = 'focusedSearchDarkMode';
+        const MAX_HISTORY_ITEMS = 50;
+
+        // Default sites
+        const DEFAULT_SITES = [
+            {
+                id: 'youtube',
+                name: 'YouTube',
+                urlTemplate: 'https://www.youtube.com/results?search_query={$keyword}',
+                color: '#FF0000',
+                category: 'Video',
+                favorite: false
+            },
+            {
+                id: 'amazon',
+                name: 'Amazon',
+                urlTemplate: 'https://www.amazon.com/s?k={$keyword}',
+                color: '#FF9900',
+                category: 'Shopping',
+                favorite: false
+            },
+            {
+                id: 'google',
+                name: 'Google',
+                urlTemplate: 'https://www.google.com/search?q={$keyword}',
+                color: '#4285F4',
+                category: 'Search',
+                favorite: true
+            },
+            {
+                id: 'reddit',
+                name: 'Reddit',
+                urlTemplate: 'https://www.reddit.com/search/?q={$keyword}',
+                color: '#FF4500',
+                category: 'Social',
+                favorite: false
+            }
+        ];
+
+        // State
+        let sites = [];
+        let searchHistory = [];
+        let selectedSites = new Set();
+        let autocompleteIndex = -1;
+        let editingSiteId = null;
+
+        // Initialize app
+        function init() {
+            loadSites();
+            loadHistory();
+            loadDarkMode();
+            renderSiteButtons();
+            renderSitesList();
+            renderHistory();
+            attachEventListeners();
+        }
+
+        // Load sites from localStorage or use defaults
+        function loadSites() {
+            const storedSites = localStorage.getItem(STORAGE_KEY);
+
+            if (storedSites) {
+                try {
+                    sites = JSON.parse(storedSites);
+                    // Migrate old sites without category/favorite
+                    sites = sites.map(site => ({
+                        ...site,
+                        category: site.category || '',
+                        favorite: site.favorite || false
+                    }));
+                } catch (e) {
+                    console.error('Error loading sites:', e);
+                    sites = [...DEFAULT_SITES];
+                    saveSites();
+                }
+            } else {
+                sites = [...DEFAULT_SITES];
+                saveSites();
+            }
+        }
+
+        // Save sites to localStorage
+        function saveSites() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(sites));
+        }
+
+        // Dark mode functions
+        function loadDarkMode() {
+            const darkMode = localStorage.getItem(DARK_MODE_KEY) === 'true';
+            if (darkMode) {
+                document.body.classList.add('dark-mode');
+                updateDarkModeIcon(true);
+            }
+        }
+
+        function toggleDarkMode() {
+            const isDark = document.body.classList.toggle('dark-mode');
+            localStorage.setItem(DARK_MODE_KEY, isDark);
+            updateDarkModeIcon(isDark);
+        }
+
+        function updateDarkModeIcon(isDark) {
+            const btn = document.getElementById('darkModeToggle');
+            btn.textContent = isDark ? '☀️' : '🌙';
+        }
+
+        // Load search history from localStorage
+        function loadHistory() {
+            const storedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
+
+            if (storedHistory) {
+                try {
+                    searchHistory = JSON.parse(storedHistory);
+                } catch (e) {
+                    console.error('Error loading history:', e);
+                    searchHistory = [];
+                }
+            }
+        }
+
+        // Save search history to localStorage
+        function saveHistory() {
+            localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(searchHistory));
+        }
+
+        // Add keyword to search history
+        function addToHistory(keyword) {
+            if (!keyword || !keyword.trim()) return;
+
+            keyword = keyword.trim();
+
+            // Remove if already exists (to move to front)
+            searchHistory = searchHistory.filter(item => item !== keyword);
+
+            // Add to beginning
+            searchHistory.unshift(keyword);
+
+            // Limit to MAX_HISTORY_ITEMS
+            if (searchHistory.length > MAX_HISTORY_ITEMS) {
+                searchHistory = searchHistory.slice(0, MAX_HISTORY_ITEMS);
+            }
+
+            saveHistory();
+            renderHistory();
+        }
+
+        // Render search history
+        function renderHistory() {
+            const container = document.getElementById('historyItems');
+
+            if (searchHistory.length === 0) {
+                container.innerHTML = '<div class="history-empty">No recent searches</div>';
+                return;
+            }
+
+            container.innerHTML = searchHistory.map(keyword => `
+                <span class="history-item" data-keyword="${keyword.replace(/"/g, '&quot;')}" title="Click to use: ${keyword.replace(/"/g, '&quot;')}">
+                    ${keyword}
+                    <button class="history-item-delete" data-keyword="${keyword.replace(/"/g, '&quot;')}" title="Delete">×</button>
+                </span>
+            `).join('');
+
+            // Attach click handlers to history items
+            container.querySelectorAll('.history-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    // Don't trigger if clicking delete button
+                    if (e.target.classList.contains('history-item-delete')) return;
+                    const keyword = item.dataset.keyword;
+                    document.getElementById('searchInput').value = keyword;
+                    document.getElementById('searchInput').focus();
+                });
+            });
+
+            // Attach delete handlers
+            container.querySelectorAll('.history-item-delete').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteHistoryItem(btn.dataset.keyword);
+                });
+            });
+        }
+
+        // Delete individual history item
+        function deleteHistoryItem(keyword) {
+            searchHistory = searchHistory.filter(item => item !== keyword);
+            saveHistory();
+            renderHistory();
+        }
+
+        // Clear search history
+        function clearHistory() {
+            if (searchHistory.length === 0) return;
+
+            if (!confirm('Clear all search history?')) {
+                return;
+            }
+
+            searchHistory = [];
+            saveHistory();
+            renderHistory();
+        }
+
+        // Autocomplete functions
+        function showAutocomplete(query) {
+            const dropdown = document.getElementById('autocompleteDropdown');
+
+            if (!query.trim()) {
+                dropdown.classList.remove('active');
+                return;
+            }
+
+            const matches = searchHistory.filter(item =>
+                item.toLowerCase().includes(query.toLowerCase())
+            ).slice(0, 5);
+
+            if (matches.length === 0) {
+                dropdown.classList.remove('active');
+                return;
+            }
+
+            dropdown.innerHTML = matches.map((item, index) => `
+                <div class="autocomplete-item" data-index="${index}" data-keyword="${item.replace(/"/g, '&quot;')}">${item}</div>
+            `).join('');
+
+            dropdown.classList.add('active');
+            autocompleteIndex = -1;
+
+            // Attach click handlers
+            dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    document.getElementById('searchInput').value = item.dataset.keyword;
+                    dropdown.classList.remove('active');
+                    document.getElementById('searchInput').focus();
+                });
+            });
+        }
+
+        function hideAutocomplete() {
+            setTimeout(() => {
+                document.getElementById('autocompleteDropdown').classList.remove('active');
+            }, 200);
+        }
+
+        function navigateAutocomplete(direction) {
+            const dropdown = document.getElementById('autocompleteDropdown');
+            if (!dropdown.classList.contains('active')) return;
+
+            const items = dropdown.querySelectorAll('.autocomplete-item');
+            if (items.length === 0) return;
+
+            // Remove previous selection
+            items.forEach(item => item.classList.remove('selected'));
+
+            // Update index
+            if (direction === 'down') {
+                autocompleteIndex = Math.min(autocompleteIndex + 1, items.length - 1);
+            } else {
+                autocompleteIndex = Math.max(autocompleteIndex - 1, -1);
+            }
+
+            // Highlight selected
+            if (autocompleteIndex >= 0) {
+                items[autocompleteIndex].classList.add('selected');
+                document.getElementById('searchInput').value = items[autocompleteIndex].dataset.keyword;
+            }
+        }
+
+        // Export configuration to JSON file
+        function exportConfig() {
+            const config = {
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                sites: sites
+            };
+
+            const dataStr = JSON.stringify(config, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'focused-search-config.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            alert('Configuration exported! Save this file to your cloud storage (Google Drive, Dropbox, etc.)');
+        }
+
+        // Import configuration from JSON file
+        function importConfig(file) {
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                try {
+                    const config = JSON.parse(e.target.result);
+
+                    if (!config.sites || !Array.isArray(config.sites)) {
+                        alert('Invalid configuration file format!');
+                        return;
+                    }
+
+                    // Validate sites structure
+                    const validSites = config.sites.filter(site =>
+                        site.id && site.name && site.urlTemplate && site.color
+                    );
+
+                    if (validSites.length === 0) {
+                        alert('No valid sites found in configuration file!');
+                        return;
+                    }
+
+                    // Confirm import
+                    const message = `Import ${validSites.length} site(s)?\nThis will replace your current configuration.`;
+                    if (!confirm(message)) {
+                        return;
+                    }
+
+                    sites = validSites;
+                    saveSites();
+                    renderSiteButtons();
+                    renderSitesList();
+
+                    alert(`Successfully imported ${validSites.length} site(s)!`);
+                } catch (error) {
+                    console.error('Error importing config:', error);
+                    alert('Error reading configuration file. Please check the file format.');
+                }
+            };
+
+            reader.readAsText(file);
+        }
+
+        // Render site buttons with categories and favorites
+        function renderSiteButtons() {
+            const container = document.getElementById('siteButtons');
+
+            if (sites.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>No search sites configured. Add some below!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Group sites by category, with favorites first
+            const categorized = {};
+            const uncategorized = [];
+
+            // Sort sites: favorites first, then by name
+            const sortedSites = [...sites].sort((a, b) => {
+                if (a.favorite && !b.favorite) return -1;
+                if (!a.favorite && b.favorite) return 1;
+                return a.name.localeCompare(b.name);
+            });
+
+            sortedSites.forEach(site => {
+                if (site.category && site.category.trim()) {
+                    if (!categorized[site.category]) {
+                        categorized[site.category] = [];
+                    }
+                    categorized[site.category].push(site);
+                } else {
+                    uncategorized.push(site);
+                }
+            });
+
+            let html = '';
+
+            // Render favorites first if any
+            const favorites = sites.filter(s => s.favorite);
+            if (favorites.length > 0) {
+                html += '<div class="category-card">';
+                html += '<div class="category-header">⭐ Favorites</div>';
+                html += '<div class="category-buttons">';
+                favorites.forEach(site => {
+                    html += renderSiteButton(site);
+                });
+                html += '</div></div>';
+            }
+
+            // Render categorized sites
+            Object.keys(categorized).sort().forEach(category => {
+                // Skip if all sites in category are favorites (already shown)
+                const nonFavoriteSites = categorized[category].filter(s => !s.favorite);
+                if (nonFavoriteSites.length === 0) return;
+
+                html += '<div class="category-card">';
+                html += `<div class="category-header">${category}</div>`;
+                html += '<div class="category-buttons">';
+                nonFavoriteSites.forEach(site => {
+                    html += renderSiteButton(site);
+                });
+                html += '</div></div>';
+            });
+
+            // Render uncategorized sites (excluding favorites)
+            const nonFavoriteUncategorized = uncategorized.filter(s => !s.favorite);
+            if (nonFavoriteUncategorized.length > 0) {
+                html += '<div class="category-card">';
+                if (Object.keys(categorized).length > 0 || favorites.length > 0) {
+                    html += '<div class="category-header">Other</div>';
+                }
+                html += '<div class="category-buttons">';
+                nonFavoriteUncategorized.forEach(site => {
+                    html += renderSiteButton(site);
+                });
+                html += '</div></div>';
+            }
+
+            container.innerHTML = html;
+
+            // Attach event handlers
+            attachSiteButtonHandlers();
+        }
+
+        function renderSiteButton(site) {
+            const isSelected = selectedSites.has(site.id);
+            return `
+                <div class="site-btn-wrapper ${isSelected ? 'selected' : ''}" data-site-id="${site.id}">
+                    <button class="site-favorite ${site.favorite ? 'active' : ''}" data-site-id="${site.id}" title="${site.favorite ? 'Remove from favorites' : 'Add to favorites'}">
+                        ${site.favorite ? '⭐' : '☆'}
+                    </button>
+                    <button
+                        class="site-btn"
+                        style="background-color: ${site.color}"
+                        data-site-id="${site.id}"
+                        title="${site.urlTemplate}"
+                    >
+                        ${site.name}
+                    </button>
+                </div>
+            `;
+        }
+
+        function attachSiteButtonHandlers() {
+            // Site button clicks
+            document.querySelectorAll('.site-btn').forEach(btn => {
+                // Left click - search OR select if Ctrl/Cmd/Right-click
+                btn.addEventListener('click', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        // Ctrl/Cmd + Click = toggle selection
+                        e.preventDefault();
+                        toggleSiteSelection(btn.dataset.siteId);
+                    } else {
+                        // Normal click = search
+                        handleSiteClick(btn.dataset.siteId);
+                    }
+                });
+
+                // Right click - toggle selection
+                btn.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    toggleSiteSelection(btn.dataset.siteId);
+                });
+            });
+
+            // Favorite button clicks
+            document.querySelectorAll('.site-favorite').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleFavorite(btn.dataset.siteId);
+                });
+            });
+
+            // Category header clicks - select/unselect all in category
+            document.querySelectorAll('.category-header').forEach((header, index) => {
+                header.addEventListener('click', () => {
+                    const card = header.closest('.category-card');
+                    const buttonsInCard = card.querySelectorAll('.site-btn');
+                    const siteIds = Array.from(buttonsInCard).map(btn => btn.dataset.siteId);
+
+                    // Check if all are selected
+                    const allSelected = siteIds.every(id => selectedSites.has(id));
+
+                    if (allSelected) {
+                        // Unselect all
+                        siteIds.forEach(id => selectedSites.delete(id));
+                    } else {
+                        // Select all
+                        siteIds.forEach(id => selectedSites.add(id));
+                    }
+
+                    updateMultiSearchButton();
+                    renderSiteButtons();
+                });
+            });
+        }
+
+        function toggleSiteSelection(siteId) {
+            if (selectedSites.has(siteId)) {
+                selectedSites.delete(siteId);
+            } else {
+                selectedSites.add(siteId);
+            }
+            updateMultiSearchButton();
+            renderSiteButtons();
+        }
+
+        function updateMultiSearchButton() {
+            const btn = document.getElementById('searchSelectedBtn');
+            btn.disabled = selectedSites.size === 0;
+            btn.textContent = selectedSites.size > 0
+                ? `Search ${selectedSites.size}`
+                : 'Search Selected';
+
+            // Update select all checkbox state
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            if (selectedSites.size === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (selectedSites.size === sites.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            }
+
+            // Update selected sites display in header
+            renderSelectedSitesDisplay();
+        }
+
+        function renderSelectedSitesDisplay() {
+            const container = document.getElementById('selectedSitesDisplay');
+
+            if (selectedSites.size === 0) {
+                container.innerHTML = '<span class="selected-sites-empty">No sites selected</span>';
+                return;
+            }
+
+            const selectedSitesList = Array.from(selectedSites)
+                .map(siteId => sites.find(s => s.id === siteId))
+                .filter(site => site);
+
+            container.innerHTML = selectedSitesList.map(site => `
+                <span class="selected-site-badge" style="background-color: ${site.color}; border-color: ${site.color};">
+                    ${site.name}
+                    <span class="selected-site-badge-remove" data-site-id="${site.id}" title="Remove">✕</span>
+                </span>
+            `).join('');
+
+            // Attach remove handlers
+            container.querySelectorAll('.selected-site-badge-remove').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleSiteSelection(btn.dataset.siteId);
+                });
+            });
+        }
+
+        function toggleFavorite(siteId) {
+            const site = sites.find(s => s.id === siteId);
+            if (!site) return;
+
+            site.favorite = !site.favorite;
+            saveSites();
+            renderSiteButtons();
+            renderSitesList();
+        }
+
+        // Render sites management list
+        function renderSitesList() {
+            const container = document.getElementById('sitesList');
+
+            if (sites.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>No sites yet. Add your first search site above!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = sites.map(site => `
+                <div class="site-item" style="border-left-color: ${site.color}">
+                    <div class="site-info">
+                        <strong>${site.name}</strong>
+                        <small>${site.urlTemplate}</small>
+                        <div class="site-meta">
+                            ${site.favorite ? '<span class="site-badge favorite">⭐ Favorite</span>' : ''}
+                            ${site.category ? `<span class="site-badge">${site.category}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="site-actions">
+                        <button
+                            class="btn-edit"
+                            data-site-id="${site.id}"
+                            title="Edit ${site.name}"
+                        >
+                            Edit
+                        </button>
+                        <button
+                            class="btn-delete"
+                            data-site-id="${site.id}"
+                            title="Delete ${site.name}"
+                        >
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Attach edit handlers
+            container.querySelectorAll('.btn-edit').forEach(btn => {
+                btn.addEventListener('click', () => editSite(btn.dataset.siteId));
+            });
+
+            // Attach delete handlers
+            container.querySelectorAll('.btn-delete').forEach(btn => {
+                btn.addEventListener('click', () => deleteSite(btn.dataset.siteId));
+            });
+        }
+
+        // Handle site button click
+        function handleSiteClick(siteId) {
+            const site = sites.find(s => s.id === siteId);
+            if (!site) return;
+
+            const keyword = document.getElementById('searchInput').value.trim();
+
+            if (!keyword) {
+                alert('Please enter a search keyword first!');
+                document.getElementById('searchInput').focus();
+                return;
+            }
+
+            // Add to history
+            addToHistory(keyword);
+
+            // Substitute keyword in URL template
+            const url = substituteUrl(site.urlTemplate, keyword);
+
+            // Open in new tab
+            window.open(url, '_blank');
+        }
+
+        // Handle multi-site search
+        function handleMultiSearch() {
+            const keyword = document.getElementById('searchInput').value.trim();
+
+            if (!keyword) {
+                alert('Please enter a search keyword first!');
+                document.getElementById('searchInput').focus();
+                return;
+            }
+
+            if (selectedSites.size === 0) {
+                alert('Please select at least one site!');
+                return;
+            }
+
+            // Add to history
+            addToHistory(keyword);
+
+            // Open all selected sites with a small delay to avoid popup blockers
+            const sitesArray = Array.from(selectedSites);
+            sitesArray.forEach((siteId, index) => {
+                setTimeout(() => {
+                    const site = sites.find(s => s.id === siteId);
+                    if (site) {
+                        const url = substituteUrl(site.urlTemplate, keyword);
+                        window.open(url, '_blank');
+                    }
+                }, index * 100); // 100ms delay between each
+            });
+        }
+
+        // Substitute placeholders in URL template
+        function substituteUrl(template, keyword) {
+            // Encode the keyword for URL
+            const encodedKeyword = encodeURIComponent(keyword);
+
+            // Replace {$keyword} or {$search_keyword} with the encoded keyword
+            return template.replace(/\{\$keyword\}/gi, encodedKeyword)
+                           .replace(/\{\$search_keyword\}/gi, encodedKeyword);
+        }
+
+        // Add new site
+        function addSite(name, urlTemplate, color, category) {
+            // Generate unique ID
+            const id = 'site_' + Date.now();
+
+            // Validate URL template
+            if (!urlTemplate.includes('{$keyword}') && !urlTemplate.includes('{$search_keyword}')) {
+                alert('URL template must include {$keyword} placeholder!');
+                return false;
+            }
+
+            // Add new site
+            sites.push({
+                id,
+                name,
+                urlTemplate,
+                color,
+                category: category || '',
+                favorite: false
+            });
+
+            saveSites();
+            renderSiteButtons();
+            renderSitesList();
+
+            return true;
+        }
+
+        // Edit existing site
+        function editSite(siteId) {
+            const site = sites.find(s => s.id === siteId);
+            if (!site) return;
+
+            // Set editing mode
+            editingSiteId = siteId;
+
+            // Populate form
+            document.getElementById('siteName').value = site.name;
+            document.getElementById('siteUrl').value = site.urlTemplate;
+            document.getElementById('siteColor').value = site.color;
+            document.getElementById('siteCategory').value = site.category || '';
+
+            // Update form title and button
+            document.querySelector('#addSiteForm h3').textContent = '✏️ Edit Site';
+            document.querySelector('#addSiteForm button[type="submit"]').textContent = 'Update Site';
+            document.getElementById('cancelEditBtn').style.display = 'block';
+
+            // Scroll to form
+            document.getElementById('addSiteForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Update existing site
+        function updateSite(siteId, name, urlTemplate, color, category) {
+            const site = sites.find(s => s.id === siteId);
+            if (!site) return false;
+
+            // Validate URL template
+            if (!urlTemplate.includes('{$keyword}') && !urlTemplate.includes('{$search_keyword}')) {
+                alert('URL template must include {$keyword} placeholder!');
+                return false;
+            }
+
+            // Update site
+            site.name = name;
+            site.urlTemplate = urlTemplate;
+            site.color = color;
+            site.category = category || '';
+
+            saveSites();
+            renderSiteButtons();
+            renderSitesList();
+
+            return true;
+        }
+
+        // Cancel editing
+        function cancelEdit() {
+            editingSiteId = null;
+            document.querySelector('#addSiteForm h3').textContent = '➕ Add New Site';
+            document.querySelector('#addSiteForm button[type="submit"]').textContent = 'Add Site';
+            document.getElementById('cancelEditBtn').style.display = 'none';
+            document.getElementById('addSiteForm').reset();
+            document.getElementById('siteColor').value = '#ff0000';
+        }
+
+        // Delete site
+        function deleteSite(siteId) {
+            if (!confirm('Are you sure you want to delete this site?')) {
+                return;
+            }
+
+            sites = sites.filter(s => s.id !== siteId);
+            saveSites();
+            renderSiteButtons();
+            renderSitesList();
+        }
+
+        // Attach event listeners
+        function attachEventListeners() {
+            // Dark mode toggle
+            document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
+
+            // Clear input button
+            document.getElementById('clearInputBtn').addEventListener('click', () => {
+                document.getElementById('searchInput').value = '';
+                document.getElementById('searchInput').focus();
+            });
+
+            // Clear all button (input + selections)
+            document.getElementById('clearAllBtn').addEventListener('click', () => {
+                document.getElementById('searchInput').value = '';
+                selectedSites.clear();
+                updateMultiSearchButton();
+                renderSiteButtons();
+                document.getElementById('searchInput').focus();
+            });
+
+            // Toggle management panel
+            document.getElementById('toggleManagement').addEventListener('click', () => {
+                const panel = document.getElementById('managementPanel');
+                panel.classList.toggle('hidden');
+            });
+
+            // Clear history
+            document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
+
+            // Multi-search button
+            document.getElementById('searchSelectedBtn').addEventListener('click', handleMultiSearch);
+
+            // Select all checkbox
+            document.getElementById('selectAllCheckbox').addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    // Select all sites
+                    sites.forEach(site => selectedSites.add(site.id));
+                } else {
+                    // Unselect all sites
+                    selectedSites.clear();
+                }
+                updateMultiSearchButton();
+                renderSiteButtons();
+            });
+
+            // Export config
+            document.getElementById('exportBtn').addEventListener('click', exportConfig);
+
+            // Import config - trigger file input
+            document.getElementById('importBtn').addEventListener('click', () => {
+                document.getElementById('importFile').click();
+            });
+
+            // Handle file selection
+            document.getElementById('importFile').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    importConfig(file);
+                    // Reset file input
+                    e.target.value = '';
+                }
+            });
+
+            // Add site form
+            document.getElementById('addSiteForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                const name = document.getElementById('siteName').value.trim();
+                const urlTemplate = document.getElementById('siteUrl').value.trim();
+                const color = document.getElementById('siteColor').value;
+                const category = document.getElementById('siteCategory').value;
+
+                let success = false;
+
+                if (editingSiteId) {
+                    // Update existing site
+                    success = updateSite(editingSiteId, name, urlTemplate, color, category);
+                } else {
+                    // Add new site
+                    success = addSite(name, urlTemplate, color, category);
+                }
+
+                if (success) {
+                    // Clear form and reset editing mode
+                    e.target.reset();
+                    document.getElementById('siteColor').value = '#ff0000';
+                    cancelEdit();
+                }
+            });
+
+            // Cancel edit button
+            document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
+
+            // Search input - autocomplete
+            const searchInput = document.getElementById('searchInput');
+
+            searchInput.addEventListener('input', (e) => {
+                showAutocomplete(e.target.value);
+            });
+
+            searchInput.addEventListener('blur', () => {
+                hideAutocomplete();
+            });
+
+            searchInput.addEventListener('keydown', (e) => {
+                const dropdown = document.getElementById('autocompleteDropdown');
+
+                if (dropdown.classList.contains('active')) {
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        navigateAutocomplete('down');
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        navigateAutocomplete('up');
+                    } else if (e.key === 'Escape') {
+                        dropdown.classList.remove('active');
+                    }
+                }
+
+                // Enter key - search with first site or autocomplete selection
+                if (e.key === 'Enter') {
+                    if (dropdown.classList.contains('active')) {
+                        dropdown.classList.remove('active');
+                    } else if (sites.length > 0) {
+                        handleSiteClick(sites[0].id);
+                    }
+                }
+            });
+        }
+
+        // Start the app when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
