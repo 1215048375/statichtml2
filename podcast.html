@@ -1,0 +1,5491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>喜马拉雅游戏音频列表 - Ximalaya Game Audio List</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      color: #667eea;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .stat-item {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      opacity: 0.9;
+      margin-bottom: 5px;
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
+
+    .controls {
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      margin-bottom: 20px;
+    }
+
+    .search-section {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 250px;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 12px 20px;
+      border: 2px solid #e0e0e0;
+      border-radius: 25px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .sort-btns {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 10px 20px;
+      border: 2px solid #667eea;
+      background: white;
+      color: #667eea;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .filter-btn:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+    }
+
+    .filter-btn.active {
+      background: #667eea;
+      color: white;
+    }
+
+    .tags-section {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 2px solid #f0f0f0;
+    }
+
+    .tags-label {
+      font-weight: 600;
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+
+    .tag-filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tag-btn {
+      padding: 6px 15px;
+      border: 2px solid #e0e0e0;
+      background: white;
+      color: #666;
+      border-radius: 15px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.3s ease;
+    }
+
+    .tag-btn:hover {
+      border-color: #667eea;
+      color: #667eea;
+      transform: scale(1.05);
+    }
+
+    .tag-btn.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-color: transparent;
+    }
+
+    .audio-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .audio-card {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .audio-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .audio-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .audio-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .game-name {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 15px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .game-name.empty {
+      background: #e0e0e0;
+      color: #999;
+    }
+
+    .audio-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 15px;
+      line-height: 1.5;
+      display: block;
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    .audio-title:hover {
+      color: #667eea;
+    }
+
+    .tags-container {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .tag {
+      display: inline-block;
+      background: #f0f0f0;
+      color: #666;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+    }
+
+    .audio-meta {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .play-count {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .play-icon {
+      width: 18px;
+      height: 18px;
+      fill: #667eea;
+    }
+
+    .visit-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-decoration: none;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      margin-left: auto;
+    }
+
+    .visit-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .no-results {
+      background: white;
+      padding: 60px;
+      border-radius: 15px;
+      text-align: center;
+      color: #999;
+      font-size: 1.2rem;
+    }
+
+    footer {
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      text-align: center;
+      color: #666;
+      margin-top: 30px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 1.8rem;
+      }
+
+      .audio-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats {
+        gap: 15px;
+      }
+
+      .stat-item {
+        padding: 10px 20px;
+      }
+
+      .stat-value {
+        font-size: 1.4rem;
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .audio-card {
+      animation: fadeIn 0.5s ease forwards;
+      opacity: 0;
+    }
+
+    .audio-card:nth-child(1) { animation-delay: 0.05s; }
+    .audio-card:nth-child(2) { animation-delay: 0.1s; }
+    .audio-card:nth-child(3) { animation-delay: 0.15s; }
+    .audio-card:nth-child(4) { animation-delay: 0.2s; }
+    .audio-card:nth-child(5) { animation-delay: 0.25s; }
+    .audio-card:nth-child(6) { animation-delay: 0.3s; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎮 喜马拉雅游戏音频列表</h1>
+      <div class="stats">
+        <div class="stat-item">
+          <div class="stat-label">总音频数</div>
+          <div class="stat-value" id="totalCount">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">游戏数量</div>
+          <div class="stat-value" id="totalGames">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">标签数量</div>
+          <div class="stat-value" id="totalTags">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">总播放量</div>
+          <div class="stat-value" id="totalPlays">-</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="controls">
+      <div class="search-section">
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="🔍 搜索标题或游戏名...">
+        </div>
+        <div class="sort-btns">
+          <button class="filter-btn active" onclick="resetFilters()">全部</button>
+          <button class="filter-btn" onclick="sortBy('plays')">按播放量</button>
+          <button class="filter-btn" onclick="sortBy('title')">按标题</button>
+        </div>
+      </div>
+
+      <div class="tags-section">
+        <div class="tags-label">🏷️ 按标签筛选：</div>
+        <div class="tag-filters" id="tagFilters"></div>
+      </div>
+    </div>
+
+    <div id="audioGrid" class="audio-grid"></div>
+
+    <footer>
+      <p>📊 数据来源: 喜马拉雅 | 生成时间: <span id="generatedTime"></span></p>
+      <p style="margin-top: 10px; color: #999; font-size: 0.9rem;">
+        点击卡片标题或访问按钮即可在新标签页中打开音频
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    // Embedded data
+    const audioData = [
+  {
+    "title": "《丝之歌》大黄蜂救不了纺络",
+    "count": "4.6万",
+    "count_num": 46000.0,
+    "game_name": "丝之歌",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/926940773"
+  },
+  {
+    "title": "《乌合之众DEMO》七年敬香无人问 一朝误入欲网中",
+    "count": "7.2万",
+    "count_num": 72000.0,
+    "game_name": "乌合之众DEMO",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/923305820"
+  },
+  {
+    "title": "《寂静岭F》详解昭和少女的全部选择，选对声音最重要！",
+    "count": "11.2万",
+    "count_num": 112000.0,
+    "game_name": "寂静岭F",
+    "tags": [
+      "RPG",
+      "动作",
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/922059084"
+  },
+  {
+    "title": "《宝可梦集换式卡牌》谨防小卡片让人倾家荡产",
+    "count": "7.8万",
+    "count_num": 78000.0,
+    "game_name": "宝可梦集换式卡牌",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/919594253"
+  },
+  {
+    "title": "《盛世天下》第二期：碰见不开眼的预言该怎么办",
+    "count": "9.1万",
+    "count_num": 91000.0,
+    "game_name": "盛世天下",
+    "tags": [
+      "GAL",
+      "搞笑",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/916498147"
+  },
+  {
+    "title": "超播报 | 最近玩了啥：丝之歌、无主之地4、寂静岭f",
+    "count": "6.5万",
+    "count_num": 65000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/916463748"
+  },
+  {
+    "title": "《盛世天下》魂穿武则天，谁能在后宫活到最后？",
+    "count": "13万",
+    "count_num": 130000.0,
+    "game_name": "盛世天下",
+    "tags": [
+      "GAL",
+      "历史"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/915086126"
+  },
+  {
+    "title": "《天外世界》翡翠鸟星系第一女星谋杀案",
+    "count": "9.4万",
+    "count_num": 94000.0,
+    "game_name": "天外世界",
+    "tags": [
+      "科幻"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/912271301"
+  },
+  {
+    "title": "老袁金花恶霸波在永定河边的忆往昔｜特别篇",
+    "count": "6.9万",
+    "count_num": 69000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/912292494"
+  },
+  {
+    "title": "超播报 | CNDOTA别为我哭泣",
+    "count": "3.4万",
+    "count_num": 34000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/911970832"
+  },
+  {
+    "title": "趁着丝之歌发售来回顾《空洞骑士》",
+    "count": "11.5万",
+    "count_num": 115000.0,
+    "game_name": "空洞骑士",
+    "tags": [
+      "动作",
+      "独立游戏",
+      "类魂"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/910845184"
+  },
+  {
+    "title": "《双点博物馆》所有游客都去给我逛纪念品商店！",
+    "count": "10.3万",
+    "count_num": 103000.0,
+    "game_name": "双点博物馆",
+    "tags": [
+      "模拟",
+      "独立游戏"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/907007730"
+  },
+  {
+    "title": "小孩卫冕沙特杯！“我还在顶峰等你们来挑战！”",
+    "count": "8.9万",
+    "count_num": 89000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/905224917"
+  },
+  {
+    "title": "《天外世界》好客翡翠鸟殖民地欢迎你！",
+    "count": "15万",
+    "count_num": 150000.0,
+    "game_name": "天外世界",
+    "tags": [
+      "科幻"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/902505243"
+  },
+  {
+    "title": "骂声不断的《明末：渊虚之羽》到底讲了什么故事？",
+    "count": "23.7万",
+    "count_num": 237000.0,
+    "game_name": "明末：渊虚之羽",
+    "tags": [
+      "仙侠",
+      "动作"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/899746139"
+  },
+  {
+    "title": "《星穹铁道》什么才能拯救雅利洛VI？",
+    "count": "7.4万",
+    "count_num": 74000.0,
+    "game_name": "星穹铁道",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/896913976"
+  },
+  {
+    "title": "《明末：渊虚之羽》：我成满清第一巴图鲁了？",
+    "count": "21.1万",
+    "count_num": 211000.0,
+    "game_name": "明末：渊虚之羽",
+    "tags": [
+      "动作",
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/893588580"
+  },
+  {
+    "title": "穿越回历史八王之乱，主播谁能活到最后？",
+    "count": "18.7万",
+    "count_num": 187000.0,
+    "game_name": "",
+    "tags": [
+      "多人",
+      "多人桌游"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/891822173"
+  },
+  {
+    "title": "《渡神纪》以彼之道还施彼身的变形记",
+    "count": "9.3万",
+    "count_num": 93000.0,
+    "game_name": "渡神纪",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/888812552"
+  },
+  {
+    "title": "《多重人生》如果公司里都是自己的分身……",
+    "count": "16.2万",
+    "count_num": 162000.0,
+    "game_name": "多重人生",
+    "tags": [
+      "GAL",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/884494196"
+  },
+  {
+    "title": "相声里的三国：聊一些老老年间的三国游戏 ft.玲珑塔门市部&野史下酒",
+    "count": "8.5万",
+    "count_num": 85000.0,
+    "game_name": "",
+    "tags": [
+      "历史"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/882384343"
+  },
+  {
+    "title": "玩《情感反诈模拟器》到底能不能反诈？",
+    "count": "16.4万",
+    "count_num": 164000.0,
+    "game_name": "情感反诈模拟器",
+    "tags": [
+      "GAL"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/881721908"
+  },
+  {
+    "title": "《光与影：33号远征队》之我爱我家",
+    "count": "18.2万",
+    "count_num": 182000.0,
+    "game_name": "光与影：33号远征队",
+    "tags": [
+      "RPG",
+      "动作"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/872003127"
+  },
+  {
+    "title": "《哈迪斯2》没事别起名叫泰坦",
+    "count": "11.2万",
+    "count_num": 112000.0,
+    "game_name": "哈迪斯2",
+    "tags": [
+      "动作",
+      "类魂"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/877166595"
+  },
+  {
+    "title": "《英雄立志传：三国志》驸马篡权后该选谁继位？",
+    "count": "14.9万",
+    "count_num": 149000.0,
+    "game_name": "英雄立志传：三国志",
+    "tags": [
+      "历史"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/869300232"
+  },
+  {
+    "title": "《城南旧事》在无忧无虑的童年里，很多惊天动地的事就这样发生了丨串台超游",
+    "count": "13.2万",
+    "count_num": 132000.0,
+    "game_name": "城南旧事",
+    "tags": [
+      "电影小说"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/864985032"
+  },
+  {
+    "title": "《绝地潜兵2》还上海保卫战一个真相（请务必听到最后！）",
+    "count": "23.6万",
+    "count_num": 236000.0,
+    "game_name": "绝地潜兵2",
+    "tags": [
+      "合作",
+      "科幻"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/862938035"
+  },
+  {
+    "title": "《苏丹的游戏》纵欲！杀戮！奢靡！征服！",
+    "count": "18.5万",
+    "count_num": 185000.0,
+    "game_name": "苏丹的游戏",
+    "tags": [
+      "GAL",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/853194023"
+  },
+  {
+    "title": "《不祥之夜：回魂》身份推理游戏为什么越来越不好玩？",
+    "count": "11万",
+    "count_num": 110000.0,
+    "game_name": "不祥之夜：回魂",
+    "tags": [
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/861023934"
+  },
+  {
+    "title": "《战神：诸神黄昏》个人意志究竟能否改变命运",
+    "count": "12.4万",
+    "count_num": 124000.0,
+    "game_name": "战神：诸神黄昏",
+    "tags": [
+      "RPG",
+      "动作"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/849202138"
+  },
+  {
+    "title": "《好莱坞动物》在近代美国打造电影王朝",
+    "count": "12.9万",
+    "count_num": 129000.0,
+    "game_name": "好莱坞动物",
+    "tags": [
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/845701262"
+  },
+  {
+    "title": "《双影奇境》交朋友前先请他给你讲个故事吧！",
+    "count": "11.4万",
+    "count_num": 114000.0,
+    "game_name": "双影奇境",
+    "tags": [
+      "多人",
+      "科幻"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/841888817"
+  },
+  {
+    "title": "《赛博朋克2077》你想不想让美梦继续？",
+    "count": "18.7万",
+    "count_num": 187000.0,
+    "game_name": "赛博朋克2077",
+    "tags": [
+      "动作",
+      "科幻"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/838497681"
+  },
+  {
+    "title": "《都市传说解体中心》破除封建迷信还是得靠生活阅历",
+    "count": "17.5万",
+    "count_num": 175000.0,
+    "game_name": "都市传说解体中心",
+    "tags": [
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/835086135"
+  },
+  {
+    "title": "超播报 | 你想买Switch 2吗？",
+    "count": "8.2万",
+    "count_num": 82000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/833680143"
+  },
+  {
+    "title": "《战神4》下：父子间的双向救赎",
+    "count": "9.7万",
+    "count_num": 97000.0,
+    "game_name": "战神4",
+    "tags": [
+      "RPG",
+      "动作",
+      "科幻"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/831817957"
+  },
+  {
+    "title": "《中国式相亲》听直男在相亲的大潮里学游泳",
+    "count": "28.1万",
+    "count_num": 281000.0,
+    "game_name": "中国式相亲",
+    "tags": [
+      "GAL"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/823597275"
+  },
+  {
+    "title": "《脑洞量表：欲语还休》请未成年人在家长陪同下收听",
+    "count": "10.8万",
+    "count_num": 108000.0,
+    "game_name": "脑洞量表：欲语还休",
+    "tags": [
+      "多人桌游"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/827508541"
+  },
+  {
+    "title": "《怪物猎人》打赢雌火龙，大学里就没有我追不到的姑娘！",
+    "count": "11.7万",
+    "count_num": 117000.0,
+    "game_name": "怪物猎人",
+    "tags": [
+      "动作",
+      "合作"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/820758458"
+  },
+  {
+    "title": "《大江湖之苍龙与白鸟》街溜子救不了大宋",
+    "count": "10.8万",
+    "count_num": 108000.0,
+    "game_name": "大江湖之苍龙与白鸟",
+    "tags": [
+      "搞笑",
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/812983877"
+  },
+  {
+    "title": "《如龙8外传》速报：极道文化根基不再，如龙何去何从？",
+    "count": "7.5万",
+    "count_num": 75000.0,
+    "game_name": "如龙8外传",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/808663906"
+  },
+  {
+    "title": "《战神4》上：故事要从母亲的遗愿讲起",
+    "count": "12.5万",
+    "count_num": 125000.0,
+    "game_name": "战神4",
+    "tags": [
+      "RPG",
+      "动作"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/809728660"
+  },
+  {
+    "title": "《饿殍：明末千里行》身逢乱世该向谁复仇？",
+    "count": "13.2万",
+    "count_num": 132000.0,
+    "game_name": "饿殍：明末千里行",
+    "tags": [
+      "恐怖",
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/807007736"
+  },
+  {
+    "title": "《战神4&5》前瞻：希腊三部曲讲了什么？游戏里有哪些北欧神话？",
+    "count": "16.1万",
+    "count_num": 161000.0,
+    "game_name": "战神4&5",
+    "tags": [
+      "RPG",
+      "动作"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/805012193"
+  },
+  {
+    "title": "《1999：唐人街影话》新年故事还是得包饺子",
+    "count": "12.1万",
+    "count_num": 121000.0,
+    "game_name": "1999：唐人街影话",
+    "tags": [
+      "电影小说"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/803253063"
+  },
+  {
+    "title": "到底是谁在Excel里玩魔兽世界啊！？",
+    "count": "10.3万",
+    "count_num": 103000.0,
+    "game_name": "",
+    "tags": [
+      "其他"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/798281006"
+  },
+  {
+    "title": "《爸爸妈妈的留言》听野哥科学解释规则怪谈",
+    "count": "13.5万",
+    "count_num": 135000.0,
+    "game_name": "爸爸妈妈的留言",
+    "tags": [
+      "多人桌游",
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/800922232"
+  },
+  {
+    "title": "《星穹铁道》驶向星辰大海前先学习职场经验",
+    "count": "11.3万",
+    "count_num": 113000.0,
+    "game_name": "星穹铁道",
+    "tags": [
+      "手游",
+      "科幻"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/797022373"
+  },
+  {
+    "title": "《Lighter》小坏点的电子设备漫游记",
+    "count": "5.5万",
+    "count_num": 55000.0,
+    "game_name": "Lighter",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/796248584"
+  },
+  {
+    "title": "超推荐 | 开了36年的《桃太郎电铁》终于有中文版了。",
+    "count": "6万",
+    "count_num": 60000.0,
+    "game_name": "桃太郎电铁",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/794535474"
+  },
+  {
+    "title": "五年了！《死亡搁浅》为什么评价依然两极分化？",
+    "count": "22.3万",
+    "count_num": 223000.0,
+    "game_name": "死亡搁浅",
+    "tags": [
+      "动作"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/792446449"
+  },
+  {
+    "title": "在《战锤40K：行商浪人》的世界里谈情说爱",
+    "count": "12.7万",
+    "count_num": 127000.0,
+    "game_name": "战锤40K：行商浪人",
+    "tags": [
+      "RPG",
+      "科幻"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/790217845"
+  },
+  {
+    "title": "超颁奖 | 一番番春秋冬夏， 一场场酸甜苦辣",
+    "count": "9.5万",
+    "count_num": 95000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/788175348"
+  },
+  {
+    "title": "超推荐 | 海龟汤：我爸爸被男友迷晕？真相是？！",
+    "count": "11.8万",
+    "count_num": 118000.0,
+    "game_name": "",
+    "tags": [
+      "多人桌游"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/788171947"
+  },
+  {
+    "title": "《恐黑症》把灯全都关掉再睡觉哦",
+    "count": "7.8万",
+    "count_num": 78000.0,
+    "game_name": "恐黑症",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/787514749"
+  },
+  {
+    "title": "超推荐 | 港式无厘头大集合，就在《生块叉烧好过生你》",
+    "count": "6.8万",
+    "count_num": 68000.0,
+    "game_name": "生块叉烧好过生你",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/785998636"
+  },
+  {
+    "title": "《魔兽》凯尔萨斯：做领导还是要常回家看看",
+    "count": "11.3万",
+    "count_num": 113000.0,
+    "game_name": "魔兽",
+    "tags": [
+      "多人"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/786154680"
+  },
+  {
+    "title": "超播报 | 黑神话落选年度游戏，你还愿意相信TGA吗？",
+    "count": "9万",
+    "count_num": 90000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/785221492"
+  },
+  {
+    "title": "超推荐 | 木村拓哉的《审判之眼》能否穿透人心的黑暗",
+    "count": "7.7万",
+    "count_num": 77000.0,
+    "game_name": "审判之眼",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/784418470"
+  },
+  {
+    "title": "《猜心俱乐部》测一测大家有没有默契！",
+    "count": "9.9万",
+    "count_num": 99000.0,
+    "game_name": "猜心俱乐部",
+    "tags": [
+      "多人桌游"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/783851901"
+  },
+  {
+    "title": "羽毛：当一个速通高手决定去做独立游戏",
+    "count": "5.6万",
+    "count_num": 56000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/783057065"
+  },
+  {
+    "title": "超推荐 I 瞎掰王：都在瞎特喵扯淡！",
+    "count": "7.5万",
+    "count_num": 75000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/782323980"
+  },
+  {
+    "title": "《双城之战》英雄联盟亲女儿，金克斯的诞生与新生",
+    "count": "11.6万",
+    "count_num": 116000.0,
+    "game_name": "双城之战",
+    "tags": [
+      "电影小说"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/781722469"
+  },
+  {
+    "title": "《哈尔西恩的救赎》用推箱子驱散心中黑暗",
+    "count": "6.1万",
+    "count_num": 61000.0,
+    "game_name": "哈尔西恩的救赎",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/780785139"
+  },
+  {
+    "title": "超推荐 | 我们都有神经病？！那些反映精神问题的游戏",
+    "count": "8.3万",
+    "count_num": 83000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/780056612"
+  },
+  {
+    "title": "《三国志8》重生之吾乃荆南四杰之韩玄",
+    "count": "11.3万",
+    "count_num": 113000.0,
+    "game_name": "三国志8",
+    "tags": [
+      "历史",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/779551666"
+  },
+  {
+    "title": "超推荐 | 媳妇为啥沉迷装死？背后另有隐情！",
+    "count": "8.1万",
+    "count_num": 81000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/777603911"
+  },
+  {
+    "title": "《三国志8》重生之我乃东吴德王严白虎",
+    "count": "12.5万",
+    "count_num": 125000.0,
+    "game_name": "三国志8",
+    "tags": [
+      "历史",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/777222620"
+  },
+  {
+    "title": "做游戏难，发行更难，如何为独立游戏打上聚光灯？",
+    "count": "7.5万",
+    "count_num": 75000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/775424032"
+  },
+  {
+    "title": "超推荐 | 海龟汤3：我奶奶经常扇我，我是谁？",
+    "count": "11.6万",
+    "count_num": 116000.0,
+    "game_name": "",
+    "tags": [
+      "多人桌游"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/775418047"
+  },
+  {
+    "title": "超推荐 | 如果拍一部游戏版的《林中小屋》",
+    "count": "10.3万",
+    "count_num": 103000.0,
+    "game_name": "林中小屋",
+    "tags": [
+      "恐怖",
+      "电影小说"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/773124396"
+  },
+  {
+    "title": "《三国志8》重生之我乃河北上将潘凤",
+    "count": "12.3万",
+    "count_num": 123000.0,
+    "game_name": "三国志8",
+    "tags": [
+      "历史",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/774904444"
+  },
+  {
+    "title": "在33MB的《动物井》中成为头号玩家",
+    "count": "9.6万",
+    "count_num": 96000.0,
+    "game_name": "动物井",
+    "tags": [
+      "独立游戏"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/771996650"
+  },
+  {
+    "title": "超推荐 | 霍格沃茨插班生快来，学姐们给你补课啦~",
+    "count": "9万",
+    "count_num": 90000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/771338776"
+  },
+  {
+    "title": "《工人与资源》从零开始建设现代化",
+    "count": "12.1万",
+    "count_num": 121000.0,
+    "game_name": "工人与资源",
+    "tags": [
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/770317645"
+  },
+  {
+    "title": "超播报 | Steam新品节，解锁摸鱼新姿势",
+    "count": "7.5万",
+    "count_num": 75000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/769509874"
+  },
+  {
+    "title": "超推荐 |《替身》为什么大家都爱伊藤润二",
+    "count": "8.6万",
+    "count_num": 86000.0,
+    "game_name": "替身",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/768981714"
+  },
+  {
+    "title": "《大侠立志传》送礼！结缘！顺便保家卫国",
+    "count": "12.9万",
+    "count_num": 129000.0,
+    "game_name": "大侠立志传",
+    "tags": [
+      "RPG",
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/768472690"
+  },
+  {
+    "title": "超推荐 | 恐怖片《咒》改编游戏？试玩版+剧情预测！",
+    "count": "8.6万",
+    "count_num": 86000.0,
+    "game_name": "咒",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/766917869"
+  },
+  {
+    "title": "闯荡江湖什么最重要？！半瓶神仙醋做客超游",
+    "count": "11.3万",
+    "count_num": 113000.0,
+    "game_name": "",
+    "tags": [
+      "RPG",
+      "仙侠",
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/767631220"
+  },
+  {
+    "title": "《中国式网游》回忆起陪伴大哥纸醉金迷的热血年代",
+    "count": "13.9万",
+    "count_num": 139000.0,
+    "game_name": "中国式网游",
+    "tags": [
+      "GAL",
+      "独立游戏"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/766425775"
+  },
+  {
+    "title": "超推荐 | 萌宠？猛宠！傻傻分不清楚",
+    "count": "6.5万",
+    "count_num": 65000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/764439757"
+  },
+  {
+    "title": "《黑神话》意见欲！跳出局外！逍遥自在！",
+    "count": "31.6万",
+    "count_num": 316000.0,
+    "game_name": "黑神话",
+    "tags": [
+      "仙侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/763834711"
+  },
+  {
+    "title": "《零：月蚀的假面》下 | 里之章！胧月灭岛始末！",
+    "count": "1.6万",
+    "count_num": 16000.0,
+    "game_name": "零：月蚀的假面",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/761410567"
+  },
+  {
+    "title": "超推荐 | 海龟汤2：你数数我数数，我惊声尖叫！",
+    "count": "11.1万",
+    "count_num": 111000.0,
+    "game_name": "",
+    "tags": [
+      "多人桌游"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/762625354"
+  },
+  {
+    "title": "《黑神话》身本忧！借腹生子！家破人亡！",
+    "count": "25.4万",
+    "count_num": 254000.0,
+    "game_name": "黑神话",
+    "tags": [
+      "仙侠",
+      "动作"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/759743569"
+  },
+  {
+    "title": "《零：月蚀的假面》上 | 表之章！少女神隐事件！",
+    "count": "2万",
+    "count_num": 20000.0,
+    "game_name": "零：月蚀的假面",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/761246285"
+  },
+  {
+    "title": "超推荐 | 历史的巨镜：从《巫师》纪录片中窥见中国游戏发展",
+    "count": "8.7万",
+    "count_num": 87000.0,
+    "game_name": "巫师",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/760925133"
+  },
+  {
+    "title": "《黑神话》舌尝思！爱恨纠缠！成仙化魔！",
+    "count": "26.7万",
+    "count_num": 267000.0,
+    "game_name": "黑神话",
+    "tags": [
+      "仙侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/758255886"
+  },
+  {
+    "title": "超推荐 |《拣爱》谈恋爱怎么会有标准答案呢？",
+    "count": "7.7万",
+    "count_num": 77000.0,
+    "game_name": "拣爱",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/758918037"
+  },
+  {
+    "title": "《黑神话》鼻嗅爱！三界四洲！纵欲极乐！",
+    "count": "28.5万",
+    "count_num": 285000.0,
+    "game_name": "黑神话",
+    "tags": [
+      "仙侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/758254626"
+  },
+  {
+    "title": "《拳皇终极历史》请把这期节目发给曾经一起打拳皇的TA",
+    "count": "11.1万",
+    "count_num": 111000.0,
+    "game_name": "拳皇终极历史",
+    "tags": [
+      "格斗"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/756089635"
+  },
+  {
+    "title": "超推荐 |《Good Job》加油！把公司干倒闭",
+    "count": "8.5万",
+    "count_num": 85000.0,
+    "game_name": "Good Job",
+    "tags": [
+      "独立游戏"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/756611121"
+  },
+  {
+    "title": "《黑神话》耳听怒！黄金古国！佛竟无头！",
+    "count": "32.8万",
+    "count_num": 328000.0,
+    "game_name": "黑神话",
+    "tags": [
+      "仙侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/756041977"
+  },
+  {
+    "title": "超推荐 | 爽文男主巧舟，从《逆转裁判》到《幽灵诡计》",
+    "count": "10.3万",
+    "count_num": 103000.0,
+    "game_name": "逆转裁判",
+    "tags": [
+      "任天堂",
+      "日式",
+      "独立游戏"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/755115482"
+  },
+  {
+    "title": "《黑神话》眼见喜！观音禅院！袈裟血案！",
+    "count": "38.6万",
+    "count_num": 386000.0,
+    "game_name": "黑神话",
+    "tags": [
+      "仙侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/753737187"
+  },
+  {
+    "title": "超推荐 | 一起来下饭，播客版《验尸模拟器》",
+    "count": "9.8万",
+    "count_num": 98000.0,
+    "game_name": "验尸模拟器",
+    "tags": [
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/752834482"
+  },
+  {
+    "title": "《魔兽世界》学英雄天赋，做地心英雄",
+    "count": "11万",
+    "count_num": 110000.0,
+    "game_name": "魔兽世界",
+    "tags": [
+      "多人"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/752832368"
+  },
+  {
+    "title": "超推荐 | 群星中的克苏鲁，降落在《诡镇奇谈》",
+    "count": "10.6万",
+    "count_num": 106000.0,
+    "game_name": "诡镇奇谈",
+    "tags": [
+      "恐怖",
+      "类魂"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/752025302"
+  },
+  {
+    "title": "《魔兽世界》对谈SKY：地心之战故事里的魔兽青春",
+    "count": "9万",
+    "count_num": 90000.0,
+    "game_name": "魔兽世界",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/751004168"
+  },
+  {
+    "title": "《黑神话》就是一场修行",
+    "count": "30.9万",
+    "count_num": 309000.0,
+    "game_name": "黑神话",
+    "tags": [
+      "仙侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/751077837"
+  },
+  {
+    "title": "超播报 |《黑神话》今天你直面天命了吗？",
+    "count": "15.7万",
+    "count_num": 157000.0,
+    "game_name": "黑神话",
+    "tags": [
+      "仙侠",
+      "动作"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/750260075"
+  },
+  {
+    "title": "《中元节特辑》诡异！媳妇为何性情大变",
+    "count": "16.3万",
+    "count_num": 163000.0,
+    "game_name": "中元节特辑",
+    "tags": [
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/749118286"
+  },
+  {
+    "title": "《黎明杀机》屠夫的现实原型？杀人狂的真实案件记录",
+    "count": "11.1万",
+    "count_num": 111000.0,
+    "game_name": "黎明杀机",
+    "tags": [
+      "动作",
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/749129073"
+  },
+  {
+    "title": "石油杯街霸震撼结局！'小孩'曾卓君问鼎冠军，引爆游戏圈",
+    "count": "9.2万",
+    "count_num": 92000.0,
+    "game_name": "",
+    "tags": [
+      "多人",
+      "格斗"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/748336569"
+  },
+  {
+    "title": "超推荐 | 游戏玩家去除班味儿指南",
+    "count": "6.8万",
+    "count_num": 68000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/747771438"
+  },
+  {
+    "title": "《奇唤士》妖僧拉斯普京凭什么祸乱宫廷",
+    "count": "10.8万",
+    "count_num": 108000.0,
+    "game_name": "奇唤士",
+    "tags": [
+      "历史"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/746800457"
+  },
+  {
+    "title": "超播报 | V圈大乱斗！《虚环》项目组精神状态有待查询",
+    "count": "5.6万",
+    "count_num": 56000.0,
+    "game_name": "虚环",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/746675562"
+  },
+  {
+    "title": "超推荐 | 奥运会期间，就应该动换动换",
+    "count": "7.5万",
+    "count_num": 75000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/746154875"
+  },
+  {
+    "title": "电车难题？左右两难的抉择！面对考验吧列车长！",
+    "count": "11万",
+    "count_num": 110000.0,
+    "game_name": "",
+    "tags": [
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/745140077"
+  },
+  {
+    "title": "超播报 | 育碧打钱！巴黎奥运会上的刺客信条",
+    "count": "7.2万",
+    "count_num": 72000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/744903744"
+  },
+  {
+    "title": "本所七大不可思议02 | 多线网状叙事诡计，真凶隐藏其中？",
+    "count": "1万",
+    "count_num": 10000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/744937284"
+  },
+  {
+    "title": "本所七大不可思议03 | 延续了几百年的江户时代阴阳术大战",
+    "count": "5765",
+    "count_num": 5765.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/744945544"
+  },
+  {
+    "title": "本所七大不可思议01 | 如果世上存在复活之术，你会用吗？",
+    "count": "8266",
+    "count_num": 8266.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/744933171"
+  },
+  {
+    "title": "超推荐 |《风云天下会》那名场面可是太多了",
+    "count": "8.3万",
+    "count_num": 83000.0,
+    "game_name": "风云天下会",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/744192739"
+  },
+  {
+    "title": "《魔兽世界》奥杜尔——北欧众神大战克苏鲁",
+    "count": "12.2万",
+    "count_num": 122000.0,
+    "game_name": "魔兽世界",
+    "tags": [
+      "多人"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/743544118"
+  },
+  {
+    "title": "超播报 | 炸酱面里全是肉没有面也不行啊！",
+    "count": "6.8万",
+    "count_num": 68000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/743266407"
+  },
+  {
+    "title": "超推荐 |《俏皮脸》因为公寓谋杀案而暴露的克苏鲁故事",
+    "count": "10万",
+    "count_num": 100000.0,
+    "game_name": "俏皮脸",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/742857677"
+  },
+  {
+    "title": "《魔兽争霸》在领导眼里忠诚是不是比能力更重要",
+    "count": "12.9万",
+    "count_num": 129000.0,
+    "game_name": "魔兽争霸",
+    "tags": [
+      "多人"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/742394545"
+  },
+  {
+    "title": "超播报 | 玩游戏切忌戴耳机还叫唤！容易离婚！",
+    "count": "7万",
+    "count_num": 70000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/741726359"
+  },
+  {
+    "title": "超推荐 | 这碗海龟汤怕是扶不正了",
+    "count": "10.2万",
+    "count_num": 102000.0,
+    "game_name": "",
+    "tags": [
+      "多人桌游",
+      "搞笑"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/741316774"
+  },
+  {
+    "title": "揭秘！《奇妙探险队》领队人选，挑战你的想象力边界",
+    "count": "9.3万",
+    "count_num": 93000.0,
+    "game_name": "奇妙探险队",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/740903837"
+  },
+  {
+    "title": "超播报 | 石油杯为什么不重视LOL？",
+    "count": "7.9万",
+    "count_num": 79000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/740115817"
+  },
+  {
+    "title": "超推荐 |《奇异人生》再见克洛伊，再见阿卡迪亚湾",
+    "count": "9.7万",
+    "count_num": 97000.0,
+    "game_name": "奇异人生",
+    "tags": [
+      "GAL",
+      "RPG"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/739770140"
+  },
+  {
+    "title": "微软研发最具影响力的游戏竟然是《扫雷》！",
+    "count": "9.5万",
+    "count_num": 95000.0,
+    "game_name": "扫雷",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/738592801"
+  },
+  {
+    "title": "超播报 | 你会看2024沙特电竞世界杯吗？",
+    "count": "6.6万",
+    "count_num": 66000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/738589905"
+  },
+  {
+    "title": "超推荐 | 向死而生的《最终幻想10》，浓缩了多少亚洲家庭的感情缩影",
+    "count": "9万",
+    "count_num": 90000.0,
+    "game_name": "最终幻想10",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/738184808"
+  },
+  {
+    "title": "《控制》DLC与Remedy充满野心的六道门",
+    "count": "6677",
+    "count_num": 6677.0,
+    "game_name": "控制",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/738154717"
+  },
+  {
+    "title": "《控制》02控制局危机、新局长和她的领导班子",
+    "count": "5575",
+    "count_num": 5575.0,
+    "game_name": "控制",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/738154111"
+  },
+  {
+    "title": "《控制》01欢迎来到充满怪谈的太古屋",
+    "count": "1万",
+    "count_num": 10000.0,
+    "game_name": "控制",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/738153804"
+  },
+  {
+    "title": "《活侠传》不争馒头咱争口气！",
+    "count": "15.3万",
+    "count_num": 153000.0,
+    "game_name": "活侠传",
+    "tags": [
+      "GAL",
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/737564545"
+  },
+  {
+    "title": "超播报 | 《黄金树之影》真有那么难吗？未必！",
+    "count": "7.7万",
+    "count_num": 77000.0,
+    "game_name": "黄金树之影",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/737141182"
+  },
+  {
+    "title": "《哈迪斯》的冥府里都关着什么冤种",
+    "count": "23.4万",
+    "count_num": 234000.0,
+    "game_name": "哈迪斯",
+    "tags": [
+      "类魂"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/735728442"
+  },
+  {
+    "title": "超推荐 | 除了《女鬼桥1》，上学时还有哪些校园故事让你半夜不敢去厕所？",
+    "count": "13.7万",
+    "count_num": 137000.0,
+    "game_name": "女鬼桥1",
+    "tags": [
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/736803040"
+  },
+  {
+    "title": "超播报 | 距离超游杯还有4天啦！",
+    "count": "5.3万",
+    "count_num": 53000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/735663575"
+  },
+  {
+    "title": "超推荐 | 夏促游戏推荐：放一个暑假，你能玩多少游戏？",
+    "count": "8.1万",
+    "count_num": 81000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/735290332"
+  },
+  {
+    "title": "超播报 | 超游杯！免门票！有奖品！欢迎来玩！",
+    "count": "5万",
+    "count_num": 50000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/734302901"
+  },
+  {
+    "title": "《头文字D》嘚儿漂！嘚儿漂！嘚儿意的漂",
+    "count": "9.1万",
+    "count_num": 91000.0,
+    "game_name": "头文字D",
+    "tags": [
+      "日式"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/734500582"
+  },
+  {
+    "title": "超推荐 |《古墓丽影9》劳拉没有了D罩杯，却成为了游戏IP重启的典范",
+    "count": "10.1万",
+    "count_num": 101000.0,
+    "game_name": "古墓丽影9",
+    "tags": [
+      "动作"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/733975468"
+  },
+  {
+    "title": "游戏界的艺术家，鬼才制作人小岛秀夫",
+    "count": "12.4万",
+    "count_num": 124000.0,
+    "game_name": "",
+    "tags": [
+      "其他",
+      "电影小说"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/733277512"
+  },
+  {
+    "title": "超播报 | 游戏评测组织怎么就成了闹剧？",
+    "count": "6.4万",
+    "count_num": 64000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/732900641"
+  },
+  {
+    "title": "超推荐 | 父母玩游戏比我们还带劲是一种什么体验",
+    "count": "6.7万",
+    "count_num": 67000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/732576217"
+  },
+  {
+    "title": "城市规划总遇难题！如何打造优美《城市天际线》",
+    "count": "11.7万",
+    "count_num": 117000.0,
+    "game_name": "城市天际线",
+    "tags": [
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/732110440"
+  },
+  {
+    "title": "《如果在冬夜，四个旅人》一个时代的精神危机与自我放弃",
+    "count": "1.1万",
+    "count_num": 11000.0,
+    "game_name": "如果在冬夜，四个旅人",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/732145204"
+  },
+  {
+    "title": "《艾迪芬奇的记忆》生命终结，记忆永存",
+    "count": "5658",
+    "count_num": 5658.0,
+    "game_name": "艾迪芬奇的记忆",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/732140051"
+  },
+  {
+    "title": "《去月球》人人都想拥有的“死而无憾”真的存在吗？",
+    "count": "4987",
+    "count_num": 4987.0,
+    "game_name": "去月球",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/732138213"
+  },
+  {
+    "title": "《Gris》当最亲爱的人离开时",
+    "count": "3731",
+    "count_num": 3731.0,
+    "game_name": "Gris",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/732135981"
+  },
+  {
+    "title": "《灵魂摆渡人》我们可以在葬礼中欢乐吗？",
+    "count": "5652",
+    "count_num": 5652.0,
+    "game_name": "灵魂摆渡人",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/732133427"
+  },
+  {
+    "title": "玩游戏顺便学历史，来份《五代志》吧！",
+    "count": "8.5万",
+    "count_num": 85000.0,
+    "game_name": "五代志",
+    "tags": [
+      "多人桌游"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/731539072"
+  },
+  {
+    "title": "超播报 | 电子斗蛐蛐要控制时间！",
+    "count": "5.4万",
+    "count_num": 54000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/731534226"
+  },
+  {
+    "title": "超推荐 | 15年前的柯南VS金田一，死神集结致敬经典推理元素",
+    "count": "9.5万",
+    "count_num": 95000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/731202589"
+  },
+  {
+    "title": "《如龙8》讽刺！太讽刺！垃圾扔到美利坚",
+    "count": "10.8万",
+    "count_num": 108000.0,
+    "game_name": "如龙8",
+    "tags": [
+      "RPG",
+      "日式"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/730538414"
+  },
+  {
+    "title": "超播报 | 定价268那可是有讲究的！",
+    "count": "7.2万",
+    "count_num": 72000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/730096302"
+  },
+  {
+    "title": "超推荐 | 人类呀！搞了半天其实什么都《控制》不了",
+    "count": "8.2万",
+    "count_num": 82000.0,
+    "game_name": "控制",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/729766081"
+  },
+  {
+    "title": "《脑洞量表》第一届，默契度大考验",
+    "count": "9.2万",
+    "count_num": 92000.0,
+    "game_name": "脑洞量表",
+    "tags": [
+      "多人桌游"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/728738827"
+  },
+  {
+    "title": "超播报 | 享受快乐，放过自己没啥不好",
+    "count": "7.5万",
+    "count_num": 75000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/728738250"
+  },
+  {
+    "title": "超推荐 | 天气热了，玩点中式民俗恐怖游戏清凉一“吓”吧",
+    "count": "9.7万",
+    "count_num": 97000.0,
+    "game_name": "",
+    "tags": [
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/728353163"
+  },
+  {
+    "title": "《浪人崛起》一集讲透！何为日本幕末！",
+    "count": "51.3万",
+    "count_num": 513000.0,
+    "game_name": "浪人崛起",
+    "tags": [
+      "动作"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/727511607"
+  },
+  {
+    "title": "超播报 | 快推荐一款“粪”作给主播",
+    "count": "5.7万",
+    "count_num": 57000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/727307023"
+  },
+  {
+    "title": "超播报 | 没有主角光环还能不能闯荡江湖？",
+    "count": "6.1万",
+    "count_num": 61000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/725951020"
+  },
+  {
+    "title": "《重返未来1999》废城里的人类理想与自我实现",
+    "count": "11.1万",
+    "count_num": 111000.0,
+    "game_name": "重返未来1999",
+    "tags": [
+      "手游",
+      "科幻"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/725972706"
+  },
+  {
+    "title": "《魔兽争霸》工作上的事一定要多请示领导",
+    "count": "12万",
+    "count_num": 120000.0,
+    "game_name": "魔兽争霸",
+    "tags": [
+      "多人"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/724914883"
+  },
+  {
+    "title": "超播报 | 新时代的小朋友都会用AI写作业吗",
+    "count": "6万",
+    "count_num": 60000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/724476152"
+  },
+  {
+    "title": "都市怪谈大集合！《岚和山之彼端》",
+    "count": "13.8万",
+    "count_num": 138000.0,
+    "game_name": "岚和山之彼端",
+    "tags": [
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/723423791"
+  },
+  {
+    "title": "收获日02 | 秘密委托涉政坛 三亿日元成悬案",
+    "count": "6613",
+    "count_num": 6613.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/723206987"
+  },
+  {
+    "title": "收获日03 | 夺取林肯特赦令 妄逃法网终成空",
+    "count": "1.1万",
+    "count_num": 11000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/723208571"
+  },
+  {
+    "title": "收获日01 | 四人小队初集结 拉姆劫道定行规",
+    "count": "1万",
+    "count_num": 10000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/723209116"
+  },
+  {
+    "title": "《足球经理》拒腐蚀，永不贪能不能带好一支球队",
+    "count": "12.2万",
+    "count_num": 122000.0,
+    "game_name": "足球经理",
+    "tags": [
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/722197046"
+  },
+  {
+    "title": "动视暴雪X网易复婚，会长我想打魔兽！",
+    "count": "10.4万",
+    "count_num": 104000.0,
+    "game_name": "",
+    "tags": [
+      "其他"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/721951278"
+  },
+  {
+    "title": "超播报 | 意外！女性向真人互动游戏遇冷",
+    "count": "6.9万",
+    "count_num": 69000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/721503051"
+  },
+  {
+    "title": "《如龙8》夏威夷黑警不干人事",
+    "count": "8.4万",
+    "count_num": 84000.0,
+    "game_name": "如龙8",
+    "tags": [
+      "RPG",
+      "动作",
+      "日式"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/720365601"
+  },
+  {
+    "title": "超播报 | 今天的新闻，请自己判断真假",
+    "count": "5万",
+    "count_num": 50000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/719852499"
+  },
+  {
+    "title": "《文明》埃及的金字塔到底谁造的？",
+    "count": "18.5万",
+    "count_num": 185000.0,
+    "game_name": "文明",
+    "tags": [
+      "历史",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/718208020"
+  },
+  {
+    "title": "超播报 | 如何安全的成为赛博义父",
+    "count": "6.5万",
+    "count_num": 65000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/717684677"
+  },
+  {
+    "title": "《波斯王子》教科书上不讲的历史",
+    "count": "14.2万",
+    "count_num": 142000.0,
+    "game_name": "波斯王子",
+    "tags": [
+      "2D",
+      "独立游戏",
+      "类魂"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/716612145"
+  },
+  {
+    "title": "超播报 | 你有六亿美元，你会做什么游戏？",
+    "count": "6.6万",
+    "count_num": 66000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/715715761"
+  },
+  {
+    "title": "《如龙8》春日一番踏上夏威夷寻母之旅",
+    "count": "9万",
+    "count_num": 90000.0,
+    "game_name": "如龙8",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/714094604"
+  },
+  {
+    "title": "凯瑟琳03 | 恰如其时的当下性，爱使人盲目而婚姻让人恢复视力",
+    "count": "1.1万",
+    "count_num": 11000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/714181528"
+  },
+  {
+    "title": "凯瑟琳02 | “精神出轨”到“精神出柜”：在爱情的世界里，性别重要吗？",
+    "count": "6709",
+    "count_num": 6709.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/714181079"
+  },
+  {
+    "title": "凯瑟琳01 | 当渣男开始正视自身欲望，他会迎来真正的自由吗？",
+    "count": "9827",
+    "count_num": 9827.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/714180695"
+  },
+  {
+    "title": "《凯瑟琳》系列节目先导预告",
+    "count": "3.8万",
+    "count_num": 38000.0,
+    "game_name": "凯瑟琳",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/714180369"
+  },
+  {
+    "title": "超播报 | 纪念！龙珠之父去世了",
+    "count": "5.5万",
+    "count_num": 55000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/713487269"
+  },
+  {
+    "title": "超推荐 | 39年后，桃子公主最终还是拒绝了马里奥",
+    "count": "5.2万",
+    "count_num": 52000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/712863699"
+  },
+  {
+    "title": "《狙击精英4》世界军史服役最长的步枪",
+    "count": "6.9万",
+    "count_num": 69000.0,
+    "game_name": "狙击精英4",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/712273009"
+  },
+  {
+    "title": "超播报 | 18年工龄的国内游戏人真的存在吗？",
+    "count": "5.3万",
+    "count_num": 53000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/711542934"
+  },
+  {
+    "title": "超推荐 | 想学会《读空气》还真挺难的",
+    "count": "5.4万",
+    "count_num": 54000.0,
+    "game_name": "读空气",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/710140084"
+  },
+  {
+    "title": "《咩咩启示录》珍爱生命，远离邪教",
+    "count": "10.6万",
+    "count_num": 106000.0,
+    "game_name": "咩咩启示录",
+    "tags": [
+      "独立游戏"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/710100247"
+  },
+  {
+    "title": "超播报 | 幸福！今年游戏大作扎堆",
+    "count": "6.1万",
+    "count_num": 61000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/709186802"
+  },
+  {
+    "title": "超推荐 | 香草社《圣兽之王》或许预定24年上半年最佳游戏",
+    "count": "5.8万",
+    "count_num": 58000.0,
+    "game_name": "圣兽之王",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/708824705"
+  },
+  {
+    "title": "《古龙风云录》闯荡江湖能不能快活",
+    "count": "12.1万",
+    "count_num": 121000.0,
+    "game_name": "古龙风云录",
+    "tags": [
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/708110839"
+  },
+  {
+    "title": "超播报 | 抛开性价比不谈，那就剩穷了",
+    "count": "5.8万",
+    "count_num": 58000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/707644460"
+  },
+  {
+    "title": "《血色衣冠》谁是帝星联盟最强朝代",
+    "count": "11.1万",
+    "count_num": 111000.0,
+    "game_name": "血色衣冠",
+    "tags": [
+      "历史",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/706759702"
+  },
+  {
+    "title": "《山河旅探》身处剧变时代，能看清前路吗？",
+    "count": "9.1万",
+    "count_num": 91000.0,
+    "game_name": "山河旅探",
+    "tags": [
+      "RPG",
+      "恐怖",
+      "独立游戏"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/705233251"
+  },
+  {
+    "title": "超播报 | 抱歉！《古龙》可能不会做系列了",
+    "count": "5.7万",
+    "count_num": 57000.0,
+    "game_name": "古龙",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/704836302"
+  },
+  {
+    "title": "《如龙5-6》极道落幕：生命的诗篇就是两个字“胡闹”",
+    "count": "1.1万",
+    "count_num": 11000.0,
+    "game_name": "如龙5-6",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/704338330"
+  },
+  {
+    "title": "《如龙3-4》黑帮如何致富：歌舞伎町那些事儿",
+    "count": "9013",
+    "count_num": 9013.0,
+    "game_name": "如龙3-4",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/704338056"
+  },
+  {
+    "title": "《如龙2》黑帮中的外国势力：打不过咱还是报警吧",
+    "count": "9126",
+    "count_num": 9126.0,
+    "game_name": "如龙2",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/704337753"
+  },
+  {
+    "title": "《如龙1》人性必须破碎：边缘社会的生存法则",
+    "count": "1.2万",
+    "count_num": 12000.0,
+    "game_name": "如龙1",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/704324767"
+  },
+  {
+    "title": "《如龙0》任侠精神下的极道内核与社会形象",
+    "count": "9.1万",
+    "count_num": 91000.0,
+    "game_name": "如龙0",
+    "tags": [
+      "RPG",
+      "日式"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/703968502"
+  },
+  {
+    "title": "超播报 | 88岁爷爷喜提吉尼斯纪录",
+    "count": "5.2万",
+    "count_num": 52000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/703050958"
+  },
+  {
+    "title": "《港诡实录》跨越三代的家族秘术",
+    "count": "14.6万",
+    "count_num": 146000.0,
+    "game_name": "港诡实录",
+    "tags": [
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/702158797"
+  },
+  {
+    "title": "超播报 | 标题炸裂？性感母女原始丛林大冒险",
+    "count": "5.9万",
+    "count_num": 59000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/701588269"
+  },
+  {
+    "title": "《古龙风云录》大侠都赶紧去看心理医生吧",
+    "count": "11.7万",
+    "count_num": 117000.0,
+    "game_name": "古龙风云录",
+    "tags": [
+      "RPG",
+      "仙侠",
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/700788563"
+  },
+  {
+    "title": "超推荐 | 从黑白米老鼠游戏预告到版权保护",
+    "count": "5.2万",
+    "count_num": 52000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/701063592"
+  },
+  {
+    "title": "超播报 | 这个春节，我一定要联网玩主机！",
+    "count": "5.8万",
+    "count_num": 58000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/700398423"
+  },
+  {
+    "title": "超推荐 | 聊聊4399的童年回忆、发家和转型",
+    "count": "15.4万",
+    "count_num": 154000.0,
+    "game_name": "",
+    "tags": [
+      "独立游戏"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/699766158"
+  },
+  {
+    "title": "《主播女孩重度依赖》目标一百万粉丝！",
+    "count": "10万",
+    "count_num": 100000.0,
+    "game_name": "主播女孩重度依赖",
+    "tags": [
+      "GAL",
+      "模拟",
+      "独立游戏"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/699392891"
+  },
+  {
+    "title": "超颁奖 | 2023年纠结了很多事",
+    "count": "9.3万",
+    "count_num": 93000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/697970649"
+  },
+  {
+    "title": "超播报 | 2024年游戏行业的五个预测",
+    "count": "6.1万",
+    "count_num": 61000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/698786049"
+  },
+  {
+    "title": "超推荐 I 小岛秀夫不做游戏的时候干什么？",
+    "count": "7.3万",
+    "count_num": 73000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/696949820"
+  },
+  {
+    "title": "《少女前线2》为什么大家都骂它？",
+    "count": "9.2万",
+    "count_num": 92000.0,
+    "game_name": "少女前线2",
+    "tags": [
+      "手游"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/696558923"
+  },
+  {
+    "title": "超推荐 I 斗电子蛐蛐，做赛博王爷",
+    "count": "5.2万",
+    "count_num": 52000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/695540322"
+  },
+  {
+    "title": "超播报 | 面对生活要保持希望哦",
+    "count": "6.2万",
+    "count_num": 62000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/696026254"
+  },
+  {
+    "title": "《心灵杀手2》无源信息证明有高维存在",
+    "count": "10.4万",
+    "count_num": 104000.0,
+    "game_name": "心灵杀手2",
+    "tags": [
+      "RPG",
+      "射击",
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/694877290"
+  },
+  {
+    "title": "超播报 | 这天命你还想要吗？",
+    "count": "6.4万",
+    "count_num": 64000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/694412487"
+  },
+  {
+    "title": "风景秀丽亮瀑镇潜藏的《心灵杀手》",
+    "count": "10.9万",
+    "count_num": 109000.0,
+    "game_name": "心灵杀手",
+    "tags": [
+      "RPG",
+      "动作",
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/693385165"
+  },
+  {
+    "title": "超推荐｜一硬到底，聊聊世嘉为什么要复活老IP",
+    "count": "5.9万",
+    "count_num": 59000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/694085028"
+  },
+  {
+    "title": "超播报 | 独立游戏=通房大丫头？",
+    "count": "6.1万",
+    "count_num": 61000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/692756795"
+  },
+  {
+    "title": "超推荐｜欢迎来到锈湖，这里什么事都可能发生",
+    "count": "9.2万",
+    "count_num": 92000.0,
+    "game_name": "",
+    "tags": [
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/692123444"
+  },
+  {
+    "title": "《女娲号》甩泥点造人可是有科学根据的！",
+    "count": "8.9万",
+    "count_num": 89000.0,
+    "game_name": "女娲号",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/691705527"
+  },
+  {
+    "title": "超播报 | 戴着大戒指没准能碰到好朋友",
+    "count": "5.6万",
+    "count_num": 56000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/690771510"
+  },
+  {
+    "title": "超推荐｜独立游戏为何偏爱中式恐怖？",
+    "count": "7.5万",
+    "count_num": 75000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/690326179"
+  },
+  {
+    "title": "《重返未来1999：洞穴的囚徒》写给玩家的哲学情诗",
+    "count": "9万",
+    "count_num": 90000.0,
+    "game_name": "重返未来1999：洞穴的囚徒",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/689521245"
+  },
+  {
+    "title": "超推荐 I 聊聊关于促销买游戏那点事",
+    "count": "6.1万",
+    "count_num": 61000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/688182679"
+  },
+  {
+    "title": "超播报 | 强行站队的游戏媒体可就谈不上专业了",
+    "count": "5万",
+    "count_num": 50000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/688832210"
+  },
+  {
+    "title": "《漫威丧尸宇宙》金花细数超级英雄的时代变迁",
+    "count": "13.9万",
+    "count_num": 139000.0,
+    "game_name": "漫威丧尸宇宙",
+    "tags": [
+      "多人桌游"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/687305817"
+  },
+  {
+    "title": "超播报 | 老职业选手的电竞魂",
+    "count": "5.5万",
+    "count_num": 55000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/686615123"
+  },
+  {
+    "title": "超推荐｜群口TGA2023，从独立游戏和《HIFI-RUSH》聊聊评奖标准Vol.4",
+    "count": "6.7万",
+    "count_num": 67000.0,
+    "game_name": "HIFI-RUSH",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/686090753"
+  },
+  {
+    "title": "《美女包围》你会不会寻找灵魂伴侣",
+    "count": "12.7万",
+    "count_num": 127000.0,
+    "game_name": "美女包围",
+    "tags": [
+      "GAL"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/685398047"
+  },
+  {
+    "title": "超播报 | 金摇杆公布，你都玩了哪些呢",
+    "count": "5.7万",
+    "count_num": 57000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/684364090"
+  },
+  {
+    "title": "超推荐｜当你把独立游戏当成坏人模拟器，爽！Vol.3",
+    "count": "6.2万",
+    "count_num": 62000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/683610793"
+  },
+  {
+    "title": "《我被美女包围了》录到一半停电了！",
+    "count": "17.8万",
+    "count_num": 178000.0,
+    "game_name": "我被美女包围了",
+    "tags": [
+      "GAL"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/682703807"
+  },
+  {
+    "title": "超播报 | 不是我没走，是你还没放手！",
+    "count": "5.4万",
+    "count_num": 54000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/682042819"
+  },
+  {
+    "title": "超推荐 | 游戏里赚钱又不能现实中花！运维更新跟不上再好也白搭Vol.2",
+    "count": "7.4万",
+    "count_num": 74000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/681291623"
+  },
+  {
+    "title": "《博德之门3》E02 玩脑子，先礼后兵",
+    "count": "11.9万",
+    "count_num": 119000.0,
+    "game_name": "博德之门3",
+    "tags": [
+      "RPG",
+      "多人",
+      "科幻"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/680150719"
+  },
+  {
+    "title": "超播报 | 不太行啊！小老弟！爽！",
+    "count": "5.9万",
+    "count_num": 59000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/679791631"
+  },
+  {
+    "title": "超推荐 | 10月独立游戏真不少！放假在家“抽嘴巴”，下班回家想跑团 Vol.1",
+    "count": "5.9万",
+    "count_num": 59000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/679589512"
+  },
+  {
+    "title": "《逸剑风云决》这个江湖好不了！",
+    "count": "10万",
+    "count_num": 100000.0,
+    "game_name": "逸剑风云决",
+    "tags": [
+      "RPG",
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/678291404"
+  },
+  {
+    "title": "《逸剑》引发的关于武侠游戏的讨论",
+    "count": "7.2万",
+    "count_num": 72000.0,
+    "game_name": "逸剑",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/678292056"
+  },
+  {
+    "title": "超播报 | 显卡下架X营销怪招X老瘫推荐",
+    "count": "5.7万",
+    "count_num": 57000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/676992256"
+  },
+  {
+    "title": "《往日之影》街头阎王要当赛博菩萨",
+    "count": "12.2万",
+    "count_num": 122000.0,
+    "game_name": "往日之影",
+    "tags": [
+      "RPG",
+      "射击",
+      "科幻"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/672859502"
+  },
+  {
+    "title": "超播报 | 收购结束X新型主机X野哥深夜看某直播跌宕起伏热血沸腾",
+    "count": "6万",
+    "count_num": 60000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/674378370"
+  },
+  {
+    "title": "《堕落之主》穿梭于影界与现实的魂",
+    "count": "8.2万",
+    "count_num": 82000.0,
+    "game_name": "堕落之主",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/673202395"
+  },
+  {
+    "title": "超播报 | 魔法专业X成本控制X刀塔亚运会夺冠",
+    "count": "5万",
+    "count_num": 50000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/672314545"
+  },
+  {
+    "title": "《博德之门3》E01爱美人，更爱百姓",
+    "count": "14.2万",
+    "count_num": 142000.0,
+    "game_name": "博德之门3",
+    "tags": [
+      "RPG",
+      "科幻"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/671056513"
+  },
+  {
+    "title": "超播报 | 亚运金牌X电子竞技X为国争光",
+    "count": "5.2万",
+    "count_num": 52000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/670824428"
+  },
+  {
+    "title": "《巴别塔圣歌》世界因语言而不同",
+    "count": "8.3万",
+    "count_num": 83000.0,
+    "game_name": "巴别塔圣歌",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/669972478"
+  },
+  {
+    "title": "不秃头也能变强！LPL走过的这十年",
+    "count": "6.5万",
+    "count_num": 65000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/669203648"
+  },
+  {
+    "title": "从漫威桌游聊起，萌新玩家的欢乐痛苦与迷思（feat.雷电）",
+    "count": "7.7万",
+    "count_num": 77000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/668072216"
+  },
+  {
+    "title": "超播报｜Unity新政引众怒✖️核聚变✖️DICE CON回顾",
+    "count": "6万",
+    "count_num": 60000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/667034269"
+  },
+  {
+    "title": "新手警察误入《烟火》离奇谜案",
+    "count": "11.3万",
+    "count_num": 113000.0,
+    "game_name": "烟火",
+    "tags": [
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/665313832"
+  },
+  {
+    "title": "超播报 | 电竞入亚运：下届超游杯我们也想用亚运钉！",
+    "count": "6.4万",
+    "count_num": 64000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/665601825"
+  },
+  {
+    "title": "所有女生都能在《未定事件薄》里找到理想伴侣？",
+    "count": "8.8万",
+    "count_num": 88000.0,
+    "game_name": "未定事件薄",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/664274054"
+  },
+  {
+    "title": "超播报 | 博德必玩X星空必玩X华为牛X",
+    "count": "5.8万",
+    "count_num": 58000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/663521544"
+  },
+  {
+    "title": "你会玩游戏玩到自己想做MOD吗",
+    "count": "6.8万",
+    "count_num": 68000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/661234525"
+  },
+  {
+    "title": "超播报 | 博德之门上线X黑神话试玩X装甲核心解惑",
+    "count": "6.6万",
+    "count_num": 66000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/660995413"
+  },
+  {
+    "title": "黑水五虎下扬州《我来自江湖》",
+    "count": "12.7万",
+    "count_num": 127000.0,
+    "game_name": "我来自江湖",
+    "tags": [
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/659861289"
+  },
+  {
+    "title": "《如何屠龙》中世纪历史里写满了吃人",
+    "count": "9.8万",
+    "count_num": 98000.0,
+    "game_name": "如何屠龙",
+    "tags": [
+      "电影小说"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/659081802"
+  },
+  {
+    "title": "《闪耀暖暖》颜值高于一切，穿搭拯救世界",
+    "count": "8.4万",
+    "count_num": 84000.0,
+    "game_name": "闪耀暖暖",
+    "tags": [
+      "日式"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/657810365"
+  },
+  {
+    "title": "串台银杏树下：都3202年了，为什么我还在玩老游戏？",
+    "count": "7.2万",
+    "count_num": 72000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/656924349"
+  },
+  {
+    "title": "《三伏》假做真时真亦假",
+    "count": "10.6万",
+    "count_num": 106000.0,
+    "game_name": "三伏",
+    "tags": [
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/655917057"
+  },
+  {
+    "title": "超播报 | 2023上半年国产游戏销量榜",
+    "count": "6.8万",
+    "count_num": 68000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/655077527"
+  },
+  {
+    "title": "《火山的女儿》有bug？你以为的便宜是别人设计的剧本",
+    "count": "8.8万",
+    "count_num": 88000.0,
+    "game_name": "火山的女儿",
+    "tags": [
+      "GAL",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/653493934"
+  },
+  {
+    "title": "第二届《瞎掰王》爆炸来袭！",
+    "count": "9.1万",
+    "count_num": 91000.0,
+    "game_name": "瞎掰王",
+    "tags": [
+      "多人桌游",
+      "搞笑"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/653200169"
+  },
+  {
+    "title": "《重返未来1999》聊聊莎士比亚和十四行诗",
+    "count": "10.4万",
+    "count_num": 104000.0,
+    "game_name": "重返未来1999",
+    "tags": [
+      "手游"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/652473949"
+  },
+  {
+    "title": "超播报｜潜水员戴夫原型✖️2nd超游杯开放报名✖️某社解散（feat.游戏葡萄）",
+    "count": "5.8万",
+    "count_num": 58000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/651494384"
+  },
+  {
+    "title": "《宝可梦 朱紫》的饲养员们从科幻聊到了育儿",
+    "count": "8万",
+    "count_num": 80000.0,
+    "game_name": "宝可梦 朱紫",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/650489400"
+  },
+  {
+    "title": "游攻队到底谁是《瞎掰王》",
+    "count": "6.8万",
+    "count_num": 68000.0,
+    "game_name": "瞎掰王",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/649846153"
+  },
+  {
+    "title": "这个东西治好了小伙子的ED｜《八方旅人2》",
+    "count": "11.6万",
+    "count_num": 116000.0,
+    "game_name": "八方旅人2",
+    "tags": [
+      "RPG"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/648344537"
+  },
+  {
+    "title": "如何在《维多利亚3》中拯救茜茜公主",
+    "count": "9.2万",
+    "count_num": 92000.0,
+    "game_name": "维多利亚3",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/646877985"
+  },
+  {
+    "title": "超播报 | 幻想X暗黑X街霸",
+    "count": "5.8万",
+    "count_num": 58000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/645999298"
+  },
+  {
+    "title": "装修踩过啥坑？《房产达人》帮你回忆",
+    "count": "29.1万",
+    "count_num": 291000.0,
+    "game_name": "房产达人",
+    "tags": [
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/645161203"
+  },
+  {
+    "title": "《凶手就是你吧》请听我狡辩！",
+    "count": "10万",
+    "count_num": 100000.0,
+    "game_name": "凶手就是你吧",
+    "tags": [
+      "多人桌游",
+      "搞笑"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/643635319"
+  },
+  {
+    "title": "疯了！有人从《极品飞车》里挑家用车",
+    "count": "9.6万",
+    "count_num": 96000.0,
+    "game_name": "极品飞车",
+    "tags": [
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/640398721"
+  },
+  {
+    "title": "你不是冲锋队长！你是《钢铁指挥官》",
+    "count": "8.7万",
+    "count_num": 87000.0,
+    "game_name": "钢铁指挥官",
+    "tags": [
+      "策略"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/642047388"
+  },
+  {
+    "title": "《明日方舟》不媚宅，不擦边，不氪金",
+    "count": "8.5万",
+    "count_num": 85000.0,
+    "game_name": "明日方舟",
+    "tags": [
+      "手游"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/638667880"
+  },
+  {
+    "title": "超播报 | 索尼新掌机X影之刃X坚持成人向",
+    "count": "5.3万",
+    "count_num": 53000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/638183404"
+  },
+  {
+    "title": "如果游戏角色秃了会怎么样？",
+    "count": "6万",
+    "count_num": 60000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/636952744"
+  },
+  {
+    "title": "趁热入坑不？《塞尔达传说 王国之泪》",
+    "count": "13.4万",
+    "count_num": 134000.0,
+    "game_name": "塞尔达传说 王国之泪",
+    "tags": [
+      "RPG",
+      "动作"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/634491746"
+  },
+  {
+    "title": "你有什么聚会必备神器？",
+    "count": "6.3万",
+    "count_num": 63000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/636660392"
+  },
+  {
+    "title": "《满庭芳 宋上繁华》东京不夜城",
+    "count": "8.2万",
+    "count_num": 82000.0,
+    "game_name": "满庭芳 宋上繁华",
+    "tags": [
+      "历史",
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/633915725"
+  },
+  {
+    "title": "你觉得游戏是第九艺术吗？",
+    "count": "9.3万",
+    "count_num": 93000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/632221457"
+  },
+  {
+    "title": "年轻人你不是在打《暖雪》，你是在积功德！",
+    "count": "10.1万",
+    "count_num": 101000.0,
+    "game_name": "暖雪",
+    "tags": [
+      "2D",
+      "独立游戏",
+      "类魂"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/631017569"
+  },
+  {
+    "title": "《海龟汤》请原谅主播不太聪明",
+    "count": "10.6万",
+    "count_num": 106000.0,
+    "game_name": "海龟汤",
+    "tags": [
+      "多人桌游"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/630666581"
+  },
+  {
+    "title": "《文明6》彼得大帝的丰功伟业",
+    "count": "9.3万",
+    "count_num": 93000.0,
+    "game_name": "文明6",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/629443443"
+  },
+  {
+    "title": "《死亡空间》没有人能扛三分钟",
+    "count": "14万",
+    "count_num": 140000.0,
+    "game_name": "死亡空间",
+    "tags": [
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/628159725"
+  },
+  {
+    "title": "超播报 | 恶意退款X显卡升级X人工智能",
+    "count": "6.4万",
+    "count_num": 64000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/627225679"
+  },
+  {
+    "title": "《风帆纪元》游戏策划有文化，但不多",
+    "count": "8.4万",
+    "count_num": 84000.0,
+    "game_name": "风帆纪元",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/626350431"
+  },
+  {
+    "title": "《超级马里奥》我们的童年回忆",
+    "count": "10.5万",
+    "count_num": 105000.0,
+    "game_name": "超级马里奥",
+    "tags": [
+      "任天堂"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/624361972"
+  },
+  {
+    "title": "超播报 超级游攻队集结！",
+    "count": "6万",
+    "count_num": 60000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/625533648"
+  },
+  {
+    "title": "超播报 | 河洛古龙X威力加强X王国之泪",
+    "count": "6.1万",
+    "count_num": 61000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/623705963"
+  },
+  {
+    "title": "《灵魂骇客2》收集恶魔拯救世界",
+    "count": "7.5万",
+    "count_num": 75000.0,
+    "game_name": "灵魂骇客2",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/622552012"
+  },
+  {
+    "title": "《冰汽时代》里为了活下去能保持善良吗",
+    "count": "10.3万",
+    "count_num": 103000.0,
+    "game_name": "冰汽时代",
+    "tags": [
+      "搞笑",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/620746978"
+  },
+  {
+    "title": "超播报 | 反恐精英X摩尔去世X暗黑试玩",
+    "count": "5.5万",
+    "count_num": 55000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/621753268"
+  },
+  {
+    "title": "超播报 | 媒体满分X更新变砖X不许从良",
+    "count": "5.4万",
+    "count_num": 54000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/619902131"
+  },
+  {
+    "title": "我们把《卧龙》下一代剧情剧透了！",
+    "count": "9.9万",
+    "count_num": 99000.0,
+    "game_name": "卧龙",
+    "tags": [
+      "动作",
+      "武侠",
+      "类魂"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/618891295"
+  },
+  {
+    "title": "超播报 | 灵活策略X绝非垄断X宫斗游戏",
+    "count": "5.6万",
+    "count_num": 56000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/618035704"
+  },
+  {
+    "title": "《卧龙》里是谁在匡扶汉室，是我！",
+    "count": "10.6万",
+    "count_num": 106000.0,
+    "game_name": "卧龙",
+    "tags": [
+      "动作",
+      "武侠",
+      "武士"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/617067664"
+  },
+  {
+    "title": "超播报 | 奥运电竞X地狱大门X削减本体",
+    "count": "5.2万",
+    "count_num": 52000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/616287564"
+  },
+  {
+    "title": "《原子之心》机器人演绎暴力美学",
+    "count": "12.5万",
+    "count_num": 125000.0,
+    "game_name": "原子之心",
+    "tags": [
+      "射击",
+      "科幻"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/615277820"
+  },
+  {
+    "title": "超播报 | 大作不断X宣发谨慎X二代头盔",
+    "count": "5.4万",
+    "count_num": 54000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/614418916"
+  },
+  {
+    "title": "超播报 | 史低提醒X街霸亚军X珍惜现在",
+    "count": "5.1万",
+    "count_num": 51000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/613471089"
+  },
+  {
+    "title": "《双鱼玉佩》来源于都市怪谈",
+    "count": "13.3万",
+    "count_num": 133000.0,
+    "game_name": "双鱼玉佩",
+    "tags": [
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/611836829"
+  },
+  {
+    "title": "《霍格沃兹之遗》开学啦，同学们抓紧返校！",
+    "count": "10.2万",
+    "count_num": 102000.0,
+    "game_name": "霍格沃兹之遗",
+    "tags": [
+      "动作",
+      "电影小说",
+      "科幻"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/612743421"
+  },
+  {
+    "title": "超播报｜星际夺冠×霍格沃兹之遗×半瓶神仙醋",
+    "count": "5.7万",
+    "count_num": 57000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/611307064"
+  },
+  {
+    "title": "《纪元1800》解释了拉动经济的三驾马车",
+    "count": "9.5万",
+    "count_num": 95000.0,
+    "game_name": "纪元1800",
+    "tags": [
+      "历史"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/610258762"
+  },
+  {
+    "title": "玩转北宋，在《江湖十一》中狂飙",
+    "count": "10.5万",
+    "count_num": 105000.0,
+    "game_name": "江湖十一",
+    "tags": [
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/607934625"
+  },
+  {
+    "title": "超播报 恐怖录像X霍格沃兹X电子骨灰",
+    "count": "7.2万",
+    "count_num": 72000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/609622126"
+  },
+  {
+    "title": "超播报 | 没有宣发X差评第一X舆情热点",
+    "count": "5.5万",
+    "count_num": 55000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/607930569"
+  },
+  {
+    "title": "金花研究《奇门遁甲》后号称能算命",
+    "count": "14.1万",
+    "count_num": 141000.0,
+    "game_name": "奇门遁甲",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/605780836"
+  },
+  {
+    "title": "超播报 | 下架讨论X发售定档X索尼VR",
+    "count": "5.2万",
+    "count_num": 52000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/605211106"
+  },
+  {
+    "title": "《皇家骑士团》善恶到头终有报，多走正道",
+    "count": "9万",
+    "count_num": 90000.0,
+    "game_name": "皇家骑士团",
+    "tags": [
+      "RPG",
+      "策略"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/603671059"
+  },
+  {
+    "title": "超播报 | PS5要漏X日本老玩家X寒假限时",
+    "count": "5万",
+    "count_num": 50000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/603463649"
+  },
+  {
+    "title": "报告老板，《三体》游戏该这么改编",
+    "count": "8.6万",
+    "count_num": 86000.0,
+    "game_name": "三体",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/602272273"
+  },
+  {
+    "title": "超播报 | 新游期待X微软收购X打折促销",
+    "count": "4.3万",
+    "count_num": 43000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/601283337"
+  },
+  {
+    "title": "2022年度超级游颁奖",
+    "count": "8.2万",
+    "count_num": 82000.0,
+    "game_name": "",
+    "tags": [
+      "多人桌游",
+      "搞笑"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/600390665"
+  },
+  {
+    "title": "超播报 | 免费游戏X会员价值X严重跑题",
+    "count": "5.5万",
+    "count_num": 55000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/599852522"
+  },
+  {
+    "title": "当你玩游戏时没有流量了咋办！",
+    "count": "6.1万",
+    "count_num": 61000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/598924422"
+  },
+  {
+    "title": "超播报 | 世界杯结束X年货买游戏X幽深密室",
+    "count": "5.4万",
+    "count_num": 54000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/598151900"
+  },
+  {
+    "title": "剧情挣扎了两代的《瘟疫传说》",
+    "count": "8.6万",
+    "count_num": 86000.0,
+    "game_name": "瘟疫传说",
+    "tags": [
+      "动作",
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/597165619"
+  },
+  {
+    "title": "超播报｜TGA颁奖✖️微软收购受阻",
+    "count": "5.1万",
+    "count_num": 51000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/596262740"
+  },
+  {
+    "title": "《隐迹渐现》一场跨越二十年的谜案",
+    "count": "8.4万",
+    "count_num": 84000.0,
+    "game_name": "隐迹渐现",
+    "tags": [
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/594890843"
+  },
+  {
+    "title": "超播报 | 木卫四X龙腾世纪X极品飞车",
+    "count": "5.1万",
+    "count_num": 51000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/594472592"
+  },
+  {
+    "title": "地铁里拿着怪书东张西望的人，可能正在探案",
+    "count": "7万",
+    "count_num": 70000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/593299973"
+  },
+  {
+    "title": "超播报 | 检测串通X百相千面X虚拟看球",
+    "count": "5.1万",
+    "count_num": 51000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/592181822"
+  },
+  {
+    "title": "《仙剑7》告诉我们避孕的重要意义",
+    "count": "9.5万",
+    "count_num": 95000.0,
+    "game_name": "仙剑7",
+    "tags": [
+      "RPG"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/590983257"
+  },
+  {
+    "title": "超播报 | 暴雪X网易X离婚",
+    "count": "7.3万",
+    "count_num": 73000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/589921477"
+  },
+  {
+    "title": "超播报 | 伪球迷X魔兽专题X群接单",
+    "count": "5.7万",
+    "count_num": 57000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/587709466"
+  },
+  {
+    "title": "《魔兽世界》龙族崛起的历史有疑点",
+    "count": "10.4万",
+    "count_num": 104000.0,
+    "game_name": "魔兽世界",
+    "tags": [
+      "多人"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/588774497"
+  },
+  {
+    "title": "听喜欢格斗的妹子讲《合金弹头》",
+    "count": "7.9万",
+    "count_num": 79000.0,
+    "game_name": "合金弹头",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/586103951"
+  },
+  {
+    "title": "超播报 | 战神评测X新显卡X年度游戏",
+    "count": "5.2万",
+    "count_num": 52000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/584898283"
+  },
+  {
+    "title": "极度烧脑，令人泪崩的《我在七年后等你》",
+    "count": "8.5万",
+    "count_num": 85000.0,
+    "game_name": "我在七年后等你",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/583618206"
+  },
+  {
+    "title": "超播报 | 四强淘汰X巫师重制X理性消费",
+    "count": "6.1万",
+    "count_num": 61000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/582370305"
+  },
+  {
+    "title": "谁会不喜欢玩拳皇呢，看我一套下前下前拳",
+    "count": "11.7万",
+    "count_num": 117000.0,
+    "game_name": "",
+    "tags": [
+      "格斗"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/581157141"
+  },
+  {
+    "title": "超播报｜画面泄露X新游免费X败者晋级",
+    "count": "5.6万",
+    "count_num": 56000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/580032167"
+  },
+  {
+    "title": "超播报 | 回坑X不节能X竟敢涨价",
+    "count": "8.7万",
+    "count_num": 87000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/578058298"
+  },
+  {
+    "title": "元宇宙来临，该不该入坑VR做移民？",
+    "count": "7.7万",
+    "count_num": 77000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/578221815"
+  },
+  {
+    "title": "《纸人》魏二哥化身神探破了案",
+    "count": "11.2万",
+    "count_num": 112000.0,
+    "game_name": "纸人",
+    "tags": [
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/576985452"
+  },
+  {
+    "title": "《刺客信条 奥德赛》无厘头的希腊式英雄",
+    "count": "12.9万",
+    "count_num": 129000.0,
+    "game_name": "刺客信条 奥德赛",
+    "tags": [
+      "动作",
+      "历史"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/575195053"
+  },
+  {
+    "title": "超播报｜联盟世界赛X使命新篇章X文化输出棒",
+    "count": "5.7万",
+    "count_num": 57000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/576117150"
+  },
+  {
+    "title": "《F1赛车经理》车手比赛时想尿尿咋办",
+    "count": "9.5万",
+    "count_num": 95000.0,
+    "game_name": "F1赛车经理",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/573432101"
+  },
+  {
+    "title": "超播报｜有点短X烟挺大X会员服务香不香",
+    "count": "6.6万",
+    "count_num": 66000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/572583319"
+  },
+  {
+    "title": "《巫妖王之怒》承认错误不丢人",
+    "count": "11.5万",
+    "count_num": 115000.0,
+    "game_name": "巫妖王之怒",
+    "tags": [
+      "多人"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/571738393"
+  },
+  {
+    "title": "超播报｜史上最大泄露X三国有黑人X羊了个羊",
+    "count": "8.2万",
+    "count_num": 82000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/570884466"
+  },
+  {
+    "title": "《喷子模拟器》教你成为小黑子",
+    "count": "10.2万",
+    "count_num": 102000.0,
+    "game_name": "喷子模拟器",
+    "tags": [
+      "模拟",
+      "独立游戏"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/569833412"
+  },
+  {
+    "title": "超播报 | 刺客信条X大乱斗X手游圈钱",
+    "count": "4.9万",
+    "count_num": 49000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/569110211"
+  },
+  {
+    "title": "《全网公敌》不要点击做AI的链接",
+    "count": "8.2万",
+    "count_num": 82000.0,
+    "game_name": "全网公敌",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/567348645"
+  },
+  {
+    "title": "超播报｜显卡跌价X人工智能X中秋限玩",
+    "count": "5.5万",
+    "count_num": 55000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/567125549"
+  },
+  {
+    "title": "《双点校园》开学啦！作业写了吗？",
+    "count": "9万",
+    "count_num": 90000.0,
+    "game_name": "双点校园",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/565869056"
+  },
+  {
+    "title": "超播报｜如何快速获得对方信任",
+    "count": "6万",
+    "count_num": 60000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/565319273"
+  },
+  {
+    "title": "《后室》趁地球不注意穿越进去",
+    "count": "11万",
+    "count_num": 110000.0,
+    "game_name": "后室",
+    "tags": [
+      "其他"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/564338214"
+  },
+  {
+    "title": "超播报｜黑神话出新视频牛X",
+    "count": "6.3万",
+    "count_num": 63000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/563493435"
+  },
+  {
+    "title": "《电竞传奇》刘主任可能疯了",
+    "count": "6.6万",
+    "count_num": 66000.0,
+    "game_name": "电竞传奇",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/562020041"
+  },
+  {
+    "title": "真《电竞传奇》SKY传奇",
+    "count": "6.4万",
+    "count_num": 64000.0,
+    "game_name": "电竞传奇",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/562021359"
+  },
+  {
+    "title": "超播报｜直播做什么能火呢？",
+    "count": "5.1万",
+    "count_num": 51000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/561649634"
+  },
+  {
+    "title": "不学瓦岗一炉香！《王者荣耀》里的程咬金",
+    "count": "16.9万",
+    "count_num": 169000.0,
+    "game_name": "王者荣耀",
+    "tags": [
+      "历史"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/558631709"
+  },
+  {
+    "title": "超播报｜VR游戏会不会成为趋势",
+    "count": "5.7万",
+    "count_num": 57000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/559726205"
+  },
+  {
+    "title": "超播报｜被抄袭，我们要的不仅仅是道歉更需要钱",
+    "count": "5.8万",
+    "count_num": 58000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/557730304"
+  },
+  {
+    "title": "超播报｜为游戏花钱但不能影响战力",
+    "count": "5.8万",
+    "count_num": 58000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/555721561"
+  },
+  {
+    "title": "闲侃游戏中的建筑｜从帝国时代的错误说起",
+    "count": "8.1万",
+    "count_num": 81000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/556576616"
+  },
+  {
+    "title": "《战至巅峰》：万事唯有认真二字",
+    "count": "7.1万",
+    "count_num": 71000.0,
+    "game_name": "战至巅峰",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/554437399"
+  },
+  {
+    "title": "超播报｜小朋友抽卡开箱要理性",
+    "count": "5.7万",
+    "count_num": 57000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/553556538"
+  },
+  {
+    "title": "《社畜的福报》｜那个年代创业者的悲歌（下）",
+    "count": "8.6万",
+    "count_num": 86000.0,
+    "game_name": "社畜的福报",
+    "tags": [
+      "搞笑",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/552353524"
+  },
+  {
+    "title": "黑水✖️超游✖️仙桥｜元宇宙的原住民 生日快乐！",
+    "count": "31.4万",
+    "count_num": 314000.0,
+    "game_name": "",
+    "tags": [
+      "多人桌游",
+      "搞笑"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/551400020"
+  },
+  {
+    "title": "《社畜的福报》｜那个年代创业者的悲歌（中）",
+    "count": "7.6万",
+    "count_num": 76000.0,
+    "game_name": "社畜的福报",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/550156463"
+  },
+  {
+    "title": "超播报｜有黑马！激烈刺激的超游杯等你来战",
+    "count": "4.9万",
+    "count_num": 49000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/549197609"
+  },
+  {
+    "title": "《社畜的福报》｜那个年代创业者的悲歌（上）",
+    "count": "8.4万",
+    "count_num": 84000.0,
+    "game_name": "社畜的福报",
+    "tags": [
+      "GAL",
+      "搞笑",
+      "模拟",
+      "独立游戏"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/548141984"
+  },
+  {
+    "title": "超播报 | 谁是你心中最想要的SSR主播卡",
+    "count": "5.6万",
+    "count_num": 56000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/547269700"
+  },
+  {
+    "title": "《哈利·波特》勾起了很多童年回忆",
+    "count": "8.5万",
+    "count_num": 85000.0,
+    "game_name": "哈利·波特",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/546072486"
+  },
+  {
+    "title": "超播报 | 骂归骂，闹归闹，EA挣钱不手软！",
+    "count": "5.3万",
+    "count_num": 53000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/545313831"
+  },
+  {
+    "title": "反转又反转，春逝百年抄真相并不简单",
+    "count": "8万",
+    "count_num": 80000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/544138672"
+  },
+  {
+    "title": "超播报｜第一个付费主播来了",
+    "count": "5.8万",
+    "count_num": 58000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/543128294"
+  },
+  {
+    "title": "春逝百年抄，一款真玩脑子的游戏",
+    "count": "8.1万",
+    "count_num": 81000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/542056939"
+  },
+  {
+    "title": "超播报｜震惊！不仅游戏要付费，上班也得付费",
+    "count": "5.9万",
+    "count_num": 59000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/541182038"
+  },
+  {
+    "title": "明朝英雄开国传（下）—开局一只碗，装备全靠捡！",
+    "count": "8.8万",
+    "count_num": 88000.0,
+    "game_name": "",
+    "tags": [
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/539858412"
+  },
+  {
+    "title": "超播报 | RNG夺冠，主播要参赛，保护我方院长！",
+    "count": "5.5万",
+    "count_num": 55000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/539132247"
+  },
+  {
+    "title": "超播报 | EA寻收购，网易忙移植",
+    "count": "5.6万",
+    "count_num": 56000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/537077056"
+  },
+  {
+    "title": "明朝英雄开国传-游走在历史和演绎之间的上古游戏",
+    "count": "9.9万",
+    "count_num": 99000.0,
+    "game_name": "",
+    "tags": [
+      "历史",
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/537938817"
+  },
+  {
+    "title": "《风信楼》客官请自重，真的不卖身！",
+    "count": "8.2万",
+    "count_num": 82000.0,
+    "game_name": "风信楼",
+    "tags": [
+      "历史",
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/534820223"
+  },
+  {
+    "title": "生化危机2重置版到底吓不吓人",
+    "count": "10.8万",
+    "count_num": 108000.0,
+    "game_name": "",
+    "tags": [
+      "动作",
+      "射击",
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/531523508"
+  },
+  {
+    "title": "超播报 |《超游》重置版跨平台不跳票！",
+    "count": "5.2万",
+    "count_num": 52000.0,
+    "game_name": "超游",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/533317681"
+  },
+  {
+    "title": "超播报 | 二十年EVE正当壮年，魔兽却逐渐老去！",
+    "count": "5.6万",
+    "count_num": 56000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/530465269"
+  },
+  {
+    "title": "《王者荣耀》里的沈梦溪究竟有没有戕害苏东坡？",
+    "count": "7.2万",
+    "count_num": 72000.0,
+    "game_name": "王者荣耀",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/529083327"
+  },
+  {
+    "title": "你好，邻居。你家的邻居还好么？",
+    "count": "8.6万",
+    "count_num": 86000.0,
+    "game_name": "",
+    "tags": [
+      "搞笑",
+      "独立游戏"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/526888522"
+  },
+  {
+    "title": "超播报｜一起来看女团吧",
+    "count": "5.5万",
+    "count_num": 55000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/528188959"
+  },
+  {
+    "title": "超播报 宝儿，赚那么多钱请个原创吧，我看着都心疼！",
+    "count": "4.9万",
+    "count_num": 49000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/525898080"
+  },
+  {
+    "title": "《侠之道》老师别打了，我选大长腿！",
+    "count": "9.2万",
+    "count_num": 92000.0,
+    "game_name": "侠之道",
+    "tags": [
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/524534044"
+  },
+  {
+    "title": "超播报 咱就说抢先体验它到底香不香？",
+    "count": "5.1万",
+    "count_num": 51000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/523545038"
+  },
+  {
+    "title": "《艾尔登法环》开启褪色者时代（下）",
+    "count": "11.7万",
+    "count_num": 117000.0,
+    "game_name": "艾尔登法环",
+    "tags": [
+      "动作",
+      "科幻",
+      "类魂"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/522052828"
+  },
+  {
+    "title": "《艾尔登法环》开启褪色者时代（上）",
+    "count": "15.2万",
+    "count_num": 152000.0,
+    "game_name": "艾尔登法环",
+    "tags": [
+      "动作",
+      "类魂"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/519542311"
+  },
+  {
+    "title": "超播报 乐高来了老头环走了微软来了我走了",
+    "count": "6.4万",
+    "count_num": 64000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/520987434"
+  },
+  {
+    "title": "超播报｜游戏好不好，全靠评分带",
+    "count": "6.2万",
+    "count_num": 62000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/518480815"
+  },
+  {
+    "title": "《神医》大夫我没病，但我还想好好治一下",
+    "count": "9.3万",
+    "count_num": 93000.0,
+    "game_name": "神医",
+    "tags": [
+      "GAL",
+      "搞笑"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/517176293"
+  },
+  {
+    "title": "《神医》大夫饶了我吧，这病不治了！",
+    "count": "10万",
+    "count_num": 100000.0,
+    "game_name": "神医",
+    "tags": [
+      "GAL",
+      "搞笑",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/514613306"
+  },
+  {
+    "title": "超播报｜别听到Mirror就想到三消了，加个Forge吓死你",
+    "count": "6.1万",
+    "count_num": 61000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/516088717"
+  },
+  {
+    "title": "超播报｜不会抓鬼的道长不是好巫师",
+    "count": "6.8万",
+    "count_num": 68000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/513707615"
+  },
+  {
+    "title": "《王者荣耀》墨家和班门的恩怨情仇",
+    "count": "9.6万",
+    "count_num": 96000.0,
+    "game_name": "王者荣耀",
+    "tags": [
+      "历史",
+      "合作"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/512197630"
+  },
+  {
+    "title": "《皇帝养成计划2》朕亡国的方法可多了",
+    "count": "10.9万",
+    "count_num": 109000.0,
+    "game_name": "皇帝养成计划2",
+    "tags": [
+      "历史",
+      "搞笑",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/509963332"
+  },
+  {
+    "title": "超播报｜为梦想玩的那群人还在吗",
+    "count": "5.6万",
+    "count_num": 56000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/511254728"
+  },
+  {
+    "title": "超播报 | RPG的时代会落幕吗",
+    "count": "6.8万",
+    "count_num": 68000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/508918500"
+  },
+  {
+    "title": "《幽浮2》如果外星人来了，你选择躺平吗？",
+    "count": "8.7万",
+    "count_num": 87000.0,
+    "game_name": "幽浮2",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/507645442"
+  },
+  {
+    "title": "《底特律变人》算了，还是别变了",
+    "count": "25.8万",
+    "count_num": 258000.0,
+    "game_name": "底特律变人",
+    "tags": [
+      "科幻"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/505428200"
+  },
+  {
+    "title": "超播报 | 超游开放麦线下互动活动等你来参与",
+    "count": "4.9万",
+    "count_num": 49000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/506750823"
+  },
+  {
+    "title": "超播报 | 主播放话！要送阿尔宙斯，录音为证！",
+    "count": "9.2万",
+    "count_num": 92000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/504489256"
+  },
+  {
+    "title": "银河破裂者变身银河建造者-在太空也要大炼钢铁",
+    "count": "11万",
+    "count_num": 110000.0,
+    "game_name": "",
+    "tags": [
+      "其他",
+      "科幻"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/503230435"
+  },
+  {
+    "title": "《赛博朋克2077》如何确定我是我",
+    "count": "15.6万",
+    "count_num": 156000.0,
+    "game_name": "赛博朋克2077",
+    "tags": [
+      "动作",
+      "科幻"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/500702562"
+  },
+  {
+    "title": "超播报 | 跟消逝的光芒2学习如何屠榜",
+    "count": "7.1万",
+    "count_num": 71000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/500071250"
+  },
+  {
+    "title": "樱桃小口带把刀 先胡不是胖 后胡压大炕！",
+    "count": "7.5万",
+    "count_num": 75000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/498813746"
+  },
+  {
+    "title": "游戏主播贺岁档——第三届超级游文化颁奖",
+    "count": "7.7万",
+    "count_num": 77000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/497319267"
+  },
+  {
+    "title": "超播报 | 想被收购?那就去请微软的人来吧！",
+    "count": "5.6万",
+    "count_num": 56000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/496177155"
+  },
+  {
+    "title": "超播报 | 不独占的战神也是战神，没有王者的寒假也是寒假",
+    "count": "6.2万",
+    "count_num": 62000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/493732675"
+  },
+  {
+    "title": "《双人成行》是甜蜜的心愿还是恶毒的诅咒",
+    "count": "10.7万",
+    "count_num": 107000.0,
+    "game_name": "双人成行",
+    "tags": [
+      "合作",
+      "多人",
+      "搞笑"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/492593537"
+  },
+  {
+    "title": "超播报 | 文化拱火，游戏越来越离谱",
+    "count": "5.6万",
+    "count_num": 56000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/491381914"
+  },
+  {
+    "title": "《只狼》不死斩，斩不断人心贪欲！",
+    "count": "12.2万",
+    "count_num": 122000.0,
+    "game_name": "只狼",
+    "tags": [
+      "动作",
+      "武侠",
+      "武士",
+      "类魂"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/489840543"
+  },
+  {
+    "title": "超播报 | 咱就说这些人干点什么不好",
+    "count": "5.6万",
+    "count_num": 56000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/489171126"
+  },
+  {
+    "title": "《天命奇御2》炒房泡妞练神功，不香吗？",
+    "count": "8.8万",
+    "count_num": 88000.0,
+    "game_name": "天命奇御2",
+    "tags": [
+      "RPG",
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/488150453"
+  },
+  {
+    "title": "超播报｜年底各家榜单风云聚会，steam究竟何去何从？",
+    "count": "6万",
+    "count_num": 60000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/487215995"
+  },
+  {
+    "title": "动物园规则怪谈，最后结局竟然是这样！",
+    "count": "47万",
+    "count_num": 470000.0,
+    "game_name": "",
+    "tags": [
+      "多人桌游",
+      "搞笑"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/485919571"
+  },
+  {
+    "title": "超播报｜UZI高光回归，狮院女社长达成“时间管理大师”成就！",
+    "count": "5.6万",
+    "count_num": 56000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/484917668"
+  },
+  {
+    "title": "又是回忆儿时的味道，兵人大战让人类遭了个罪！",
+    "count": "8万",
+    "count_num": 80000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/483581560"
+  },
+  {
+    "title": "超播报｜TGA名单公布 史上首个开服失败的游戏",
+    "count": "5.6万",
+    "count_num": 56000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/482543068"
+  },
+  {
+    "title": "文明系列–绿了法王，气死英皇的欧洲放荡奇女子",
+    "count": "9.6万",
+    "count_num": 96000.0,
+    "game_name": "",
+    "tags": [
+      "历史",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/481109334"
+  },
+  {
+    "title": "超播报｜《战舰世界》专家背书 跳票七年《潜行者2》回归 《绝地求生》手游更新",
+    "count": "5.4万",
+    "count_num": 54000.0,
+    "game_name": "战舰世界",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/480126540"
+  },
+  {
+    "title": "让主播玩到崩溃的反战游戏《我的战争》！是希望还是绝望？",
+    "count": "8.4万",
+    "count_num": 84000.0,
+    "game_name": "我的战争",
+    "tags": [
+      "RPG",
+      "模拟",
+      "独立游戏"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/478756701"
+  },
+  {
+    "title": "王者荣耀又有新目标开始肝了/LOL动漫《双城之战》考古联盟历史的玩家值得一看！",
+    "count": "6.6万",
+    "count_num": 66000.0,
+    "game_name": "双城之战",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/477744744"
+  },
+  {
+    "title": "超播报 | 天刀大佬直播删号引发全网关注，腾讯游戏再一次陷入舆论漩涡！",
+    "count": "5.8万",
+    "count_num": 58000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/475326221"
+  },
+  {
+    "title": "听说了吗？买纪录片送《帝国时代4》啦",
+    "count": "8.2万",
+    "count_num": 82000.0,
+    "game_name": "帝国时代4",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/476425732"
+  },
+  {
+    "title": "能让主播通宵上头的开罗游戏，到底是什么？",
+    "count": "9.2万",
+    "count_num": 92000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/474098626"
+  },
+  {
+    "title": "超播报 | 老IP大动作 有点儿透心凉",
+    "count": "6万",
+    "count_num": 60000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/472996238"
+  },
+  {
+    "title": "特期节目 | 超游的自我回忆与改变",
+    "count": "6.9万",
+    "count_num": 69000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/471664749"
+  },
+  {
+    "title": "超播报 | LOL届中国足球拳打意大利脚踢巴西，勇夺全球总决赛冠军！恭喜EDG！",
+    "count": "6万",
+    "count_num": 60000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/470618688"
+  },
+  {
+    "title": "超越恐惧与人性的克苏鲁神话",
+    "count": "11.1万",
+    "count_num": 111000.0,
+    "game_name": "",
+    "tags": [
+      "电影小说",
+      "类魂"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/469320225"
+  },
+  {
+    "title": "超播报 | 帝国时代4登顶发售热榜 LOL手游T0英雄竟然是他们",
+    "count": "6.8万",
+    "count_num": 68000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/468369724"
+  },
+  {
+    "title": "你相信进化论吗？有关繁衍和进化的《人类奥德赛》！",
+    "count": "10万",
+    "count_num": 100000.0,
+    "game_name": "人类奥德赛",
+    "tags": [
+      "历史"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/467102670"
+  },
+  {
+    "title": "刀塔云玩家和完美老员工一起聊ti",
+    "count": "7.2万",
+    "count_num": 72000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/464957391"
+  },
+  {
+    "title": "日本武士大战蒙古海军 恶霸波骗媳妇儿玩对马岛之魂",
+    "count": "9万",
+    "count_num": 90000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/462691092"
+  },
+  {
+    "title": "不让病人倒在医院走廊上的双点医院",
+    "count": "10.4万",
+    "count_num": 104000.0,
+    "game_name": "",
+    "tags": [
+      "模拟",
+      "独立游戏"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/460428789"
+  },
+  {
+    "title": "值得细品！三观不同能玩出千人千面的环世界",
+    "count": "10万",
+    "count_num": 100000.0,
+    "game_name": "",
+    "tags": [
+      "独立游戏"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/458468201"
+  },
+  {
+    "title": "四大主播齐聚 王者荣耀再开 新人物云缨所崇拜的女人到底是谁？",
+    "count": "9万",
+    "count_num": 90000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/456502372"
+  },
+  {
+    "title": "六道轮回 八部天龙 河洛群侠 梦回金庸",
+    "count": "11.3万",
+    "count_num": 113000.0,
+    "game_name": "",
+    "tags": [
+      "RPG",
+      "仙侠",
+      "武侠",
+      "电影小说"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/454369015"
+  },
+  {
+    "title": "跟着汤姆嘚呵大战哈利波特",
+    "count": "9.5万",
+    "count_num": 95000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/452262239"
+  },
+  {
+    "title": "坦克、输出、治疗，从你爱玩的职业分析性格",
+    "count": "9.5万",
+    "count_num": 95000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/448138542"
+  },
+  {
+    "title": "超游七夕拖更老袁被迫营业爆料",
+    "count": "5.4万",
+    "count_num": 54000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/443680178"
+  },
+  {
+    "title": "为《黑神话》破例讲讲西游",
+    "count": "29.3万",
+    "count_num": 293000.0,
+    "game_name": "黑神话",
+    "tags": [
+      "仙侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/447659379"
+  },
+  {
+    "title": "文明系列暑期档——真理永远只在大炮的射程之内",
+    "count": "10.9万",
+    "count_num": 109000.0,
+    "game_name": "",
+    "tags": [
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/440866430"
+  },
+  {
+    "title": "月圆之夜-一款能让姑娘玩一宿的游戏",
+    "count": "8.2万",
+    "count_num": 82000.0,
+    "game_name": "",
+    "tags": [
+      "手游"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/436534805"
+  },
+  {
+    "title": "奥运进行时——站着侃《热血新纪录》",
+    "count": "7.4万",
+    "count_num": 74000.0,
+    "game_name": "热血新纪录",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/438847351"
+  },
+  {
+    "title": "游文化今日说法 律师不要妖魔化",
+    "count": "7万",
+    "count_num": 70000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/434284940"
+  },
+  {
+    "title": "寂静岭2-一个细思极恐的非恐怖故事",
+    "count": "14.9万",
+    "count_num": 149000.0,
+    "game_name": "",
+    "tags": [
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/429872278"
+  },
+  {
+    "title": "原来相对论造不出超时空兵，但能让你吃饱肚子",
+    "count": "8.2万",
+    "count_num": 82000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/432015131"
+  },
+  {
+    "title": "逆转裁判——正义双子星的法证之路",
+    "count": "12.1万",
+    "count_num": 121000.0,
+    "game_name": "",
+    "tags": [
+      "GAL",
+      "RPG",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/427848668"
+  },
+  {
+    "title": "华夏群星闪耀时——永不消逝的少年心",
+    "count": "9.3万",
+    "count_num": 93000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/425968852"
+  },
+  {
+    "title": "华夏群星闪耀时——永不消逝的少年心",
+    "count": "7.3万",
+    "count_num": 73000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/425805009"
+  },
+  {
+    "title": "超游线下开放麦总动员—六月十一，郎园等你！",
+    "count": "5.3万",
+    "count_num": 53000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/423022575"
+  },
+  {
+    "title": "历史群英大乱斗——回顾那血色的衣冠",
+    "count": "11.3万",
+    "count_num": 113000.0,
+    "game_name": "",
+    "tags": [
+      "历史",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/424000605"
+  },
+  {
+    "title": "野人！还不快去给小北极熊充点值",
+    "count": "7.4万",
+    "count_num": 74000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/421638010"
+  },
+  {
+    "title": "恶霸波:凹凸曼他可是真的！",
+    "count": "8.4万",
+    "count_num": 84000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/419550048"
+  },
+  {
+    "title": "超游职场故事征文补全计划",
+    "count": "6.3万",
+    "count_num": 63000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/417766363"
+  },
+  {
+    "title": "职场浮生记–讲述听友们自己的故事",
+    "count": "8.6万",
+    "count_num": 86000.0,
+    "game_name": "",
+    "tags": [
+      "搞笑",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/417342816"
+  },
+  {
+    "title": "噩耗！比特币即将摧毁游戏产业！",
+    "count": "10.5万",
+    "count_num": 105000.0,
+    "game_name": "",
+    "tags": [
+      "其他"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/412928186"
+  },
+  {
+    "title": "职场浮生记-上班摸鱼玩游戏，游戏里拼命猛加班",
+    "count": "8.3万",
+    "count_num": 83000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/415130751"
+  },
+  {
+    "title": "文明再度归来——带你去浪漫的土耳其",
+    "count": "9.7万",
+    "count_num": 97000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/410913241"
+  },
+  {
+    "title": "五一长假去哪里，超游陪你玩游戏–五一直播活动预告",
+    "count": "5.4万",
+    "count_num": 54000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/410887072"
+  },
+  {
+    "title": "埋伏在无聊斋的前游戏策划博博——品味游戏里的寻梦环游记",
+    "count": "7.5万",
+    "count_num": 75000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/408675409"
+  },
+  {
+    "title": "王者荣耀第二弹来袭——一锅炖不下的法坦庄周",
+    "count": "8万",
+    "count_num": 80000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/406327050"
+  },
+  {
+    "title": "侍魂里的剑道——金花院长带你走上刀剑疯魔路",
+    "count": "9.5万",
+    "count_num": 95000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/401664661"
+  },
+  {
+    "title": "恶霸波:我的几百小时青春献给了《质量效应》",
+    "count": "8.7万",
+    "count_num": 87000.0,
+    "game_name": "质量效应",
+    "tags": [
+      "RPG",
+      "科幻"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/403932091"
+  },
+  {
+    "title": "超游挖坑文明——从阿兹特克的灭亡聊起",
+    "count": "9.4万",
+    "count_num": 94000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/399276556"
+  },
+  {
+    "title": "号外！超游听友委员会现在集结！",
+    "count": "5.3万",
+    "count_num": 53000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/395540741"
+  },
+  {
+    "title": "当野人遇到去月球——直男恋爱面面观",
+    "count": "8.1万",
+    "count_num": 81000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/396817375"
+  },
+  {
+    "title": "让细菌佛来问问你，你有地铁月票么？",
+    "count": "7.5万",
+    "count_num": 75000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/394045023"
+  },
+  {
+    "title": "王者荣耀中的战国核武器他是谁？——游文化年度专题来袭",
+    "count": "8.2万",
+    "count_num": 82000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/392127663"
+  },
+  {
+    "title": "明星大侦探——丁溪鹤漫谈剧本杀的自我修养",
+    "count": "7万",
+    "count_num": 70000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/389882146"
+  },
+  {
+    "title": "心机之蛙！少年侦探团玩转剧本杀",
+    "count": "7.4万",
+    "count_num": 74000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/387466144"
+  },
+  {
+    "title": "游戏主播贺岁档——第二届超级游文化颁奖",
+    "count": "7.1万",
+    "count_num": 71000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/385398520"
+  },
+  {
+    "title": "吃到老，玩到老，那些仙剑的回忆",
+    "count": "7.8万",
+    "count_num": 78000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/380415746"
+  },
+  {
+    "title": "赤壁大火究竟是谁放的？听听没收钱的怎么说",
+    "count": "8.2万",
+    "count_num": 82000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/383252034"
+  },
+  {
+    "title": "生活岂止游戏——科比周年祭",
+    "count": "5.9万",
+    "count_num": 59000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/379014598"
+  },
+  {
+    "title": "现在的年轻人真奇怪，花钱把自己往阴间带——恐怖密室怪异行为大赏",
+    "count": "8.6万",
+    "count_num": 86000.0,
+    "game_name": "",
+    "tags": [
+      "恐怖"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/377651396"
+  },
+  {
+    "title": "从哈登去哪儿到将2K进行到底",
+    "count": "6.2万",
+    "count_num": 62000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/376911651"
+  },
+  {
+    "title": "弹着肖邦的夜曲，没完没了的范特西",
+    "count": "6.9万",
+    "count_num": 69000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/375178086"
+  },
+  {
+    "title": "《如龙7》坐牢大叔和按摩小姐姐的冒险",
+    "count": "9.7万",
+    "count_num": 97000.0,
+    "game_name": "如龙7",
+    "tags": [
+      "RPG",
+      "动作",
+      "日式"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/372938784"
+  },
+  {
+    "title": "《刺客信条：英灵殿》之到底谁是英国人？！",
+    "count": "9.2万",
+    "count_num": 92000.0,
+    "game_name": "刺客信条：英灵殿",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/370759983"
+  },
+  {
+    "title": "镚儿厅的街霸与宿舍的拳皇！",
+    "count": "8.2万",
+    "count_num": 82000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/368697084"
+  },
+  {
+    "title": "如果这期聊的游戏你都没玩过野人直播吃翔",
+    "count": "8万",
+    "count_num": 80000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/366519630"
+  },
+  {
+    "title": "《沙丘》其实我们也没人看完",
+    "count": "8.6万",
+    "count_num": 86000.0,
+    "game_name": "沙丘",
+    "tags": [
+      "电影小说"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/364300892"
+  },
+  {
+    "title": "《九怨》阴阳师的血腥对决！",
+    "count": "7.5万",
+    "count_num": 75000.0,
+    "game_name": "九怨",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/361958845"
+  },
+  {
+    "title": "小霸王-曾经的其乐无穷",
+    "count": "8.7万",
+    "count_num": 87000.0,
+    "game_name": "",
+    "tags": [
+      "任天堂",
+      "日式"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/359681794"
+  },
+  {
+    "title": "慎入！新晋惊悚主播恶霸波频频被吓事件",
+    "count": "8.9万",
+    "count_num": 89000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/355061431"
+  },
+  {
+    "title": "美女主播！带着几个老男人聊《心跳回忆》的心跳回忆",
+    "count": "8.3万",
+    "count_num": 83000.0,
+    "game_name": "心跳回忆",
+    "tags": [
+      "GAL",
+      "日式"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/357365010"
+  },
+  {
+    "title": "从《女神异闻录》精神分析恶霸波",
+    "count": "9.1万",
+    "count_num": 91000.0,
+    "game_name": "女神异闻录",
+    "tags": [
+      "RPG",
+      "日式"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/352895230"
+  },
+  {
+    "title": "球盲金花也敢玩足球经理",
+    "count": "8.4万",
+    "count_num": 84000.0,
+    "game_name": "",
+    "tags": [
+      "多人"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/350733137"
+  },
+  {
+    "title": "《幽游白书》不良少年靠拼爹，善恶不能分两边",
+    "count": "9.8万",
+    "count_num": 98000.0,
+    "game_name": "幽游白书",
+    "tags": [
+      "电影小说"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/346177684"
+  },
+  {
+    "title": "要说浪，我可就大航海了",
+    "count": "8.4万",
+    "count_num": 84000.0,
+    "game_name": "",
+    "tags": [
+      "GAL",
+      "日式",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/343994266"
+  },
+  {
+    "title": "《圣女战旗》把我们最熟悉的两个法国人放在一起的故事",
+    "count": "8.4万",
+    "count_num": 84000.0,
+    "game_name": "圣女战旗",
+    "tags": [
+      "历史",
+      "日式",
+      "策略"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/337902821"
+  },
+  {
+    "title": "《圣女战旗》与拿破仑的结局",
+    "count": "6.8万",
+    "count_num": 68000.0,
+    "game_name": "圣女战旗",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/340080864"
+  },
+  {
+    "title": "金花老师谈起木马，勾起了很多陈年往事",
+    "count": "10.9万",
+    "count_num": 109000.0,
+    "game_name": "",
+    "tags": [
+      "其他",
+      "历史"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/335782233"
+  },
+  {
+    "title": "从《全战：特洛伊》来聊聊古希腊的耍流氓大战",
+    "count": "11.2万",
+    "count_num": 112000.0,
+    "game_name": "全战：特洛伊",
+    "tags": [
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/333714722"
+  },
+  {
+    "title": "百景图改名风波2—魏忠贤一定不是魏金花家的亲戚",
+    "count": "7.6万",
+    "count_num": 76000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/331679640"
+  },
+  {
+    "title": "百景图改名风波里的汪五峰到底是谁",
+    "count": "7万",
+    "count_num": 70000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/329555579"
+  },
+  {
+    "title": "震惊！原来恶霸波是精灵宝可梦的专业训练师！【可能标题党了(^o^)】",
+    "count": "7.7万",
+    "count_num": 77000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/324951873"
+  },
+  {
+    "title": "从《江南百景图》聊聊有五个人的江南四大才子",
+    "count": "8.5万",
+    "count_num": 85000.0,
+    "game_name": "江南百景图",
+    "tags": [
+      "历史"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/327226123"
+  },
+  {
+    "title": "明着聊股票 凑活聊大富翁",
+    "count": "6.8万",
+    "count_num": 68000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/322649120"
+  },
+  {
+    "title": "《命运石之门》中二起来吧！浪漫主义绽放的作战计划！",
+    "count": "7.1万",
+    "count_num": 71000.0,
+    "game_name": "命运石之门",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/313696901"
+  },
+  {
+    "title": "明着聊大富翁 偷偷聊股票",
+    "count": "7.5万",
+    "count_num": 75000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/320393196"
+  },
+  {
+    "title": "《命运石之门》时间穿越里这么可爱的女生一定是男孩子",
+    "count": "7.7万",
+    "count_num": 77000.0,
+    "game_name": "命运石之门",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/311261234"
+  },
+  {
+    "title": "动物森友会~300个小时我都肝了什么？！",
+    "count": "13.1万",
+    "count_num": 131000.0,
+    "game_name": "",
+    "tags": [
+      "多人",
+      "种田"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/306681289"
+  },
+  {
+    "title": "《轩辕剑3：云和山的彼端 》让我们进入大唐",
+    "count": "6.5万",
+    "count_num": 65000.0,
+    "game_name": "轩辕剑3：云和山的彼端",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/309251794"
+  },
+  {
+    "title": "《轩辕剑3：云和山的彼端 》从欧洲到大唐的旅程开始了",
+    "count": "7万",
+    "count_num": 70000.0,
+    "game_name": "轩辕剑3：云和山的彼端",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/307069459"
+  },
+  {
+    "title": "《阴阳师：百闻牌》里的鬼怪，有些也太怂了吧。不忍直视！",
+    "count": "6.1万",
+    "count_num": 61000.0,
+    "game_name": "阴阳师：百闻牌",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/299729091"
+  },
+  {
+    "title": "别看你在《阴阳师：百闻牌》里蹦得欢，原来你们是群这样的童子",
+    "count": "6.4万",
+    "count_num": 64000.0,
+    "game_name": "阴阳师：百闻牌",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/296929909"
+  },
+  {
+    "title": "《仁王2》下集，你以为我们聊游戏了？其实并没有",
+    "count": "6.5万",
+    "count_num": 65000.0,
+    "game_name": "仁王2",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/291469490"
+  },
+  {
+    "title": "《刺客信条：大革命》游离于历史主线又重新诠释了历史",
+    "count": "9.2万",
+    "count_num": 92000.0,
+    "game_name": "刺客信条：大革命",
+    "tags": [
+      "动作",
+      "历史"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/242601357"
+  },
+  {
+    "title": "从《仁王2》聊初级的日本剑道",
+    "count": "7.4万",
+    "count_num": 74000.0,
+    "game_name": "仁王2",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/285232315"
+  },
+  {
+    "title": "那个沉迷昆特牌的“猎魔人”到底为啥要去找养女",
+    "count": "8.1万",
+    "count_num": 81000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/240968082"
+  },
+  {
+    "title": "《大菠萝》里天使的另一面",
+    "count": "8.8万",
+    "count_num": 88000.0,
+    "game_name": "大菠萝",
+    "tags": [
+      "RPG"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/235499776"
+  },
+  {
+    "title": "《暗黑破坏神》里那些忙碌的恶魔到底在折腾啥？",
+    "count": "10万",
+    "count_num": 100000.0,
+    "game_name": "暗黑破坏神",
+    "tags": [
+      "RPG",
+      "多人"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/237179435"
+  },
+  {
+    "title": "《火焰纹章-风花雪月》里映射的那些教会与国王、皇帝们的破事",
+    "count": "9.3万",
+    "count_num": 93000.0,
+    "game_name": "火焰纹章-风花雪月",
+    "tags": [
+      "RPG",
+      "任天堂",
+      "日式"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/233400004"
+  },
+  {
+    "title": "【猴子成长篇】从《太阁立志传》聊战国故事",
+    "count": "9.5万",
+    "count_num": 95000.0,
+    "game_name": "太阁立志传",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/227333501"
+  },
+  {
+    "title": "【猴子疯狂篇】从《太阁立志传》聊战国故事",
+    "count": "8.8万",
+    "count_num": 88000.0,
+    "game_name": "太阁立志传",
+    "tags": [
+      "历史"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/229309677"
+  },
+  {
+    "title": "从《太阁立志传》聊聊日本战国的英雄，世界舞台的小丑，丰臣秀吉",
+    "count": "10.6万",
+    "count_num": 106000.0,
+    "game_name": "太阁立志传",
+    "tags": [
+      "历史",
+      "日式",
+      "模拟",
+      "武士"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/225350426"
+  },
+  {
+    "title": "所有仙侠类的鼻祖《蜀山剑侠传》到底讲了个什么？！",
+    "count": "10.1万",
+    "count_num": 101000.0,
+    "game_name": "蜀山剑侠传",
+    "tags": [
+      "RPG",
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/223391533"
+  },
+  {
+    "title": "（司马晋篇）从三国游戏中的战略和历史，聊聊各国的困境",
+    "count": "10.2万",
+    "count_num": 102000.0,
+    "game_name": "",
+    "tags": [
+      "历史",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/219516166"
+  },
+  {
+    "title": "（曹魏篇）从三国游戏中的战略和历史，聊聊各国的困境",
+    "count": "10.2万",
+    "count_num": 102000.0,
+    "game_name": "",
+    "tags": [
+      "历史",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/217576192"
+  },
+  {
+    "title": "三国志系列，从游戏中的战略思路聊聊魏蜀吴的困境",
+    "count": "11.9万",
+    "count_num": 119000.0,
+    "game_name": "",
+    "tags": [
+      "历史",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/214430928"
+  },
+  {
+    "title": "（蜀汉篇）从三国游戏中的战略和历史，聊聊各国的困境",
+    "count": "11.1万",
+    "count_num": 111000.0,
+    "game_name": "",
+    "tags": [
+      "历史",
+      "模拟"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/216056614"
+  },
+  {
+    "title": "预告 | 三国志系列，从游戏中的战略思路聊聊魏蜀吴的困境",
+    "count": "6.4万",
+    "count_num": 64000.0,
+    "game_name": "",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/214370145"
+  },
+  {
+    "title": "从《金庸群侠传》开始聊起的金庸与武侠（上）",
+    "count": "11.6万",
+    "count_num": 116000.0,
+    "game_name": "金庸群侠传",
+    "tags": [
+      "RPG",
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/210845790"
+  },
+  {
+    "title": "从《金庸群侠传》开始聊起的金庸和武侠（下）",
+    "count": "9.2万",
+    "count_num": 92000.0,
+    "game_name": "金庸群侠传",
+    "tags": [
+      "RPG",
+      "仙侠",
+      "武侠"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/212443802"
+  },
+  {
+    "title": "预告 | 《金庸群侠传》一聊起来就停不住",
+    "count": "6万",
+    "count_num": 60000.0,
+    "game_name": "金庸群侠传",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/210150768"
+  },
+  {
+    "title": "《魔兽世界》中的精灵原来就是历史中的欧洲蛮族凯尔特人",
+    "count": "9万",
+    "count_num": 90000.0,
+    "game_name": "魔兽世界",
+    "tags": [],
+    "soundUrl": "https://www.ximalaya.com/sound/207693450"
+  },
+  {
+    "title": "《魔兽世界》里喜欢人类姑娘的兽人历史原型和真实的萨满教",
+    "count": "8.4万",
+    "count_num": 84000.0,
+    "game_name": "魔兽世界",
+    "tags": [
+      "多人"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/209520552"
+  },
+  {
+    "title": "《魔兽世界》怀旧服里那些圣骑士和十字军的历史奇葩原型",
+    "count": "13.1万",
+    "count_num": 131000.0,
+    "game_name": "魔兽世界",
+    "tags": [
+      "多人"
+    ],
+    "soundUrl": "https://www.ximalaya.com/sound/206176919"
+  }
+];
+    const allTags = ["2D", "GAL", "RPG", "仙侠", "任天堂", "其他", "动作", "历史", "合作", "多人", "多人桌游", "射击", "恐怖", "手游", "搞笑", "日式", "格斗", "模拟", "武侠", "武士", "独立游戏", "电影小说", "种田", "科幻", "策略", "类魂"];
+
+    let filteredData = [...audioData];
+    let currentSort = 'original';
+    let activeTag = null;
+
+    // Initialize
+    function init() {
+      updateStats();
+      renderTagFilters();
+      renderAudioCards(filteredData);
+      document.getElementById('generatedTime').textContent = new Date().toLocaleString('zh-CN');
+    }
+
+    // Update statistics
+    function updateStats() {
+      const totalCount = audioData.length;
+
+      const uniqueGames = new Set(audioData.map(item => item.game_name).filter(name => name));
+      const totalGames = uniqueGames.size;
+
+      const totalTags = allTags.length;
+
+      let totalPlays = 0;
+      audioData.forEach(item => {
+        if (item.count_num) {
+          totalPlays += item.count_num;
+        }
+      });
+
+      document.getElementById('totalCount').textContent = totalCount;
+      document.getElementById('totalGames').textContent = totalGames;
+      document.getElementById('totalTags').textContent = totalTags;
+      document.getElementById('totalPlays').textContent = formatNumber(totalPlays);
+    }
+
+    // Render tag filter buttons
+    function renderTagFilters() {
+      const container = document.getElementById('tagFilters');
+
+      container.innerHTML = allTags.map(tag => `
+        <button class="tag-btn" onclick="filterByTag('${tag.replace(/'/g, "\\'")}')">
+          ${tag}
+        </button>
+      `).join('');
+    }
+
+    // Filter by tag
+    function filterByTag(tag) {
+      const buttons = document.querySelectorAll('.tag-btn');
+      const clickedButton = Array.from(buttons).find(btn => btn.textContent.trim() === tag);
+
+      if (activeTag === tag) {
+        // Deselect
+        activeTag = null;
+        clickedButton.classList.remove('active');
+        filteredData = [...audioData];
+      } else {
+        // Select new tag
+        activeTag = tag;
+        buttons.forEach(btn => btn.classList.remove('active'));
+        clickedButton.classList.add('active');
+        filteredData = audioData.filter(item => item.tags && item.tags.includes(tag));
+      }
+
+      // Apply current search if any
+      const searchQuery = document.getElementById('searchInput').value.trim();
+      if (searchQuery) {
+        applySearch(searchQuery);
+      } else {
+        renderAudioCards(filteredData);
+      }
+    }
+
+    // Reset filters
+    function resetFilters() {
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tag-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      activeTag = null;
+      filteredData = [...audioData];
+      document.getElementById('searchInput').value = '';
+
+      renderAudioCards(filteredData);
+    }
+
+    // Format large numbers
+    function formatNumber(num) {
+      if (num >= 100000000) {
+        return (num / 100000000).toFixed(1) + '亿';
+      } else if (num >= 10000) {
+        return (num / 10000).toFixed(1) + '万';
+      }
+      return num.toLocaleString();
+    }
+
+    // Render audio cards
+    function renderAudioCards(data) {
+      const grid = document.getElementById('audioGrid');
+
+      if (data.length === 0) {
+        grid.innerHTML = '<div class="no-results">😕 没有找到匹配的结果</div>';
+        return;
+      }
+
+      grid.innerHTML = data.map((item, index) => `
+        <div class="audio-card">
+          <span class="game-name${item.game_name ? '' : ' empty'}">
+            ${item.game_name || '未分类'}
+          </span>
+          <a href="${item.soundUrl}" target="_blank" class="audio-title" rel="noopener noreferrer">
+            ${item.title}
+          </a>
+          ${item.tags && item.tags.length > 0 ? `
+          <div class="tags-container">
+            ${item.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+          </div>
+          ` : ''}
+          <div class="audio-meta">
+            <div class="play-count">
+              <svg class="play-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+              <span>${item.count || '未知'}</span>
+            </div>
+            <a href="${item.soundUrl}" target="_blank" class="visit-btn" rel="noopener noreferrer">
+              访问 →
+            </a>
+            <a href="iting://open?msg_type=11&track_id=${item.soundUrl.split('/').pop()}" class="visit-btn" rel="noopener noreferrer">
+              iTing →
+            </a>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Apply search
+    function applySearch(query) {
+      const lowerQuery = query.toLowerCase();
+      let baseData = activeTag
+        ? audioData.filter(item => item.tags && item.tags.includes(activeTag))
+        : [...audioData];
+
+      filteredData = baseData.filter(item =>
+        item.title.toLowerCase().includes(lowerQuery) ||
+        (item.game_name && item.game_name.toLowerCase().includes(lowerQuery))
+      );
+
+      renderAudioCards(filteredData);
+    }
+
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const query = e.target.value.trim();
+
+      if (query === '') {
+        if (activeTag) {
+          filteredData = audioData.filter(item => item.tags && item.tags.includes(activeTag));
+        } else {
+          filteredData = [...audioData];
+        }
+      } else {
+        applySearch(query);
+      }
+
+      renderAudioCards(filteredData);
+    });
+
+    // Sort functionality
+    function sortBy(type) {
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      switch(type) {
+        case 'plays':
+          filteredData.sort((a, b) => (b.count_num || 0) - (a.count_num || 0));
+          break;
+        case 'title':
+          filteredData.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
+          break;
+      }
+
+      renderAudioCards(filteredData);
+    }
+
+    // Initialize
+    init();
+  </script>
+</body>
+</html>
