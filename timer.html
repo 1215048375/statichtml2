@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>timer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>积木倒计时 - 搬运工版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@700&display=swap');
@@ -31,7 +32,16 @@
             overflow: hidden;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
             border: 4px solid #fff;
-            transition: background-color 0.3s, border-color 0.3s;
+            /* 移除之前的 width/height transition，避免最大化时的延迟感 */
+            transition: border-radius 0.3s, border 0.3s; 
+        }
+
+        #game-wrapper.maximized {
+            width: 100vw !important;
+            height: 100vh !important;
+            border-radius: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
         }
 
         body.dark-mode #game-wrapper {
@@ -39,16 +49,17 @@
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8);
         }
 
-        canvas { display: block; width: 330px; height: 220px; }
+        canvas { display: block; width: 100%; height: 100%; }
 
+        /* UI 元素使用相对单位或保持原大小，依靠布局适应 */
         .mini-toolbar {
-            position: absolute; top: 6px; left: 6px; display: flex; gap: 3px; z-index: 20; pointer-events: none;
+            position: absolute; top: 8px; left: 8px; display: flex; gap: 4px; z-index: 20; pointer-events: none;
         }
 
         .mini-btn {
             pointer-events: auto; background-color: rgba(255, 255, 255, 0.8);
-            border: 1px solid #d1d5db; color: #4b5563; width: 24px; height: 24px; /* 进一步微调按钮大小 */
-            border-radius: 4px; font-size: 10px; cursor: pointer; transition: all 0.2s;
+            border: 1px solid #d1d5db; color: #4b5563; width: 28px; height: 28px;
+            border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.2s;
             box-shadow: 0 1px 2px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center;
         }
         .mini-btn:hover { background-color: #fff; transform: translateY(-1px); color: #2563eb; border-color: #93c5fd; }
@@ -56,13 +67,13 @@
         body.dark-mode .mini-btn:hover { background-color: #374151; color: #60a5fa; border-color: #60a5fa; }
 
         #top-timer-display {
-            position: absolute; top: 6px; right: 6px;
-            font-family: 'JetBrains Mono', monospace; font-size: 14px; 
+            position: absolute; top: 8px; right: 8px;
+            font-family: 'JetBrains Mono', monospace; font-size: 16px; 
             color: #4b5563; font-weight: 700; background: rgba(255,255,255,0.8);
-            padding: 2px 6px; border-radius: 4px; 
+            padding: 4px 10px; border-radius: 6px; 
             pointer-events: auto; cursor: pointer;
             box-shadow: 0 1px 2px rgba(0,0,0,0.05); z-index: 25; transition: all 0.3s;
-            min-width: 32px; text-align: center;
+            min-width: 40px; text-align: center;
         }
         #top-timer-display:hover { transform: translateY(-1px); background: rgba(255,255,255,0.95); }
         body.dark-mode #top-timer-display { background: rgba(31, 41, 55, 0.8); color: #e5e7eb; }
@@ -77,14 +88,14 @@
         body.dark-mode .overlay { background: rgba(17, 24, 39, 0.9); }
         .overlay.hidden { opacity: 0; pointer-events: none; }
         
-        .overlay h1 { color: #d97706; font-size: 20px; font-weight: 700; margin-bottom: 2px; font-family: 'Inter', sans-serif; }
+        .overlay h1 { color: #d97706; font-size: 24px; font-weight: 700; margin-bottom: 4px; font-family: 'Inter', sans-serif; }
         body.dark-mode .overlay h1 { color: #f59e0b; }
-        .overlay p { color: #6b7280; font-size: 11px; margin-bottom: 10px; }
+        .overlay p { color: #6b7280; font-size: 12px; margin-bottom: 12px; }
         body.dark-mode .overlay p { color: #9ca3af; }
 
         .time-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 220px; }
         .time-btn {
-            background: #fff; border: 2px solid #fb923c; color: #c2410c; padding: 8px;
+            background: #fff; border: 2px solid #fb923c; color: #c2410c; padding: 10px;
             border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
             transition: all 0.2s; text-align: center; box-shadow: 0 2px 4px rgba(251, 146, 60, 0.2);
             font-family: 'Inter', sans-serif;
@@ -102,7 +113,7 @@
         body.dark-mode .keypad-display { color: #fbbf24; border-color: #d97706; }
         .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; }
         .key-btn {
-            background: #fff; border: 1px solid #fed7aa; color: #c2410c; padding: 6px 0;
+            background: #fff; border: 1px solid #fed7aa; color: #c2410c; padding: 8px 0;
             border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer;
             transition: all 0.1s; font-family: 'JetBrains Mono', monospace;
         }
@@ -112,12 +123,12 @@
         body.dark-mode .key-btn:hover { background: #4b5563; }
         .key-btn.action { background: #fb923c; color: white; border-color: #f97316; }
         body.dark-mode .key-btn.action { background: #d97706; border-color: #b45309; }
-        .back-link { margin-top: 6px; font-size: 12px; color: #9ca3af; cursor: pointer; text-decoration: underline; }
+        .back-link { margin-top: 8px; font-size: 12px; color: #9ca3af; cursor: pointer; text-decoration: underline; }
         .back-link:hover { color: #6b7280; }
 
         .bubble {
-            position: absolute; background: white; border-radius: 4px; padding: 2px 6px;
-            font-size: 10px; font-family: 'Inter', sans-serif; font-weight: 600; color: #333;
+            position: absolute; background: white; border-radius: 4px; padding: 3px 8px;
+            font-size: 11px; font-family: 'Inter', sans-serif; font-weight: 600; color: #333;
             pointer-events: none; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             transform: translate(-50%, -100%); white-space: nowrap; opacity: 0;
             transition: opacity 0.3s, margin-top 0.3s; z-index: 10;
@@ -132,9 +143,9 @@
         .bubble.show { opacity: 1; margin-top: -6px; }
 
         .toast {
-            position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8); color: white; padding: 2px 10px; border-radius: 12px;
-            font-size: 10px; font-weight: 600; opacity: 0; pointer-events: none;
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8); color: white; padding: 6px 16px; border-radius: 16px;
+            font-size: 12px; font-weight: 600; opacity: 0; pointer-events: none;
             transition: opacity 0.3s; z-index: 100;
         }
         .toast.show { opacity: 1; }
@@ -166,6 +177,9 @@
         </button>
         <button id="theme-btn" class="mini-btn" onclick="game.toggleTheme()" title="切换模式">
             <span class="text-xs">🌙</span>
+        </button>
+        <button class="mini-btn" onclick="game.toggleMaximize()" title="最大化适配">
+            <span class="text-xs">⛶</span>
         </button>
     </div>
 
@@ -585,14 +599,18 @@ class Game {
         this.styleIndex = 0;
         this.currentStyle = CONFIG.STYLES[0].id;
         this.showTimerText = false;
+        this.isMaximized = false;
 
-        // 调整画布尺寸
+        // 默认小尺寸
         this.width = 330; 
         this.height = 220;
+        this.logicalWidth = 330;
+        this.logicalHeight = 220;
+        this.scale = 1;
         
-        this.cols = Math.floor(this.width / CONFIG.GRID_SIZE); 
-        this.rows = Math.ceil(this.height / CONFIG.GRID_SIZE);
-        this.gridOffsetX = (this.width - this.cols * CONFIG.GRID_SIZE) / 2;
+        this.cols = Math.floor(this.logicalWidth / CONFIG.GRID_SIZE); 
+        this.rows = Math.ceil(this.logicalHeight / CONFIG.GRID_SIZE);
+        this.gridOffsetX = (this.logicalWidth - this.cols * CONFIG.GRID_SIZE) / 2;
 
         this.resize(); 
         this.workers = [];
@@ -607,6 +625,10 @@ class Game {
         requestAnimationFrame(this.loop);
         
         document.getElementById('game-wrapper').style.backgroundColor = this.currentTheme.WRAPPER_BG;
+        
+        window.addEventListener('resize', () => {
+            if (this.isMaximized) this.handleResize();
+        });
     }
 
     toggleTimerText() {
@@ -625,11 +647,56 @@ class Game {
         clearTimeout(this.toastTimer);
         this.toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
     }
+    
+    toggleMaximize() {
+        this.isMaximized = !this.isMaximized;
+        const wrapper = document.getElementById('game-wrapper');
+        if (this.isMaximized) {
+            wrapper.classList.add('maximized');
+        } else {
+            wrapper.classList.remove('maximized');
+        }
+        setTimeout(() => this.handleResize(), 50); 
+    }
+    
+    handleResize() {
+        if (this.isMaximized) {
+            this.scale = Math.min(window.innerWidth / 330, window.innerHeight / 220);
+            this.width = window.innerWidth;
+            this.height = window.innerHeight;
+            this.logicalWidth = this.width / this.scale;
+            this.logicalHeight = this.height / this.scale;
+        } else {
+            this.scale = 1;
+            this.width = 330;
+            this.height = 220;
+            this.logicalWidth = 330;
+            this.logicalHeight = 220;
+        }
+        
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+        
+        this.cols = Math.floor(this.logicalWidth / CONFIG.GRID_SIZE); 
+        this.rows = Math.ceil(this.logicalHeight / CONFIG.GRID_SIZE);
+        this.gridOffsetX = (this.logicalWidth - this.cols * CONFIG.GRID_SIZE) / 2;
+        
+        this.resize(); 
+        this.triggerUpdate(); 
+    }
 
     resize() {
-        // 极致压缩仓库空间，放在底部，仅25px高
-        this.supplyArea = { x: 10, y: 190, w: 310, h: 25 };
-        if (this.supplyBlocks.length === 0) this.generateSupplyBlocks();
+        // 使用逻辑高度，仓库固定在底部，高度压缩到25
+        const depotHeight = 25;
+        this.supplyArea = { 
+            x: 10, 
+            y: this.logicalHeight - depotHeight - 5, 
+            w: this.logicalWidth - 20, 
+            h: depotHeight 
+        };
+        
+        this.supplyBlocks = [];
+        this.generateSupplyBlocks();
     }
 
     generateSupplyBlocks() {
@@ -637,7 +704,7 @@ class Game {
         for(let i=0; i<40; i++) {
              this.supplyBlocks.push({
                  x: this.supplyArea.x + 10 + Math.random() * (this.supplyArea.w - 20), 
-                 y: this.supplyArea.y + 2 + Math.random() * (this.supplyArea.h - 4) // 调整生成范围适应新高度
+                 y: this.supplyArea.y + 2 + Math.random() * (this.supplyArea.h - 4)
              });
         }
     }
@@ -656,7 +723,7 @@ class Game {
     }
 
     getDropSupplyPoint(workerPos) {
-        const padding = 5; // 减小内边距适应小仓库
+        const padding = 5; 
         const targetX = Math.max(this.supplyArea.x + padding, Math.min(this.supplyArea.x + this.supplyArea.w - padding, workerPos.x));
         const targetY = Math.max(this.supplyArea.y + padding, Math.min(this.supplyArea.y + this.supplyArea.h - padding, workerPos.y));
         return new Vector(targetX, targetY);
@@ -741,7 +808,7 @@ class Game {
         
         const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
         for (let i = 0; i < 150; i++) {
-            this.confetti.push(new Confetti(this.width/2, this.height + 50, colors));
+            this.confetti.push(new Confetti(this.logicalWidth/2, this.logicalHeight + 50, colors));
         }
 
         setTimeout(() => {
@@ -776,8 +843,8 @@ class Game {
 
         const gridSet = new Set();
         let currentX = startX;
-        // 数字下移至第 5 行，彻底避开顶部 UI
-        const startY = 5; 
+        // 确保垂直居中, 5 是数字的高度
+        const startY = Math.max(3, Math.floor((this.rows - 5) / 2)); 
 
         for (let char of timeStr) {
             const pattern = DIGITS[char] || DIGITS[' '];
@@ -826,7 +893,12 @@ class Game {
             }
         }
 
+        // 使用逻辑尺寸清空和绘制
         this.ctx.clearRect(0, 0, this.width, this.height);
+        
+        this.ctx.save();
+        this.ctx.scale(this.scale, this.scale);
+        
         this.drawGrid();
         
         this.ctx.fillStyle = this.currentTheme.SUPPLY_BG;
@@ -861,13 +933,15 @@ class Game {
                 c.update();
                 c.draw(this.ctx);
             });
-            this.confetti = this.confetti.filter(c => c.y < this.height + 20);
+            this.confetti = this.confetti.filter(c => c.y < this.logicalHeight + 20);
             
             if (Math.random() < 0.1 && this.confetti.length < 200) {
                 const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
-                this.confetti.push(new Confetti(Math.random() * this.width, -10, colors));
+                this.confetti.push(new Confetti(Math.random() * this.logicalWidth, -10, colors));
             }
         }
+        
+        this.ctx.restore();
 
         requestAnimationFrame(this.loop);
     }
@@ -882,7 +956,7 @@ class Game {
         ); 
     }
     
-    getCenterArea() { return new Vector(this.width / 2, this.height / 2); }
+    getCenterArea() { return new Vector(this.logicalWidth / 2, this.logicalHeight / 2); }
 
     showBubble(worker, text) {
         const bubbleLayer = document.getElementById('bubble-layer');
@@ -890,8 +964,13 @@ class Game {
         bubble.className = 'bubble';
         bubble.innerText = text;
         const yOffset = worker.state === 'CLAPPING' ? (worker.jumpOffset - 25) : -25;
-        bubble.style.left = worker.pos.x + 'px';
-        bubble.style.top = (worker.pos.y + yOffset) + 'px'; 
+        // Bubble needs to be positioned based on physical pixels for DOM overlay
+        // Worker pos is logical.
+        const physicalX = worker.pos.x * this.scale;
+        const physicalY = (worker.pos.y + yOffset) * this.scale;
+        
+        bubble.style.left = physicalX + 'px';
+        bubble.style.top = physicalY + 'px'; 
         bubbleLayer.appendChild(bubble);
         requestAnimationFrame(() => bubble.classList.add('show'));
         setTimeout(() => {
@@ -903,14 +982,14 @@ class Game {
     drawGrid() {
         const size = CONFIG.GRID_SIZE;
         this.ctx.fillStyle = this.currentTheme.BG_2; 
-        this.ctx.fillRect(0,0, this.width, this.height);
+        this.ctx.fillRect(0,0, this.logicalWidth, this.logicalHeight);
         
         if(this.currentStyle === 'NEON') {
              this.ctx.fillStyle = '#0f172a';
-             this.ctx.fillRect(0,0, this.width, this.height);
+             this.ctx.fillRect(0,0, this.logicalWidth, this.logicalHeight);
         } else if (this.currentStyle === 'SKETCH') {
              this.ctx.fillStyle = '#fff'; 
-             this.ctx.fillRect(0,0, this.width, this.height);
+             this.ctx.fillRect(0,0, this.logicalWidth, this.logicalHeight);
         }
 
         for (let x = 0; x < this.cols; x++) {
