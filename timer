@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>积木倒计时 - 搬运工版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@700&display=swap');
+        /* 引入手写字体用于涂鸦风格 */
+        @import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
+
+        body {
+            background-color: #333; 
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            transition: background-color 0.3s;
+        }
+
+        #game-wrapper {
+            width: 400px;
+            height: 300px;
+            position: relative;
+            background-color: #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+            border: 4px solid #fff;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        body.dark-mode #game-wrapper {
+            border-color: #4b5563;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8);
+        }
+
+        canvas { display: block; width: 400px; height: 300px; }
+
+        .mini-toolbar {
+            position: absolute; top: 12px; left: 12px; display: flex; gap: 6px; z-index: 20; pointer-events: none;
+        }
+
+        .mini-btn {
+            pointer-events: auto; background-color: rgba(255, 255, 255, 0.8);
+            border: 1px solid #d1d5db; color: #4b5563; width: 32px; height: 32px;
+            border-radius: 6px; font-size: 14px; cursor: pointer; transition: all 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center;
+        }
+        .mini-btn:hover { background-color: #fff; transform: translateY(-1px); color: #2563eb; border-color: #93c5fd; }
+        body.dark-mode .mini-btn { background-color: rgba(31, 41, 55, 0.8); border-color: #4b5563; color: #d1d5db; }
+        body.dark-mode .mini-btn:hover { background-color: #374151; color: #60a5fa; border-color: #60a5fa; }
+
+        #top-timer-display {
+            position: absolute; top: 12px; right: 12px;
+            font-family: 'JetBrains Mono', monospace; font-size: 20px; 
+            color: #4b5563; font-weight: 700; background: rgba(255,255,255,0.8);
+            padding: 2px 8px; border-radius: 6px; pointer-events: none;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05); z-index: 25; transition: all 0.3s;
+        }
+        body.dark-mode #top-timer-display { background: rgba(31, 41, 55, 0.8); color: #e5e7eb; }
+
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(4px);
+            z-index: 50; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.5s ease-in-out;
+        }
+        body.dark-mode .overlay { background: rgba(17, 24, 39, 0.85); }
+        .overlay.hidden { opacity: 0; pointer-events: none; }
+        .overlay h1 { color: #d97706; font-size: 24px; font-weight: 700; margin-bottom: 5px; font-family: 'Inter', sans-serif; }
+        body.dark-mode .overlay h1 { color: #f59e0b; }
+        .overlay p { color: #6b7280; font-size: 12px; margin-bottom: 20px; }
+        body.dark-mode .overlay p { color: #9ca3af; }
+
+        .time-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 240px; }
+        .time-btn {
+            background: #fff; border: 2px solid #fb923c; color: #c2410c; padding: 12px;
+            border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; text-align: center; box-shadow: 0 2px 4px rgba(251, 146, 60, 0.2);
+            font-family: 'Inter', sans-serif;
+        }
+        .time-btn:hover { background: #fff7ed; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(251, 146, 60, 0.3); }
+        body.dark-mode .time-btn { background: #1f2937; border-color: #d97706; color: #fbbf24; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4); }
+        body.dark-mode .time-btn:hover { background: #374151; }
+
+        #keypad-container { display: none; flex-direction: column; align-items: center; width: 240px; }
+        .keypad-display {
+            font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: bold;
+            color: #d97706; margin-bottom: 10px; border-bottom: 2px solid #fb923c;
+            width: 100%; text-align: center; padding-bottom: 5px;
+        }
+        body.dark-mode .keypad-display { color: #fbbf24; border-color: #d97706; }
+        .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; }
+        .key-btn {
+            background: #fff; border: 1px solid #fed7aa; color: #c2410c; padding: 10px 0;
+            border-radius: 6px; font-size: 18px; font-weight: bold; cursor: pointer;
+            transition: all 0.1s; font-family: 'JetBrains Mono', monospace;
+        }
+        .key-btn:hover { background: #fff7ed; }
+        .key-btn:active { background: #fed7aa; transform: scale(0.95); }
+        body.dark-mode .key-btn { background: #374151; border-color: #4b5563; color: #e5e7eb; }
+        body.dark-mode .key-btn:hover { background: #4b5563; }
+        .key-btn.action { background: #fb923c; color: white; border-color: #f97316; }
+        body.dark-mode .key-btn.action { background: #d97706; border-color: #b45309; }
+        .back-link { margin-top: 10px; font-size: 14px; color: #9ca3af; cursor: pointer; text-decoration: underline; }
+        .back-link:hover { color: #6b7280; }
+
+        .bubble {
+            position: absolute; background: white; border-radius: 6px; padding: 4px 8px;
+            font-size: 11px; font-family: 'Inter', sans-serif; font-weight: 600; color: #333;
+            pointer-events: none; border: 1px solid #e5e7eb; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transform: translate(-50%, -100%); white-space: nowrap; opacity: 0;
+            transition: opacity 0.3s, margin-top 0.3s; z-index: 10;
+        }
+        body.dark-mode .bubble { background: #374151; color: #f3f4f6; border-color: #4b5563; }
+        .bubble::after {
+            content: ''; position: absolute; bottom: -4px; left: 50%;
+            transform: translateX(-50%); border-width: 4px 4px 0; border-style: solid;
+            border-color: white transparent transparent transparent;
+        }
+        body.dark-mode .bubble::after { border-color: #374151 transparent transparent transparent; }
+        .bubble.show { opacity: 1; margin-top: -8px; }
+
+        .toast {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8); color: white; padding: 8px 16px; border-radius: 20px;
+            font-size: 14px; font-weight: 600; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s; z-index: 100;
+        }
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+
+<div id="game-wrapper">
+    <canvas id="gameCanvas" width="400" height="300"></canvas>
+    
+    <div id="bubble-layer"></div>
+    <div id="toast" class="toast">当前风格: 默认</div>
+
+    <div class="mini-toolbar" id="toolbar">
+        <button class="mini-btn" onclick="game.stopTimer()" title="重选时间">
+            <span class="text-base">🔄</span>
+        </button>
+        <button class="mini-btn" onclick="game.addWorker('NORMAL')" title="增加普通工人">
+            <span class="text-base">👷</span>
+        </button>
+        <button class="mini-btn" onclick="game.addWorker('FAST')" title="增加秒表工人">
+            <span class="text-base" style="color:#9333ea">⚡</span>
+        </button>
+        <button class="mini-btn" onclick="game.toggleStyle()" title="切换风格">
+            <span class="text-base">🎨</span>
+        </button>
+        <button id="mute-btn" class="mini-btn" onclick="game.toggleMute()" title="开关气泡">
+            <span class="text-base">💬</span>
+        </button>
+        <button id="theme-btn" class="mini-btn" onclick="game.toggleTheme()" title="切换模式">
+            <span class="text-base">🌙</span>
+        </button>
+    </div>
+
+    <div id="top-timer-display">00:00</div>
+
+    <div id="setup-overlay" class="overlay">
+        <!-- 默认视图：预设时间 -->
+        <div id="view-presets" style="text-align:center;">
+            <h1>⏰ 专注时刻</h1>
+            <p>Ready to focus?</p>
+            
+            <div class="time-grid">
+                <button class="time-btn" onclick="game.startTimer(25)">25m</button>
+                <button class="time-btn" onclick="game.startTimer(15)">15m</button>
+                <button class="time-btn" onclick="game.startTimer(5)">5m</button>
+                <button class="time-btn" onclick="overlayUI.showKeypad()" style="border-style:dashed; color:#6b7280; border-color:#9ca3af;">...</button>
+            </div>
+        </div>
+
+        <!-- 数字键盘视图 -->
+        <div id="keypad-container">
+            <div class="keypad-display">
+                <span id="keypad-value">0</span><span style="font-size:16px; color:#9ca3af; font-weight:normal; margin-left:4px">min</span>
+            </div>
+            <div class="keypad-grid">
+                <button class="key-btn" onclick="overlayUI.typeNum(1)">1</button>
+                <button class="key-btn" onclick="overlayUI.typeNum(2)">2</button>
+                <button class="key-btn" onclick="overlayUI.typeNum(3)">3</button>
+                <button class="key-btn" onclick="overlayUI.typeNum(4)">4</button>
+                <button class="key-btn" onclick="overlayUI.typeNum(5)">5</button>
+                <button class="key-btn" onclick="overlayUI.typeNum(6)">6</button>
+                <button class="key-btn" onclick="overlayUI.typeNum(7)">7</button>
+                <button class="key-btn" onclick="overlayUI.typeNum(8)">8</button>
+                <button class="key-btn" onclick="overlayUI.typeNum(9)">9</button>
+                <button class="key-btn" onclick="overlayUI.backspace()">⬅️</button>
+                <button class="key-btn" onclick="overlayUI.typeNum(0)">0</button>
+                <button class="key-btn action" onclick="overlayUI.confirm()">GO</button>
+            </div>
+            <div class="back-link" onclick="overlayUI.showPresets()">返回</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- UI Controller ---
+const overlayUI = {
+    buffer: "",
+    showKeypad: function() {
+        document.getElementById('view-presets').style.display = 'none';
+        document.getElementById('keypad-container').style.display = 'flex';
+        this.buffer = ""; this.updateDisplay();
+    },
+    showPresets: function() {
+        document.getElementById('view-presets').style.display = 'block';
+        document.getElementById('keypad-container').style.display = 'none';
+    },
+    typeNum: function(num) {
+        if (this.buffer.length >= 3) return;
+        if (this.buffer === "0") this.buffer = num.toString();
+        else this.buffer += num.toString();
+        this.updateDisplay();
+    },
+    backspace: function() {
+        if (this.buffer.length > 0) this.buffer = this.buffer.slice(0, -1);
+        this.updateDisplay();
+    },
+    updateDisplay: function() {
+        document.getElementById('keypad-value').innerText = this.buffer || "0";
+    },
+    confirm: function() {
+        const mins = parseInt(this.buffer);
+        if (mins > 0) {
+            game.startTimer(mins);
+            setTimeout(() => this.showPresets(), 500);
+        }
+    }
+};
+
+// --- Confetti System (撒花) ---
+class Confetti {
+    constructor(x, y, colors) {
+        this.x = x; this.y = y;
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.size = Math.random() * 5 + 3;
+        this.vx = (Math.random() - 0.5) * 6;
+        this.vy = Math.random() * -10 - 5;
+        this.gravity = 0.3;
+        this.rotation = Math.random() * 360;
+        this.rotationSpeed = (Math.random() - 0.5) * 10;
+        this.drag = 0.96;
+    }
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += this.gravity;
+        this.vx *= this.drag;
+        this.rotation += this.rotationSpeed;
+    }
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation * Math.PI / 180);
+        ctx.fillStyle = this.color;
+        ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+        ctx.restore();
+    }
+}
+
+// --- Game Constants & Logic ---
+const CONFIG = {
+    GRID_SIZE: 14, 
+    WORKER_COUNT_NORMAL: 2, 
+    WORKER_COUNT_FAST: 2,
+    WORKER_SPEED_NORMAL: 2.0, 
+    WORKER_SPEED_FAST: 3.5,
+    // 风格定义
+    STYLES: [
+        { id: 'CLASSIC', name: '经典风格' },
+        { id: 'CHRISTMAS', name: '圣诞风格', colors: ['#ef4444', '#22c55e', '#eab308'] },
+        { id: 'GLASS', name: '透明玻璃', bg: 'rgba(255,255,255,0.15)', border: 'rgba(255,255,255,0.5)' },
+        { id: 'MARSHMALLOW', name: '棉花糖', colors: ['#f9a8d4', '#93c5fd', '#c4b5fd', '#fcd34d'] },
+        // --- 新增 10 种风格 ---
+        { id: 'NEON', name: '赛博霓虹' },
+        { id: 'PIXEL', name: '复古像素' },
+        { id: 'WOOD', name: '原木质感' },
+        { id: 'METAL', name: '工业金属' },
+        { id: 'CANDY', name: '缤纷糖果' },
+        { id: 'NATURE', name: '森林绿意' },
+        { id: 'OCEAN', name: '深海蓝调' },
+        { id: 'SPACE', name: '浩瀚星空' },
+        { id: 'GOLD', name: '土豪金' },
+        { id: 'SKETCH', name: '手绘涂鸦' }
+    ],
+    THEMES: {
+        LIGHT: {
+            BG_1: '#f3f4f6', BG_2: '#e5e7eb',
+            BLOCK: '#d97706', BLOCK_BORDER: '#b45309',
+            SUPPLY_BG: 'rgba(0,0,0,0.05)', SUPPLY_STROKE: '#9ca3af',
+            TEXT: '#6b7280', WRAPPER_BG: '#e5e7eb'
+        },
+        DARK: {
+            BG_1: '#1f2937', BG_2: '#111827',
+            BLOCK: '#f59e0b', BLOCK_BORDER: '#78350f',
+            SUPPLY_BG: 'rgba(255,255,255,0.05)', SUPPLY_STROKE: '#4b5563',
+            TEXT: '#9ca3af', WRAPPER_BG: '#111827'
+        }
+    }
+};
+
+const DIGITS = {
+    '0': [[1,1,1], [1,0,1], [1,0,1], [1,0,1], [1,1,1]],
+    '1': [[0,1,0], [1,1,0], [0,1,0], [0,1,0], [1,1,1]],
+    '2': [[1,1,1], [0,0,1], [1,1,1], [1,0,0], [1,1,1]],
+    '3': [[1,1,1], [0,0,1], [1,1,1], [0,0,1], [1,1,1]],
+    '4': [[1,0,1], [1,0,1], [1,1,1], [0,0,1], [0,0,1]],
+    '5': [[1,1,1], [1,0,0], [1,1,1], [0,0,1], [1,1,1]],
+    '6': [[1,1,1], [1,0,0], [1,1,1], [1,0,1], [1,1,1]],
+    '7': [[1,1,1], [0,0,1], [0,1,0], [0,1,0], [0,1,0]],
+    '8': [[1,1,1], [1,0,1], [1,1,1], [1,0,1], [1,1,1]],
+    '9': [[1,1,1], [1,0,1], [1,1,1], [0,0,1], [1,1,1]],
+    ':': [[0], [1], [0], [1], [0]],
+    ' ': [[0,0,0], [0,0,0], [0,0,0], [0,0,0], [0,0,0]]
+};
+
+const CHATTER = ["稳住", "Go!", "搬运", "加油"];
+const FAST_CHATTER = ["快!", "Flash!", "冲!", "Next"];
+const CLAP_CHATTER = ["Yay!", "完成!", "Nice!", "👏", "🎉"];
+
+class Vector {
+    constructor(x, y) { this.x = x; this.y = y; }
+    add(v) { return new Vector(this.x + v.x, this.y + v.y); }
+    sub(v) { return new Vector(this.x - v.x, this.y - v.y); }
+    mult(n) { return new Vector(this.x * n, this.y * n); }
+    mag() { return Math.sqrt(this.x * this.x + this.y * this.y); }
+    normalize() { 
+        let m = this.mag(); 
+        return m === 0 ? new Vector(0, 0) : new Vector(this.x / m, this.y / m); 
+    }
+    dist(v) { return Math.sqrt(Math.pow(this.x - v.x, 2) + Math.pow(this.y - v.y, 2)); }
+    clone() { return new Vector(this.x, this.y); }
+}
+
+class Worker {
+    constructor(id, startX, startY, game, type = 'NORMAL') {
+        this.id = id;
+        this.pos = new Vector(startX, startY);
+        this.game = game;
+        this.type = type; 
+        
+        if (this.type === 'FAST') {
+            this.color = '#9333ea';
+            this.speed = CONFIG.WORKER_SPEED_FAST * (0.9 + Math.random() * 0.2);
+        } else {
+            this.color = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b'][Math.floor(Math.random() * 4)];
+            this.speed = CONFIG.WORKER_SPEED_NORMAL * (0.9 + Math.random() * 0.2);
+        }
+
+        this.state = 'IDLE'; 
+        this.targetPos = null;
+        this.carryingBlock = false;
+        this.currentJob = null; 
+        this.jumpOffset = 0;
+    }
+
+    startClapping() {
+        this.state = 'CLAPPING';
+        this.currentJob = null;
+        this.targetPos = null;
+        this.carryingBlock = false;
+    }
+
+    update() {
+        if (this.state === 'CLAPPING') {
+            this.jumpOffset = Math.sin(Date.now() / 100) * 5 - 5; 
+            if (Math.random() < 0.02 && !this.game.muted) {
+                 this.game.showBubble(this, CLAP_CHATTER[Math.floor(Math.random() * CLAP_CHATTER.length)]);
+            }
+            return;
+        }
+
+        if (this.currentJob) {
+            this.executeJob();
+        } else {
+            const job = this.game.jobSystem.requestJob(this);
+            if (job) this.assignJob(job);
+            else this.wander();
+        }
+        
+        const rate = this.type === 'FAST' ? 0.005 : 0.002;
+        if (Math.random() < rate && !this.game.muted) {
+            const text = this.type === 'FAST' ? 
+                FAST_CHATTER[Math.floor(Math.random() * FAST_CHATTER.length)] :
+                CHATTER[Math.floor(Math.random() * CHATTER.length)];
+            this.game.showBubble(this, text);
+        }
+    }
+
+    assignJob(job) {
+        this.currentJob = job;
+        if (job.type === 'MOVE' || job.type === 'SCAVENGE') {
+            this.state = 'MOVING_TO_PICKUP';
+            this.targetPos = this.game.gridToPixel(job.src.x, job.src.y);
+        } else if (job.type === 'SUPPLY') {
+            this.state = 'MOVING_TO_SUPPLY';
+            this.targetPos = this.game.requestSupplyBlock(this.pos);
+        }
+    }
+
+    executeJob() {
+        if (!this.targetPos) return;
+        const dir = this.targetPos.sub(this.pos);
+        const dist = dir.mag();
+        if (dist <= this.speed) {
+            this.pos = this.targetPos;
+            this.onCheckpointReached();
+        } else {
+            this.pos = this.pos.add(dir.normalize().mult(this.speed));
+        }
+    }
+
+    onCheckpointReached() {
+        const job = this.currentJob;
+        if (!job) return;
+
+        if (this.state === 'MOVING_TO_PICKUP') {
+            this.carryingBlock = true;
+            this.game.removeBlockFromGrid(job.src);
+            if (job.type === 'MOVE') {
+                this.state = 'MOVING_TO_DROP';
+                this.targetPos = this.game.gridToPixel(job.dest.x, job.dest.y);
+            } else { 
+                this.state = 'MOVING_TO_SUPPLY_DROP';
+                this.targetPos = this.game.getDropSupplyPoint(this.pos);
+            }
+        } else if (this.state === 'MOVING_TO_SUPPLY') {
+            this.carryingBlock = true;
+            this.state = 'MOVING_TO_DROP';
+            this.targetPos = this.game.gridToPixel(job.dest.x, job.dest.y);
+        } else if (this.state === 'MOVING_TO_DROP') {
+            this.carryingBlock = false;
+            this.game.addBlockToGrid(job.dest);
+            this.completeJob();
+        } else if (this.state === 'MOVING_TO_SUPPLY_DROP') {
+            this.carryingBlock = false;
+            this.game.returnSupplyBlock(this.pos);
+            this.completeJob();
+        }
+    }
+
+    completeJob() {
+        this.currentJob = null;
+        this.state = 'IDLE';
+    }
+
+    wander() {
+        if (!this.targetPos || this.pos.dist(this.targetPos) < 5) {
+            const center = this.game.getCenterArea();
+            let wanderX, wanderY;
+            if (this.type === 'FAST') {
+                wanderX = center.x + 50 + (Math.random()) * 100;
+            } else {
+                wanderX = center.x - 100 + (Math.random()) * 150;
+            }
+            wanderY = center.y + 40 + (Math.random() - 0.5) * 60;
+            this.targetPos = new Vector(wanderX, wanderY);
+        }
+        const dir = this.targetPos.sub(this.pos);
+        this.pos = this.pos.add(dir.normalize().mult(this.speed * 0.5)); 
+    }
+
+    draw(ctx, styleMode) {
+        const yPos = this.pos.y + (this.state === 'CLAPPING' ? this.jumpOffset : 0);
+        
+        let bodyColor = this.color;
+        let hatColor = '#fce7f3'; 
+
+        // 风格化工人
+        if (styleMode === 'CHRISTMAS' && this.type !== 'FAST') {
+             bodyColor = '#dc2626'; 
+        } else if (styleMode === 'NEON') {
+             bodyColor = '#22d3ee'; // 霓虹青
+             hatColor = '#a5f3fc';
+        } else if (styleMode === 'PIXEL') {
+             // 像素风格工人可以保持简单，或者变方一点
+        } else if (styleMode === 'SPACE') {
+             bodyColor = '#818cf8'; // 宇航服紫
+        }
+
+        ctx.fillStyle = bodyColor;
+        ctx.fillRect(this.pos.x - 5, yPos - 10, 10, 11); 
+        ctx.fillStyle = hatColor; 
+        ctx.fillRect(this.pos.x - 4, yPos - 16, 8, 6);   
+        
+        // 特殊帽子绘制
+        if (styleMode === 'CHRISTMAS' && this.type !== 'FAST') {
+            ctx.fillStyle = '#dc2626';
+            ctx.beginPath();
+            ctx.moveTo(this.pos.x - 4, yPos - 16);
+            ctx.lineTo(this.pos.x + 4, yPos - 16);
+            ctx.lineTo(this.pos.x, yPos - 22);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(this.pos.x, yPos - 22, 2, 0, Math.PI*2); ctx.fill(); 
+        } else if (this.type === 'FAST') {
+            ctx.fillStyle = '#7e22ce';
+            ctx.fillRect(this.pos.x - 5, yPos - 18, 10, 3);
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath();
+            ctx.moveTo(this.pos.x, yPos - 20);
+            ctx.lineTo(this.pos.x - 2, yPos - 23);
+            ctx.lineTo(this.pos.x + 2, yPos - 23);
+            ctx.fill();
+        } else {
+            ctx.fillStyle = '#1f2937';
+            ctx.fillRect(this.pos.x - 4, yPos - 16, 8, 2);
+        }
+        
+        // 阴影
+        if (styleMode !== 'NEON') {
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.beginPath();
+            ctx.ellipse(this.pos.x, this.pos.y + 4, 5.5 - (this.state === 'CLAPPING' ? this.jumpOffset/2 : 0), 2.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        if (this.carryingBlock && this.state !== 'CLAPPING') {
+            const size = CONFIG.GRID_SIZE;
+            this.game.drawSingleBlock(ctx, this.pos.x - size/2, yPos - 25 - size/2, 0, 0, true); 
+        }
+    }
+}
+
+class JobSystem {
+    constructor(game) {
+        this.game = game;
+        this.normalQueue = []; this.fastQueue = [];
+    }
+    generateJobs(currentGridSet, targetGridSet, fastZoneStartX) {
+        this.normalQueue = []; this.fastQueue = [];
+        const currentArr = Array.from(currentGridSet).map(s => { const [x,y] = s.split(',').map(Number); return {x, y, str: s}; });
+        const targetArr = Array.from(targetGridSet).map(s => { const [x,y] = s.split(',').map(Number); return {x, y, str: s}; });
+        const toRemove = currentArr.filter(c => !targetGridSet.has(c.str));
+        const toAdd = targetArr.filter(t => !currentGridSet.has(t.str));
+        
+        const isFastZone = (x) => x >= fastZoneStartX;
+        
+        const distribute = (job) => {
+            let targetX;
+            if (job.type === 'MOVE') targetX = job.dest.x; 
+            else if (job.type === 'SUPPLY') targetX = job.dest.x;
+            else if (job.type === 'SCAVENGE') targetX = job.src.x;
+            if (isFastZone(targetX)) this.fastQueue.push(job); else this.normalQueue.push(job);
+        };
+
+        while(toRemove.length > 0 && toAdd.length > 0) {
+            const src = toRemove.pop();
+            let closestIdx = -1; let minDist = 99999;
+            const srcIsFast = isFastZone(src.x);
+            for(let i=0; i<toAdd.length; i++) {
+                const dest = toAdd[i];
+                const destIsFast = isFastZone(dest.x);
+                let penalty = (srcIsFast !== destIsFast) ? 100 : 0;
+                const dist = Math.abs(src.x - dest.x) + Math.abs(src.y - dest.y) + penalty;
+                if(dist < minDist) { minDist = dist; closestIdx = i; }
+            }
+            const dest = toAdd.splice(closestIdx, 1)[0];
+            distribute({ type: 'MOVE', src: src, dest: dest });
+        }
+        toRemove.forEach(item => distribute({ type: 'SCAVENGE', src: item }));
+        toAdd.forEach(item => distribute({ type: 'SUPPLY', dest: item }));
+    }
+    requestJob(worker) {
+        if (worker.type === 'FAST') return this.fastQueue.length > 0 ? this.fastQueue.shift() : null;
+        return this.normalQueue.length > 0 ? this.normalQueue.shift() : null;
+    }
+}
+
+class Game {
+    constructor() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.supplyBlocks = [];
+        this.muted = false; 
+        
+        this.isDarkMode = true;
+        this.currentTheme = CONFIG.THEMES.DARK;
+        document.body.classList.add('dark-mode');
+
+        // 风格初始化
+        this.styleIndex = 0;
+        this.currentStyle = CONFIG.STYLES[0].id;
+
+        this.width = 400; this.height = 300;
+        this.cols = Math.floor(this.width / CONFIG.GRID_SIZE); 
+        this.rows = Math.ceil(this.height / CONFIG.GRID_SIZE);
+        this.gridOffsetX = (this.width - this.cols * CONFIG.GRID_SIZE) / 2;
+
+        this.resize(); 
+        this.workers = [];
+        this.confetti = [];
+        this.currentGrid = new Set(); 
+        this.jobSystem = new JobSystem(this);
+        this.isRunning = false;
+        this.isCelebrating = false;
+        this.realTotalSeconds = 0;
+        this.initWorkers();
+        this.loop = this.loop.bind(this);
+        requestAnimationFrame(this.loop);
+        
+        document.getElementById('game-wrapper').style.backgroundColor = this.currentTheme.WRAPPER_BG;
+    }
+
+    toggleStyle() {
+        this.styleIndex = (this.styleIndex + 1) % CONFIG.STYLES.length;
+        const style = CONFIG.STYLES[this.styleIndex];
+        this.currentStyle = style.id;
+        
+        // 显示提示
+        const toast = document.getElementById('toast');
+        toast.innerText = `当前风格: ${style.name}`;
+        toast.classList.add('show');
+        clearTimeout(this.toastTimer);
+        this.toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    resize() {
+        this.supplyArea = { x: 40, y: 230, w: 320, h: 60 };
+        if (this.supplyBlocks.length === 0) this.generateSupplyBlocks();
+    }
+
+    generateSupplyBlocks() {
+        this.supplyBlocks = [];
+        for(let i=0; i<40; i++) {
+             this.supplyBlocks.push({
+                 x: this.supplyArea.x + 10 + Math.random() * (this.supplyArea.w - 20), 
+                 y: this.supplyArea.y + 10 + Math.random() * (this.supplyArea.h - 20)
+             });
+        }
+    }
+
+    requestSupplyBlock(workerPos) {
+        if (this.supplyBlocks.length === 0) return new Vector(this.supplyArea.x + Math.random() * this.supplyArea.w, this.supplyArea.y + Math.random() * this.supplyArea.h);
+        let closestIdx = -1, minDist = Infinity;
+        for (let i = 0; i < this.supplyBlocks.length; i++) {
+            const b = this.supplyBlocks[i];
+            const dist = Math.pow(b.x - workerPos.x, 2) + Math.pow(b.y - workerPos.y, 2);
+            if (dist < minDist) { minDist = dist; closestIdx = i; }
+        }
+        const block = this.supplyBlocks[closestIdx];
+        this.supplyBlocks.splice(closestIdx, 1);
+        return new Vector(block.x, block.y);
+    }
+
+    getDropSupplyPoint(workerPos) {
+        const padding = 10;
+        const targetX = Math.max(this.supplyArea.x + padding, Math.min(this.supplyArea.x + this.supplyArea.w - padding, workerPos.x));
+        const targetY = Math.max(this.supplyArea.y + padding, Math.min(this.supplyArea.y + this.supplyArea.h - padding, workerPos.y));
+        return new Vector(targetX, targetY);
+    }
+
+    returnSupplyBlock(pos) {
+        this.supplyBlocks.push({ x: pos.x + (Math.random() - 0.5) * 5, y: pos.y + (Math.random() - 0.5) * 5 });
+    }
+
+    initWorkers() {
+        this.workers = [];
+        for (let i = 0; i < CONFIG.WORKER_COUNT_NORMAL; i++) this.addWorker('NORMAL', false);
+        for (let i = 0; i < CONFIG.WORKER_COUNT_FAST; i++) this.addWorker('FAST', false);
+    }
+
+    addWorker(type, showMsg = true) {
+        const id = this.workers.length;
+        const spawnX = this.supplyArea.x + Math.random() * this.supplyArea.w;
+        const spawnY = this.supplyArea.y + Math.random() * this.supplyArea.h;
+        const worker = new Worker(id, spawnX, spawnY, this, type);
+        this.workers.push(worker);
+        if (showMsg) {
+            const msg = type === 'FAST' ? "Ready!" : "Hi!";
+            this.showBubble(worker, msg);
+        }
+    }
+
+    toggleMute() {
+        this.muted = !this.muted;
+        const btn = document.getElementById('mute-btn');
+        if (this.muted) { btn.querySelector('span').innerText = "🔇"; btn.style.opacity = "0.5"; } 
+        else { btn.querySelector('span').innerText = "💬"; btn.style.opacity = "1"; }
+    }
+
+    toggleTheme() {
+        this.isDarkMode = !this.isDarkMode;
+        this.currentTheme = this.isDarkMode ? CONFIG.THEMES.DARK : CONFIG.THEMES.LIGHT;
+        document.body.classList.toggle('dark-mode');
+        document.getElementById('game-wrapper').style.backgroundColor = this.currentTheme.WRAPPER_BG;
+    }
+
+    startTimer(minutes) {
+        this.isRunning = true;
+        this.isCelebrating = false;
+        this.confetti = [];
+        this.realTotalSeconds = minutes * 60;
+        this.lastTick = performance.now();
+        document.getElementById('setup-overlay').classList.add('hidden');
+        
+        this.workers.forEach(w => w.completeJob());
+        
+        const { gridSet, fastZoneStartX } = this.getGridPatternForTime(this.realTotalSeconds);
+        this.currentGrid = new Set(gridSet);
+        this.triggerUpdate();
+        this.updateTimeDisplay();
+    }
+
+    stopTimer() {
+        this.isRunning = false;
+        this.isCelebrating = false;
+        this.confetti = [];
+        document.getElementById('setup-overlay').classList.remove('hidden');
+        document.getElementById('top-timer-display').innerText = "00:00";
+        this.jobSystem.normalQueue = [];
+        this.jobSystem.fastQueue = [];
+        this.workers.forEach(w => w.completeJob());
+        overlayUI.showPresets();
+    }
+
+    celebrate() {
+        if (this.isCelebrating) return; 
+        
+        this.isRunning = false;
+        this.isCelebrating = true;
+        this.realTotalSeconds = 0;
+        this.updateTimeDisplay();
+        
+        this.workers.forEach(w => w.startClapping());
+        
+        this.jobSystem.normalQueue = [];
+        this.jobSystem.fastQueue = [];
+        
+        const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+        for (let i = 0; i < 150; i++) {
+            this.confetti.push(new Confetti(this.width/2, this.height + 50, colors));
+        }
+
+        setTimeout(() => {
+            this.stopTimer();
+        }, 5000);
+    }
+
+    getGridPatternForTime(seconds) {
+        let mStr = Math.floor(seconds / 60).toString();
+        if (mStr.length < 2) mStr = mStr.padStart(2, '0');
+        const sStr = (seconds % 60).toString().padStart(2, '0');
+        const timeStr = `${mStr}:${sStr}`;
+        
+        let totalWidth = 0;
+        let lastDigitOffset = 0;
+
+        // Pass 1: 计算总宽度和最后一个数字的起始位置
+        for (let i = 0; i < timeStr.length; i++) {
+            const char = timeStr[i];
+            const pattern = DIGITS[char] || DIGITS[' '];
+            const w = pattern[0].length;
+            
+            // 记录最后一个数字的开始位置（秒针个位数）
+            if (i === timeStr.length - 1) {
+                lastDigitOffset = totalWidth;
+            }
+
+            totalWidth += w + 1;
+        }
+        totalWidth -= 1; 
+        
+        const startX = Math.floor((this.cols - totalWidth) / 2);
+        
+        // Fast zone start X: 起始X + 最后一个数字的相对偏移
+        const fastZoneStartX = startX + lastDigitOffset;
+
+        const gridSet = new Set();
+        let currentX = startX;
+        const startY = 4; 
+
+        // Pass 2: 构建网格
+        for (let char of timeStr) {
+            const pattern = DIGITS[char] || DIGITS[' '];
+            const width = pattern[0].length;
+            for (let r = 0; r < pattern.length; r++) {
+                for (let c = 0; c < width; c++) {
+                    if (pattern[r][c] === 1) gridSet.add(`${currentX + c},${startY + r}`);
+                }
+            }
+            currentX += width + 1;
+        }
+        return { gridSet, startX, fastZoneStartX };
+    }
+
+    updateTimeDisplay() {
+        const m = Math.floor(this.realTotalSeconds / 60).toString().padStart(2, '0');
+        const s = (this.realTotalSeconds % 60).toString().padStart(2, '0');
+        document.getElementById('top-timer-display').innerText = `${m}:${s}`;
+    }
+
+    triggerUpdate() {
+        const nextSeconds = Math.max(0, this.realTotalSeconds - 1); 
+        const { gridSet: targetSet, fastZoneStartX } = this.getGridPatternForTime(nextSeconds);
+        this.jobSystem.generateJobs(this.currentGrid, targetSet, fastZoneStartX);
+    }
+
+    loop(timestamp) {
+        if (this.isRunning) {
+            if (timestamp - this.lastTick > 1000) {
+                this.realTotalSeconds--;
+                this.lastTick = timestamp;
+                this.updateTimeDisplay();
+                
+                if (this.realTotalSeconds > 0) {
+                    this.triggerUpdate();
+                } else {
+                    this.celebrate();
+                }
+            }
+        }
+
+        this.ctx.clearRect(0, 0, this.width, this.height);
+        this.drawGrid();
+        
+        this.ctx.fillStyle = this.currentTheme.SUPPLY_BG;
+        this.ctx.fillRect(this.supplyArea.x, this.supplyArea.y, this.supplyArea.w, this.supplyArea.h);
+        this.ctx.strokeStyle = this.currentTheme.SUPPLY_STROKE; this.ctx.setLineDash([4, 4]);
+        this.ctx.strokeRect(this.supplyArea.x, this.supplyArea.y, this.supplyArea.w, this.supplyArea.h);
+        this.ctx.setLineDash([]);
+        
+        this.ctx.fillStyle = this.currentTheme.TEXT; 
+        this.ctx.font = "12px 'Inter', sans-serif"; this.ctx.textAlign = "center";
+        this.ctx.fillText("DEPOT", this.supplyArea.x + this.supplyArea.w/2, this.supplyArea.y + this.supplyArea.h + 16);
+        
+        // 传入 index 作为颜色种子
+        for(let i=0; i<this.supplyBlocks.length; i++) {
+             let b = this.supplyBlocks[i];
+             // 使用 i 作为 seed
+             this.drawSingleBlock(this.ctx, b.x, b.y, i, i, false);
+        }
+
+        for (let key of this.currentGrid) {
+            const [gx, gy] = key.split(',').map(Number);
+            const pos = this.gridToPixel(gx, gy);
+            // 传入 gx, gy 作为 seed
+            this.drawSingleBlock(this.ctx, pos.x - CONFIG.GRID_SIZE/2, pos.y - CONFIG.GRID_SIZE/2, gx, gy, false);
+        }
+        
+        this.workers.sort((a, b) => a.pos.y - b.pos.y);
+        this.workers.forEach(w => {
+            w.update();
+            w.draw(this.ctx, this.currentStyle); // 传递当前风格
+        });
+
+        if (this.isCelebrating) {
+            this.confetti.forEach(c => {
+                c.update();
+                c.draw(this.ctx);
+            });
+            this.confetti = this.confetti.filter(c => c.y < this.height + 20);
+            
+            if (Math.random() < 0.1 && this.confetti.length < 200) {
+                const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+                this.confetti.push(new Confetti(Math.random() * this.width, -10, colors));
+            }
+        }
+
+        requestAnimationFrame(this.loop);
+    }
+
+    removeBlockFromGrid(pos) { this.currentGrid.delete(`${pos.x},${pos.y}`); }
+    addBlockToGrid(pos) { this.currentGrid.add(`${pos.x},${pos.y}`); }
+    
+    gridToPixel(gx, gy) { 
+        return new Vector(
+            this.gridOffsetX + gx * CONFIG.GRID_SIZE + CONFIG.GRID_SIZE/2, 
+            gy * CONFIG.GRID_SIZE + CONFIG.GRID_SIZE/2
+        ); 
+    }
+    
+    getCenterArea() { return new Vector(this.width / 2, this.height / 2); }
+
+    showBubble(worker, text) {
+        const bubbleLayer = document.getElementById('bubble-layer');
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.innerText = text;
+        const yOffset = worker.state === 'CLAPPING' ? (worker.jumpOffset - 25) : -25;
+        bubble.style.left = worker.pos.x + 'px';
+        bubble.style.top = (worker.pos.y + yOffset) + 'px'; 
+        bubbleLayer.appendChild(bubble);
+        requestAnimationFrame(() => bubble.classList.add('show'));
+        setTimeout(() => {
+            bubble.classList.remove('show');
+            setTimeout(() => bubble.remove(), 300);
+        }, 1500);
+    }
+
+    drawGrid() {
+        const size = CONFIG.GRID_SIZE;
+        this.ctx.fillStyle = this.currentTheme.BG_2; 
+        this.ctx.fillRect(0,0, this.width, this.height);
+        
+        // 赛博霓虹风格下，背景更暗
+        if(this.currentStyle === 'NEON') {
+             this.ctx.fillStyle = '#0f172a'; // slate-900
+             this.ctx.fillRect(0,0, this.width, this.height);
+        } else if (this.currentStyle === 'SKETCH') {
+             this.ctx.fillStyle = '#fff'; 
+             this.ctx.fillRect(0,0, this.width, this.height);
+        }
+
+        for (let x = 0; x < this.cols; x++) {
+            for (let y = 0; y < this.rows; y++) {
+                const px = this.gridOffsetX + x * size;
+                const py = y * size;
+                
+                if (this.currentStyle === 'NEON') {
+                    // 霓虹风格网格
+                    this.ctx.strokeStyle = 'rgba(6, 182, 212, 0.1)';
+                    this.ctx.lineWidth = 0.5;
+                    this.ctx.strokeRect(px, py, size, size);
+                } else if (this.currentStyle === 'SKETCH') {
+                    // 涂鸦风格网格（轻微）
+                    this.ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+                    this.ctx.lineWidth = 0.5;
+                    this.ctx.strokeRect(px, py, size, size);
+                } else {
+                    this.ctx.fillStyle = ((x)+(y))%2===0 ? this.currentTheme.BG_1 : this.currentTheme.BG_2;
+                    this.ctx.fillRect(px, py, size, size);
+                }
+            }
+        }
+    }
+
+    // --- 修改：增加10种新风格的绘制逻辑 ---
+    drawSingleBlock(ctx, x, y, gx, gy, isWorkerHolding) {
+        const size = CONFIG.GRID_SIZE;
+        const style = this.currentStyle;
+
+        if (style === 'CLASSIC') {
+            ctx.fillStyle = 'rgba(0,0,0,0.1)'; ctx.fillRect(x + 1, y + 1, size, size);
+            ctx.fillStyle = this.currentTheme.BLOCK; ctx.fillRect(x, y, size, size);
+            ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(x, y, size, 2); ctx.fillRect(x, y, 2, size);
+            ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(x, y + size - 2, size, 2); ctx.fillRect(x + size - 2, y, 2, size);
+            ctx.strokeStyle = this.currentTheme.BLOCK_BORDER; ctx.strokeRect(x, y, size, size);
+        } 
+        else if (style === 'CHRISTMAS') {
+            const colors = CONFIG.STYLES[1].colors;
+            const seed = Math.abs((Math.floor(x) * 7 + Math.floor(y) * 13)) % colors.length;
+            ctx.fillStyle = colors[seed];
+            ctx.fillRect(x, y, size, size);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillRect(x, y, size, 4);
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.5; ctx.strokeRect(x, y, size, size);
+        }
+        else if (style === 'GLASS') {
+            const conf = CONFIG.STYLES[2];
+            ctx.fillStyle = conf.bg;
+            ctx.fillRect(x, y, size, size);
+            ctx.strokeStyle = conf.border;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, size, size);
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.fillRect(x, y, size, 3);
+        }
+        else if (style === 'MARSHMALLOW') {
+            const colors = CONFIG.STYLES[3].colors;
+            const seed = Math.abs((Math.floor(x) * 3 + Math.floor(y) * 5)) % colors.length;
+            ctx.fillStyle = colors[seed];
+            const r = 4;
+            ctx.beginPath();
+            ctx.moveTo(x + r, y); ctx.lineTo(x + size - r, y);
+            ctx.quadraticCurveTo(x + size, y, x + size, y + r); ctx.lineTo(x + size, y + size - r);
+            ctx.quadraticCurveTo(x + size, y + size, x + size - r, y + size); ctx.lineTo(x + r, y + size);
+            ctx.quadraticCurveTo(x, y + size, x, y + size - r); ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y); ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath(); ctx.arc(x + 4, y + 4, 2, 0, Math.PI*2); ctx.fill();
+        }
+        // --- 新增风格 ---
+        else if (style === 'NEON') {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(x, y, size, size);
+            ctx.strokeStyle = '#06b6d4'; // Cyan
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(x, y, size, size);
+            // 内部高亮
+            ctx.fillStyle = '#06b6d4';
+            ctx.fillRect(x + size/2 - 2, y + size/2 - 2, 4, 4);
+        }
+        else if (style === 'PIXEL') {
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillRect(x, y, size, size);
+            // 简单的像素阴影
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillRect(x + 2, y + size - 2, size - 2, 2);
+            ctx.fillRect(x + size - 2, y + 2, 2, size - 2);
+            // 高光
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.fillRect(x + 2, y + 2, 2, 2);
+        }
+        else if (style === 'WOOD') {
+            ctx.fillStyle = '#92400e'; // Amber 800
+            ctx.fillRect(x, y, size, size);
+            ctx.fillStyle = '#78350f'; // Amber 900
+            ctx.fillRect(x, y + 3, size, 1);
+            ctx.fillRect(x, y + 7, size, 1);
+            ctx.fillRect(x, y + 11, size, 1);
+            ctx.strokeStyle = '#451a03';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, size, size);
+        }
+        else if (style === 'METAL') {
+            ctx.fillStyle = '#94a3b8'; // Slate 400
+            ctx.fillRect(x, y, size, size);
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, size, size);
+            // 铆钉
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(x+1, y+1, 2, 2);
+            ctx.fillRect(x+size-3, y+1, 2, 2);
+            ctx.fillRect(x+1, y+size-3, 2, 2);
+            ctx.fillRect(x+size-3, y+size-3, 2, 2);
+        }
+        else if (style === 'CANDY') {
+            ctx.fillStyle = '#ec4899'; // Pink
+            ctx.fillRect(x, y, size, size);
+            // 白色条纹
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.beginPath();
+            ctx.moveTo(x + size/2, y);
+            ctx.lineTo(x + size, y);
+            ctx.lineTo(x + size, y + size/2);
+            ctx.lineTo(x + size/2, y + size);
+            ctx.lineTo(x, y + size);
+            ctx.lineTo(x, y + size/2);
+            ctx.fill();
+        }
+        else if (style === 'NATURE') {
+            ctx.fillStyle = '#16a34a'; // Green
+            ctx.fillRect(x, y, size, size);
+            // 嫩芽
+            ctx.fillStyle = '#86efac';
+            ctx.beginPath();
+            ctx.arc(x + size/2, y + size/2, 3, 0, Math.PI*2);
+            ctx.fill();
+        }
+        else if (style === 'OCEAN') {
+            ctx.fillStyle = '#2563eb'; // Blue
+            ctx.fillRect(x, y, size, size);
+            // 气泡
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(x + size/2, y + size/2, 3, 0, Math.PI*2);
+            ctx.stroke();
+        }
+        else if (style === 'SPACE') {
+            ctx.fillStyle = '#0f172a'; // Slate 900
+            ctx.fillRect(x, y, size, size);
+            // 星星 (根据位置固定显示)
+            if ((Math.abs(x*7 + y*13) % 5) === 0) {
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(x + size/2, y + size/2, 1.5, 1.5);
+            }
+        }
+        else if (style === 'GOLD') {
+            ctx.fillStyle = '#eab308'; // Yellow
+            ctx.fillRect(x, y, size, size);
+            // 高光带
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath();
+            ctx.moveTo(x, y + size);
+            ctx.lineTo(x + size, y);
+            ctx.lineTo(x + size, y + 4);
+            ctx.lineTo(x + 4, y + size);
+            ctx.fill();
+            ctx.strokeStyle = '#a16207';
+            ctx.strokeRect(x, y, size, size);
+        }
+        else if (style === 'SKETCH') {
+            ctx.fillStyle = '#fff';
+            // 抖动效果 (使用位置作为种子，保持静止时的稳定性)
+            const jitterX = Math.sin(x * 12.3 + y * 4.56) * 1.5;
+            const jitterY = Math.cos(x * 7.89 + y * 1.23) * 1.5;
+            
+            ctx.fillRect(x + jitterX, y + jitterY, size, size);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.2;
+            ctx.strokeRect(x + jitterX, y + jitterY, size, size);
+        }
+    }
+}
+
+const game = new Game();
+</script>
+</body>
+</html>
