@@ -57,14 +57,22 @@
         body.dark-mode .mini-btn { background-color: rgba(31, 41, 55, 0.8); border-color: #4b5563; color: #d1d5db; }
         body.dark-mode .mini-btn:hover { background-color: #374151; color: #60a5fa; border-color: #60a5fa; }
 
+        /* 修改了 pointer-events 和 cursor，使其可点击 */
         #top-timer-display {
             position: absolute; top: 12px; right: 12px;
             font-family: 'JetBrains Mono', monospace; font-size: 20px; 
             color: #4b5563; font-weight: 700; background: rgba(255,255,255,0.8);
-            padding: 2px 8px; border-radius: 6px; pointer-events: none;
+            padding: 4px 10px; border-radius: 6px; 
+            pointer-events: auto; cursor: pointer; /* 允许点击 */
             box-shadow: 0 1px 2px rgba(0,0,0,0.05); z-index: 25; transition: all 0.3s;
+            min-width: 40px; text-align: center; /* 保证图标和时间切换时位置稳定 */
+        }
+        #top-timer-display:hover {
+            transform: translateY(-1px);
+            background: rgba(255,255,255,0.95);
         }
         body.dark-mode #top-timer-display { background: rgba(31, 41, 55, 0.8); color: #e5e7eb; }
+        body.dark-mode #top-timer-display:hover { background: rgba(31, 41, 55, 1); }
 
         .overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -166,7 +174,8 @@
         </button>
     </div>
 
-    <div id="top-timer-display">00:00</div>
+    <!-- 增加了 onclick 事件，默认显示图标 -->
+    <div id="top-timer-display" onclick="game.toggleTimerText()" title="点击显示/隐藏时间">🕒</div>
 
     <div id="setup-overlay" class="overlay">
         <!-- 默认视图：预设时间 -->
@@ -284,7 +293,6 @@ const CONFIG = {
         { id: 'CHRISTMAS', name: '圣诞风格', colors: ['#ef4444', '#22c55e', '#eab308'] },
         { id: 'GLASS', name: '透明玻璃', bg: 'rgba(255,255,255,0.15)', border: 'rgba(255,255,255,0.5)' },
         { id: 'MARSHMALLOW', name: '棉花糖', colors: ['#f9a8d4', '#93c5fd', '#c4b5fd', '#fcd34d'] },
-        // --- 新增 10 种风格 ---
         { id: 'NEON', name: '赛博霓虹' },
         { id: 'PIXEL', name: '复古像素' },
         { id: 'WOOD', name: '原木质感' },
@@ -594,6 +602,9 @@ class Game {
         // 风格初始化
         this.styleIndex = 0;
         this.currentStyle = CONFIG.STYLES[0].id;
+        
+        // 显示倒计时数字的状态
+        this.showTimerText = false; // 默认隐藏
 
         this.width = 400; this.height = 300;
         this.cols = Math.floor(this.width / CONFIG.GRID_SIZE); 
@@ -613,6 +624,12 @@ class Game {
         requestAnimationFrame(this.loop);
         
         document.getElementById('game-wrapper').style.backgroundColor = this.currentTheme.WRAPPER_BG;
+    }
+
+    // --- 新增：显示/隐藏倒计时数字 ---
+    toggleTimerText() {
+        this.showTimerText = !this.showTimerText;
+        this.updateTimeDisplay();
     }
 
     toggleStyle() {
@@ -798,9 +815,20 @@ class Game {
     }
 
     updateTimeDisplay() {
+        const el = document.getElementById('top-timer-display');
+        
+        // 根据状态切换显示内容
+        if (!this.showTimerText) {
+            el.innerText = "🕒";
+            el.style.fontFamily = "'Inter', sans-serif";
+            return;
+        }
+
+        // 显示时间
         const m = Math.floor(this.realTotalSeconds / 60).toString().padStart(2, '0');
         const s = (this.realTotalSeconds % 60).toString().padStart(2, '0');
-        document.getElementById('top-timer-display').innerText = `${m}:${s}`;
+        el.innerText = `${m}:${s}`;
+        el.style.fontFamily = "'JetBrains Mono', monospace";
     }
 
     triggerUpdate() {
