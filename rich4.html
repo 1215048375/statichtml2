@@ -1,0 +1,1712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Office Richman 4 - Tycoon Edition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;700;900&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Rubik', sans-serif;
+            background-color: #2c3e50;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #game-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        /* UI Layer */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* Setup Screen */
+        #setup-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(44, 62, 80, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            pointer-events: auto;
+            color: white;
+        }
+
+        .setup-box {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 0 rgba(0,0,0,0.2);
+            min-width: 300px;
+            backdrop-filter: blur(5px);
+        }
+
+        .setup-row {
+            margin: 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .setup-input {
+            padding: 5px 10px;
+            font-size: 1.2rem;
+            width: 60px;
+            text-align: center;
+            border: 2px solid #333;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Turn Indicator */
+        #turn-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(4px);
+            padding: 10px 30px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: 3px solid #333;
+            pointer-events: none;
+            transition: transform 0.2s;
+            z-index: 100;
+            display: none; 
+        }
+
+        #turn-puppet-icon { width: 40px; height: 40px; position: relative; }
+        #turn-head { width: 20px; height: 20px; background: #ffcd94; border-radius: 50%; position: absolute; top: 0; left: 50%; transform: translateX(-50%); border: 2px solid #333; z-index: 2; }
+        #turn-body { width: 30px; height: 24px; background: #ccc; border-radius: 10px 10px 0 0; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); border: 2px solid #333; z-index: 1; }
+        #turn-text { font-weight: 900; font-size: 1.5rem; color: #333; text-transform: uppercase; }
+
+        /* Log Panel */
+        #log-panel {
+            position: absolute;
+            bottom: 30px;
+            left: 20px;
+            width: 320px;
+            max-height: 150px; 
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            pointer-events: auto;
+            z-index: 90;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        #log-panel::-webkit-scrollbar { width: 4px; }
+        #log-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 2px; }
+
+        .log-entry {
+            background: rgba(30, 30, 30, 0.6);
+            backdrop-filter: blur(2px);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: normal;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease-out;
+            border-left: 4px solid transparent;
+            word-wrap: break-word;
+        }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* Player Stats Panels */
+        .player-card {
+            position: absolute;
+            width: 220px; /* Slightly wider for diff */
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(4px);
+            border-radius: 12px;
+            box-shadow: 0 5px 0 rgba(0,0,0,0.1);
+            border: 3px solid #333;
+            transition: transform 0.3s;
+            display: none; 
+        }
+        .player-card.active {
+            transform: scale(1.1);
+            border-color: #f1c40f;
+            box-shadow: 0 0 20px rgba(241, 196, 15, 0.5);
+            z-index: 5;
+            background: rgba(255, 255, 255, 0.8);
+        }
+        #p1-card { top: 20px; left: 20px; }
+        #p2-card { top: 20px; right: 20px; }
+        #p3-card { bottom: 20px; left: 20px; }
+        #p4-card { bottom: 20px; right: 20px; }
+
+        .p-name { font-weight: 900; font-size: 1.2rem; margin-bottom: 5px; text-transform: uppercase; }
+        .money-row { display: flex; align-items: center; gap: 8px; }
+        .p-money { font-size: 1.5rem; color: #27ae60; font-weight: bold; }
+        .p-assets { font-size: 0.9rem; color: #7f8c8d; }
+        
+        .money-diff {
+            font-size: 1rem;
+            font-weight: 900;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        .money-diff.show { opacity: 1; }
+        .money-diff.positive { color: #2ecc71; }
+        .money-diff.negative { color: #e74c3c; }
+
+
+        /* Controls */
+        #dice-panel {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            pointer-events: auto;
+            display: none; 
+            gap: 10px;
+        }
+
+        button.game-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 5px solid rgba(255,255,255,0.8);
+            color: white;
+            font-weight: 900;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 10px 0 rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+            backdrop-filter: blur(2px);
+            margin: 0 5px;
+        }
+        #roll-btn { background: rgba(231, 76, 60, 0.9); box-shadow: 0 10px 0 #c0392b; animation: pulse 2s infinite; width: 100px; height: 100px; font-size: 1.5rem; }
+        #items-btn { background: rgba(52, 152, 219, 0.9); box-shadow: 0 10px 0 #2980b9; font-size: 1rem; }
+
+        button.game-btn:active { transform: translateY(10px); box-shadow: none !important; }
+        button.game-btn:disabled { background: rgba(149, 165, 166, 0.8); box-shadow: 0 5px 0 #7f8c8d; cursor: not-allowed; animation: none; }
+
+        /* Dialog / Modal */
+        #game-modal {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(5px);
+            padding: 30px;
+            border-radius: 20px;
+            border: 4px solid #333;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            pointer-events: auto;
+            min-width: 300px;
+            z-index: 100;
+        }
+        .modal-title { font-size: 1.5rem; font-weight: 900; color: #2c3e50; margin-bottom: 10px; }
+        .modal-text { font-size: 1.1rem; color: #333; margin-bottom: 20px; font-weight: 600; }
+        
+        .modal-btn {
+            padding: 10px 30px;
+            font-weight: 900;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0 10px;
+            transition: transform 0.1s;
+            opacity: 0.9;
+        }
+        .btn-yes { background: #2ecc71; color: white; box-shadow: 0 4px 0 #27ae60; }
+        .btn-no { background: #e74c3c; color: white; box-shadow: 0 4px 0 #c0392b; }
+        .btn-ok { background: #3498db; color: white; box-shadow: 0 4px 0 #2980b9; }
+        .modal-btn:active { transform: translateY(4px); box-shadow: none !important; }
+
+        /* Inventory List */
+        #inventory-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .inv-item {
+            background: rgba(255,255,255,0.8);
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid #ccc;
+            font-weight: bold;
+        }
+        .inv-item:hover { background: white; border-color: #3498db; }
+
+        .float-msg { position: absolute; font-weight: 900; color: #fff; text-shadow: 2px 2px 0 #000; pointer-events: none; animation: floatUp 1.5s forwards; font-size: 1.2rem; }
+        .money-particle { position: absolute; width: 30px; height: 30px; background: #27ae60; border-radius: 50%; border: 2px solid white; color: white; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); pointer-events: none; z-index: 200; transition: top 1s ease-in-out, left 1s ease-in-out, transform 1s ease-in-out; }
+        .money-particle::after { content: '$'; }
+        .speech-bubble { position: absolute; background: rgba(255, 255, 255, 0.9); border: 3px solid #333; border-radius: 15px; padding: 5px 15px; color: #333; font-weight: 900; font-size: 1rem; pointer-events: none; transform: translate(-50%, -150%); white-space: nowrap; z-index: 150; box-shadow: 0 5px 10px rgba(0,0,0,0.2); animation: popBubble 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .speech-bubble::after { content: ''; position: absolute; bottom: -8px; left: 50%; margin-left: -8px; border-width: 8px 8px 0; border-style: solid; border-color: #333 transparent; display: block; width: 0; }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-50px); } }
+        @keyframes popBubble { from { opacity: 0; transform: translate(-50%, -100%) scale(0.5); } to { opacity: 1; transform: translate(-50%, -150%) scale(1); } }
+
+    </style>
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <!-- Tweening -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+</head>
+<body>
+
+    <div id="game-container"></div>
+
+    <div id="setup-screen">
+        <div class="setup-box">
+            <h1>OFFICE RICHMAN</h1>
+            <div class="setup-row">
+                <label>Real Humans:</label>
+                <input type="number" id="num-humans" class="setup-input" value="1" min="0" max="4">
+            </div>
+            <div class="setup-row">
+                <label>AI Rivals:</label>
+                <input type="number" id="num-ai" class="setup-input" value="1" min="0" max="3">
+            </div>
+            <button class="modal-btn btn-ok" onclick="startGame()">START GAME</button>
+        </div>
+    </div>
+
+    <div id="ui-layer">
+        <div id="turn-indicator">
+            <div id="turn-puppet-icon"><div id="turn-head"></div><div id="turn-body"></div></div>
+            <div id="turn-text">PLAYER 1</div>
+        </div>
+
+        <div id="log-panel"></div>
+
+        <!-- Player Cards with Diff Indicator -->
+        <div id="p1-card" class="player-card">
+            <div class="p-name" id="p1-name">P1</div>
+            <div class="money-row">
+                <div class="p-money" id="p1-money">$5,000</div>
+                <div class="money-diff" id="p1-diff"></div>
+            </div>
+            <div class="p-assets" id="p1-assets">Props: 0</div>
+        </div>
+        
+        <div id="p2-card" class="player-card">
+            <div class="p-name" id="p2-name">P2</div>
+            <div class="money-row">
+                <div class="p-money" id="p2-money">$5,000</div>
+                <div class="money-diff" id="p2-diff"></div>
+            </div>
+            <div class="p-assets" id="p2-assets">Props: 0</div>
+        </div>
+
+        <div id="p3-card" class="player-card">
+            <div class="p-name" id="p3-name">P3</div>
+            <div class="money-row">
+                <div class="p-money" id="p3-money">$5,000</div>
+                <div class="money-diff" id="p3-diff"></div>
+            </div>
+            <div class="p-assets" id="p3-assets">Props: 0</div>
+        </div>
+
+        <div id="p4-card" class="player-card">
+            <div class="p-name" id="p4-name">P4</div>
+            <div class="money-row">
+                <div class="p-money" id="p4-money">$5,000</div>
+                <div class="money-diff" id="p4-diff"></div>
+            </div>
+            <div class="p-assets" id="p4-assets">Props: 0</div>
+        </div>
+
+        <div id="dice-panel">
+            <button id="items-btn" class="game-btn" onclick="openInventory()">ITEMS</button>
+            <button id="roll-btn" class="game-btn" onclick="rollDice()">ROLL</button>
+        </div>
+
+        <div id="game-modal">
+            <div class="modal-title" id="m-title">Title</div>
+            <div class="modal-text" id="m-text">Message</div>
+            <div id="inventory-list"></div>
+            <div id="m-buttons"></div>
+        </div>
+    </div>
+
+<script>
+    // --- Configuration ---
+    const CONFIG = {
+        tileSize: 4,
+        boardWidth: 8,  
+        boardHeight: 8, 
+        colors: [0xff4757, 0x3742fa, 0x2ed573, 0xffa502], 
+        tileColors: {
+            empty: 0xecf0f1,
+            start: 0x2ecc71,
+            chance: 0xf39c12,
+            jail: 0x34495e,
+            hospital: 0xffffff,
+            shop: 0x9b59b6
+        }
+    };
+
+    const TILE_TYPES = {
+        START: 0,
+        PROPERTY: 1,
+        CHANCE: 2,
+        JAIL: 3,
+        HOSPITAL: 4,
+        SHOP: 5
+    };
+
+    const ITEMS = {
+        CUSTOM_ROLL: { id: 'custom_roll', name: 'Custom Roll', price: 200, desc: 'Choose dice 1-6' },
+        ROADBLOCK: { id: 'roadblock', name: 'Block Sign', price: 200, desc: 'Stop any player here' },
+        BOMB: { id: 'bomb', name: 'Land Mine', price: 200, desc: 'Destroy building on tile' },
+        TIMER_BOMB: { id: 'timer_bomb', name: 'Time Bomb', price: 200, desc: 'Explodes after 10 steps' }
+    };
+
+    // --- Sound System ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playTone(freq, type, duration, vol=0.1) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    }
+    const SOUNDS = {
+        roll: () => { for(let i=0; i<5; i++) setTimeout(() => playTone(200 + Math.random()*100, 'square', 0.05, 0.1), i*60); },
+        jump: () => playTone(400, 'sine', 0.1, 0.05),
+        buy: () => { playTone(600, 'sine', 0.1); setTimeout(()=>playTone(800, 'sine', 0.3), 100); },
+        upgrade: () => { playTone(300, 'sawtooth', 0.1); setTimeout(()=>playTone(500, 'sawtooth', 0.4), 100); },
+        pay: () => { playTone(200, 'sawtooth', 0.3); setTimeout(()=>playTone(150, 'sawtooth', 0.4), 200); },
+        event: () => { playTone(800, 'triangle', 0.5); },
+        steal: () => { playTone(900, 'sawtooth', 0.1); setTimeout(()=>playTone(1200, 'sawtooth', 0.2), 100); },
+        explode: () => { playTone(100, 'sawtooth', 0.5); setTimeout(()=>playTone(50, 'square', 0.8), 100); }
+    };
+
+    // --- Game State ---
+    let scene, camera, renderer;
+    let tiles = []; 
+    let players = [];
+    let currentPlayer = 0;
+    let isRolling = false;
+    let canUseTools = true;
+    let hasUsedTool = false;
+    let cameraTarget = new THREE.Vector3();
+    let manualPanOffset = new THREE.Vector3(); 
+    let raycaster = new THREE.Raycaster();
+    let mouse = new THREE.Vector2();
+    let buildings = []; 
+    let diceMesh; 
+    let isPanning = false; 
+    let activeThief = null; 
+    let activeBubbles = []; 
+    let hospitalPos = new THREE.Vector3(-25, 0, -25);
+    let prisonPos = new THREE.Vector3(25, 0, -25);
+    
+    // Placement State
+    let placementMode = { active: false, item: null, invIndex: -1, ghost: null };
+
+    // --- Helper Functions ---
+    function midPos(s, e) {
+        return s.clone().lerp(e, 0.5).add(new THREE.Vector3(0, 2, 0));
+    }
+
+    function getPlayerColor(p) {
+        return '#' + new THREE.Color(p.color).getHexString();
+    }
+
+    function createLabel(text) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        ctx.font = "Bold 32px 'Rubik', sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.shadowColor = "black";
+        ctx.shadowBlur = 4;
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "black";
+        ctx.strokeText(text, 128, 32);
+        ctx.fillStyle = "white";
+        ctx.fillText(text, 128, 32);
+        const texture = new THREE.CanvasTexture(canvas);
+        const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+        const sprite = new THREE.Sprite(mat);
+        sprite.scale.set(4, 1, 1);
+        return sprite;
+    }
+
+    function createDiceFace(number) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ecf0f1';
+        ctx.fillRect(0,0,64,64);
+        ctx.strokeStyle = '#bdc3c7';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(0,0,64,64);
+        ctx.fillStyle = (number === 1) ? '#e74c3c' : '#2c3e50';
+        const s = 64;
+        const dotSize = 6;
+        function drawDot(x, y) { ctx.beginPath(); ctx.arc(x, y, dotSize, 0, Math.PI*2); ctx.fill(); }
+        if(number === 1) { drawDot(s/2, s/2); }
+        if(number === 2) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.75); }
+        if(number === 3) { drawDot(s*0.25, s*0.25); drawDot(s/2, s/2); drawDot(s*0.75, s*0.75); }
+        if(number === 4) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); }
+        if(number === 5) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); drawDot(s/2, s/2); }
+        if(number === 6) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.5); drawDot(s*0.75, s*0.5); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); }
+        return new THREE.CanvasTexture(canvas);
+    }
+
+    function createDice() {
+        const mats = [
+            new THREE.MeshBasicMaterial({ map: createDiceFace(1) }),
+            new THREE.MeshBasicMaterial({ map: createDiceFace(2) }),
+            new THREE.MeshBasicMaterial({ map: createDiceFace(3) }),
+            new THREE.MeshBasicMaterial({ map: createDiceFace(4) }),
+            new THREE.MeshBasicMaterial({ map: createDiceFace(5) }),
+            new THREE.MeshBasicMaterial({ map: createDiceFace(6) })
+        ];
+        const geo = new THREE.BoxGeometry(2, 2, 2);
+        diceMesh = new THREE.Mesh(geo, mats);
+        diceMesh.position.set(0, -100, 0); 
+        diceMesh.castShadow = true;
+        scene.add(diceMesh);
+    }
+
+    function addLog(text, colorHex) {
+        const panel = document.getElementById('log-panel');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerText = text;
+        entry.style.borderLeftColor = colorHex;
+        panel.prepend(entry);
+        while (panel.children.length > 50) {
+            panel.removeChild(panel.lastChild);
+        }
+    }
+
+    function showSpeechBubble(player, text) {
+        const bubble = document.createElement('div');
+        bubble.className = 'speech-bubble';
+        bubble.innerText = text;
+        document.body.appendChild(bubble);
+        const bubbleObj = {
+            element: bubble,
+            target: player.mesh,
+            offsetY: 2.5 
+        };
+        activeBubbles.push(bubbleObj);
+        setTimeout(() => {
+            bubble.remove();
+            activeBubbles = activeBubbles.filter(b => b !== bubbleObj);
+        }, 2000);
+    }
+
+    function showFloatMsg(player, text, color='#ffffff') {
+        const div = document.createElement('div');
+        div.className = 'float-msg';
+        div.innerText = text;
+        div.style.color = color;
+        const pos = player.mesh.position.clone();
+        pos.y += 2;
+        pos.project(camera);
+        const x = (pos.x * .5 + .5) * window.innerWidth;
+        const y = (-(pos.y * .5) + .5) * window.innerHeight;
+        div.style.left = x + 'px';
+        div.style.top = y + 'px';
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 1500);
+    }
+
+    function animateMoneyTransfer(from, to) {
+        let startPos, endPos;
+        const centerScreen = toScreenPosition(new THREE.Vector3(0,0,0), camera);
+        if (from === 'system') {
+            startPos = { x: centerScreen.x, y: centerScreen.y };
+        } else if (from instanceof Player) {
+            const el = document.getElementById(`p${from.id+1}-card`);
+            if (el) { const rect = el.getBoundingClientRect(); startPos = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 }; }
+        }
+        if (to === 'system') {
+            endPos = { x: centerScreen.x, y: centerScreen.y };
+        } else if (to instanceof Player) {
+            const el = document.getElementById(`p${to.id+1}-card`);
+            if (el) { const rect = el.getBoundingClientRect(); endPos = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 }; }
+        }
+        if (!startPos || !endPos) return;
+        for(let i=0; i<5; i++) {
+            const p = document.createElement('div');
+            p.className = 'money-particle';
+            document.body.appendChild(p);
+            p.style.left = startPos.x + 'px';
+            p.style.top = startPos.y + 'px';
+            setTimeout(() => {
+                const spread = 20;
+                p.style.left = (endPos.x + (Math.random()-0.5)*spread) + 'px';
+                p.style.top = (endPos.y + (Math.random()-0.5)*spread) + 'px';
+                p.style.transform = `scale(0.5) rotate(${Math.random()*360}deg)`;
+                setTimeout(() => p.remove(), 1000); 
+            }, i * 100);
+        }
+    }
+
+    function toScreenPosition(vector, camera) {
+        const v = vector.clone();
+        v.project(camera);
+        return {
+            x: (v.x * 0.5 + 0.5) * window.innerWidth,
+            y: (-(v.y * 0.5) + 0.5) * window.innerHeight
+        };
+    }
+
+    function changeMoney(player, amount) {
+        player.money += amount;
+        
+        // Show Diff
+        const diffEl = document.getElementById(`p${player.id+1}-diff`);
+        if (diffEl) {
+            const sign = amount >= 0 ? '+' : '';
+            diffEl.innerText = `${sign}${amount}`;
+            diffEl.className = 'money-diff show ' + (amount >= 0 ? 'positive' : 'negative');
+        }
+
+        new TWEEN.Tween(player)
+            .to({ displayedMoney: player.money }, 2500) 
+            .easing(TWEEN.Easing.Quadratic.Out)
+            .onUpdate(() => updateUI())
+            .onComplete(() => {
+                 if (diffEl) diffEl.classList.remove('show');
+            })
+            .start();
+    }
+
+    function createConfetti() {
+        confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+        });
+    }
+
+    // --- UI Update Functions (Must be defined early) ---
+
+    function updateTurnIndicator() {
+        if (players.length === 0) return;
+        const p = players[currentPlayer];
+        const colorHex = '#' + new THREE.Color(p.color).getHexString();
+        document.getElementById('turn-body').style.backgroundColor = colorHex;
+        document.getElementById('turn-text').innerText = p.name;
+        document.getElementById('turn-text').style.color = colorHex;
+        
+        const el = document.getElementById('turn-indicator');
+        el.style.transform = 'translateX(-50%) scale(1.1)';
+        setTimeout(() => el.style.transform = 'translateX(-50%) scale(1)', 150);
+        
+        // AI Logic
+        if (p.isAI) {
+            document.getElementById('roll-btn').disabled = true;
+            document.getElementById('items-btn').disabled = true;
+            setTimeout(() => rollDice(), 1000);
+        } else {
+            // Check flags
+            document.getElementById('roll-btn').disabled = false;
+            document.getElementById('items-btn').disabled = hasUsedTool || !canUseTools;
+        }
+    }
+
+    function updateUI() {
+        players.forEach((p, i) => {
+            const elId = `p${i+1}`;
+            document.getElementById(`${elId}-name`).innerText = p.name;
+            document.getElementById(`${elId}-money`).innerText = '$' + Math.floor(p.displayedMoney);
+            document.getElementById(`${elId}-assets`).innerText = 'Props: ' + p.properties;
+        });
+    }
+
+    function updatePlayerPositions() {
+        const groups = {};
+        players.forEach(p => { if(!groups[p.tileIndex]) groups[p.tileIndex] = []; groups[p.tileIndex].push(p); });
+        for (const [tIdx, group] of Object.entries(groups)) {
+            if (tIdx < tiles.length) {
+                const t = tiles[tIdx];
+                const count = group.length;
+                if (count > 1) {
+                    const radius = 1.0;
+                    group.forEach((p, i) => {
+                        const angle = (i / count) * Math.PI * 2;
+                        p.mesh.position.x = t.x + Math.cos(angle) * radius;
+                        p.mesh.position.z = t.z + Math.sin(angle) * radius;
+                    });
+                } else if(count === 1 && !isRolling) {
+                     // Center single player if not moving
+                     // Note: We don't force reset here to avoid jitter during tween, logic handles it
+                }
+            }
+        }
+    }
+
+    function checkOcclusion() {
+        if (!players.length) return;
+        buildings.forEach(b => b.material.opacity = 0.8);
+        const p = players[currentPlayer];
+        const pPos = p.mesh.position.clone();
+        pPos.y += 1; 
+        const dir = pPos.clone().sub(camera.position).normalize();
+        const dist = camera.position.distanceTo(pPos);
+        raycaster.set(camera.position, dir);
+        const intersects = raycaster.intersectObjects(buildings);
+        for(let i=0; i < intersects.length; i++) {
+            if (intersects[i].distance < dist - 2) { 
+                intersects[i].object.material.opacity = 0.3;
+            }
+        }
+    }
+
+    // --- Classes ---
+
+    class Tile {
+        constructor(index, x, z, type, side) {
+            this.index = index;
+            this.x = x;
+            this.z = z;
+            this.type = type;
+            this.owner = null;
+            this.level = 0; 
+            this.price = 500 + Math.floor(Math.random() * 3) * 100;
+            this.rent = 100;
+            this.side = side; 
+            this.hasRoadblock = false;
+            this.hasBomb = false;
+            this.itemMesh = null;
+
+            this.mesh = new THREE.Group();
+            this.mesh.position.set(x, 0, z);
+
+            const roadGeo = new THREE.BoxGeometry(CONFIG.tileSize - 0.2, 0.2, CONFIG.tileSize - 0.2);
+            let color = CONFIG.tileColors.empty;
+            if(type === TILE_TYPES.START) color = CONFIG.tileColors.start;
+            if(type === TILE_TYPES.CHANCE) color = CONFIG.tileColors.chance;
+            if(type === TILE_TYPES.JAIL) color = CONFIG.tileColors.jail;
+            if(type === TILE_TYPES.HOSPITAL) color = CONFIG.tileColors.hospital;
+            if(type === TILE_TYPES.SHOP) color = CONFIG.tileColors.shop;
+
+            this.mat = new THREE.MeshStandardMaterial({ color: color });
+            this.base = new THREE.Mesh(roadGeo, this.mat);
+            this.base.receiveShadow = true;
+            this.mesh.add(this.base);
+            
+            // HOSPITAL CROSS on road
+            if(type === TILE_TYPES.HOSPITAL) {
+                 const crossV = new THREE.Mesh(new THREE.BoxGeometry(2, 0.3, 0.6), new THREE.MeshBasicMaterial({color: 0xff0000}));
+                 const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.3, 2), new THREE.MeshBasicMaterial({color: 0xff0000}));
+                 crossV.position.y = 0.1;
+                 crossH.position.y = 0.1;
+                 this.mesh.add(crossV, crossH);
+            }
+
+            if (type !== TILE_TYPES.PROPERTY && type !== TILE_TYPES.HOSPITAL) this.addIcon(type);
+
+            let bx = 0, bz = 0;
+            const offsetDist = CONFIG.tileSize; 
+            if (side === 0) bz = offsetDist;
+            if (side === 1) bx = offsetDist;
+            if (side === 2) bz = -offsetDist;
+            if (side === 3) bx = -offsetDist;
+
+            this.buildingGroup = new THREE.Group();
+            this.buildingGroup.position.set(bx, 0, bz);
+            this.mesh.add(this.buildingGroup);
+
+            const lotGeo = new THREE.PlaneGeometry(CONFIG.tileSize * 0.9, CONFIG.tileSize * 0.9);
+            const lotMat = new THREE.MeshStandardMaterial({ color: 0x95a5a6 });
+            const lot = new THREE.Mesh(lotGeo, lotMat);
+            lot.rotation.x = -Math.PI/2;
+            lot.position.y = 0.05;
+            this.buildingGroup.add(lot);
+
+            scene.add(this.mesh);
+        }
+
+        setItem(type) {
+            if (this.itemMesh) { this.mesh.remove(this.itemMesh); this.itemMesh = null; }
+            this.hasRoadblock = false;
+            this.hasBomb = false;
+
+            if (type === 'roadblock') {
+                this.hasRoadblock = true;
+                const g = new THREE.CylinderGeometry(0.5, 0.5, 0.2, 8);
+                const m = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+                this.itemMesh = new THREE.Mesh(g, m);
+                this.itemMesh.position.y = 0.5;
+                this.mesh.add(this.itemMesh);
+            } else if (type === 'bomb') {
+                this.hasBomb = true;
+                const g = new THREE.SphereGeometry(0.5);
+                const m = new THREE.MeshBasicMaterial({ color: 0x000000 });
+                this.itemMesh = new THREE.Mesh(g, m);
+                this.itemMesh.position.y = 0.5;
+                this.mesh.add(this.itemMesh);
+            }
+        }
+
+        clearItem() {
+            this.hasRoadblock = false;
+            this.hasBomb = false;
+            if (this.itemMesh) { this.mesh.remove(this.itemMesh); this.itemMesh = null; }
+        }
+
+        addIcon(type) {
+            let color = 0xffffff;
+            if(type===TILE_TYPES.START) color=0x00ff00;
+            if(type===TILE_TYPES.JAIL) color=0x000000;
+            if(type===TILE_TYPES.SHOP) color=0x9b59b6; 
+            
+            const geo = new THREE.CylinderGeometry(0.5, 0.5, 0.2, 8);
+            const mat = new THREE.MeshBasicMaterial({ color: color });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.y = 0.4;
+            
+            if (type===TILE_TYPES.SHOP) {
+                const roofGeo = new THREE.ConeGeometry(0.8, 1, 4);
+                const roofMesh = new THREE.Mesh(roofGeo, mat);
+                roofMesh.position.y = 1.0;
+                this.mesh.add(mesh, roofMesh);
+            } else {
+                this.mesh.add(mesh);
+            }
+        }
+
+        setOwner(playerId) {
+            this.owner = playerId;
+            this.upgrade();
+        }
+
+        upgrade() {
+            if (this.level < 3) {
+                this.level++;
+                this.rent = this.price * 0.8 * this.level;
+                this.updateBuildingVisual();
+                return true;
+            }
+            return false;
+        }
+
+        destroyBuilding() {
+            this.level = 0;
+            this.owner = null;
+            this.updateBuildingVisual();
+        }
+
+        updateBuildingVisual() {
+            while(this.buildingGroup.children.length > 1){ 
+                this.buildingGroup.remove(this.buildingGroup.children[1]); 
+            }
+            const pColor = this.owner !== null ? players[this.owner].color : 0xffffff;
+            const buildingColor = new THREE.Color(pColor).multiplyScalar(0.8);
+            const floorHeight = 1.5;
+            const totalHeight = Math.max(0.1, this.level * floorHeight);
+            
+            if (this.level > 0) {
+                const geo = new THREE.BoxGeometry(2.5, totalHeight, 2.5);
+                const mat = new THREE.MeshStandardMaterial({ color: buildingColor, transparent: true, opacity: 0.8 });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.y = totalHeight / 2;
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                this.buildingGroup.add(mesh);
+                buildings.push(mesh); 
+                mesh.scale.set(1, 0, 1);
+                new TWEEN.Tween(mesh.scale).to({y:1}, 500).easing(TWEEN.Easing.Bounce.Out).start();
+            }
+        }
+    }
+
+    class Thief {
+        constructor(ownerId, tileIndex) {
+            this.ownerId = ownerId;
+            this.tileIndex = tileIndex;
+            this.mesh = new THREE.Group();
+            const bodyGeo = new THREE.CylinderGeometry(0.4, 0.4, 1.0, 8);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.5;
+            this.mesh.add(body);
+            const headGeo = new THREE.SphereGeometry(0.4, 16, 16);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 1.2;
+            this.mesh.add(head);
+            const maskGeo = new THREE.BoxGeometry(0.6, 0.2, 0.4);
+            const maskMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const mask = new THREE.Mesh(maskGeo, maskMat);
+            mask.position.set(0, 1.2, 0.2);
+            this.mesh.add(mask);
+            this.mesh.position.copy(prisonPos);
+            scene.add(this.mesh);
+            this.hasLapped = false; 
+        }
+        hopTo(tileIndex, onComplete) {
+            const nextTile = tiles[tileIndex];
+            const startPos = this.mesh.position.clone();
+            const endPos = new THREE.Vector3(nextTile.x, 0.5, nextTile.z);
+            new TWEEN.Tween(this.mesh.position)
+                .to({ x: midPos(startPos,endPos).x, y: midPos(startPos,endPos).y, z: midPos(startPos,endPos).z }, 100) 
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .onComplete(() => {
+                    new TWEEN.Tween(this.mesh.position)
+                        .to({ x: endPos.x, y: endPos.y, z: endPos.z }, 100)
+                        .easing(TWEEN.Easing.Quadratic.In)
+                        .onComplete(() => {
+                            this.tileIndex = tileIndex;
+                            if (onComplete) onComplete();
+                        })
+                        .start();
+                })
+                .start();
+            this.mesh.lookAt(endPos.x, 0.5, endPos.z);
+        }
+    }
+
+    class Player {
+        constructor(id, name, color, isAI) {
+            this.id = id;
+            this.name = name;
+            this.color = color;
+            this.isAI = isAI;
+            this.money = 5000;
+            this.displayedMoney = 5000;
+            this.tileIndex = 0;
+            this.properties = 0;
+            this.inJail = false;
+            this.skipTurns = 0;
+            this.inventory = []; 
+            this.timerBomb = { active: false, steps: 0 };
+
+            this.mesh = new THREE.Group();
+            const bodyGeo = new THREE.CylinderGeometry(0.5, 0.6, 1.2, 8);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: color });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.6;
+            body.castShadow = true;
+            this.mesh.add(body);
+            const headGeo = new THREE.SphereGeometry(0.5, 16, 16);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xffcd94 });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 1.4;
+            head.castShadow = true;
+            this.mesh.add(head);
+            this.nameTag = createLabel(name);
+            this.nameTag.position.y = 2.2;
+            this.mesh.add(this.nameTag);
+            this.bombVis = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshBasicMaterial({color:0x000000}));
+            this.bombVis.position.set(0, 2.5, 0);
+            this.bombVis.visible = false;
+            this.mesh.add(this.bombVis);
+            const cGeo = new THREE.ConeGeometry(0.3, 0.6, 4);
+            const cMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            this.cursor = new THREE.Mesh(cGeo, cMat);
+            this.cursor.rotation.z = Math.PI; 
+            this.cursor.position.y = 3.2; 
+            this.cursor.visible = false;
+            this.mesh.add(this.cursor);
+            const startTile = tiles[0];
+            this.mesh.position.set(startTile.x, 0.5, startTile.z);
+            scene.add(this.mesh);
+        }
+        hopTo(tileIndex, onComplete) {
+            const nextTile = tiles[tileIndex];
+            SOUNDS.jump();
+            const startPos = this.mesh.position.clone();
+            const endPos = new THREE.Vector3(nextTile.x, 0.5, nextTile.z);
+            new TWEEN.Tween(this.mesh.position)
+                .to({ x: midPos(startPos,endPos).x, y: midPos(startPos,endPos).y, z: midPos(startPos,endPos).z }, 150)
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .onComplete(() => {
+                    new TWEEN.Tween(this.mesh.position)
+                        .to({ x: endPos.x, y: endPos.y, z: endPos.z }, 150)
+                        .easing(TWEEN.Easing.Quadratic.In)
+                        .onComplete(() => {
+                            this.tileIndex = tileIndex;
+                            updatePlayerPositions(); 
+                            if (onComplete) onComplete();
+                        })
+                        .start();
+                })
+                .start();
+            this.mesh.lookAt(endPos.x, 0.5, endPos.z);
+        }
+    }
+
+    // --- Creation Functions ---
+
+    function createDice() {
+        const mats = [
+            new THREE.MeshBasicMaterial({ map: createDiceFace(1) }),
+            new THREE.MeshBasicMaterial({ map: createDiceFace(2) }),
+            new THREE.MeshBasicMaterial({ map: createDiceFace(3) }),
+            new THREE.MeshBasicMaterial({ map: createDiceFace(4) }),
+            new THREE.MeshBasicMaterial({ map: createDiceFace(5) }),
+            new THREE.MeshBasicMaterial({ map: createDiceFace(6) })
+        ];
+        const geo = new THREE.BoxGeometry(2, 2, 2);
+        diceMesh = new THREE.Mesh(geo, mats);
+        diceMesh.position.set(0, -100, 0); 
+        diceMesh.castShadow = true;
+        scene.add(diceMesh);
+    }
+
+    function createPlayer(id, name, isAI) {
+        players.push(new Player(id, name, CONFIG.colors[id % 4], isAI));
+        if (id === 0) cameraTarget.copy(players[0].mesh.position);
+    }
+
+    function addTile(index, x, z, side) {
+        const tile = new Tile(index, x, z, TILE_TYPES.PROPERTY, side);
+        tiles.push(tile);
+    }
+
+    function createBoard() {
+        const w = CONFIG.boardWidth;
+        const s = CONFIG.tileSize;
+        const offset = (w * s) / 2 - (s/2);
+        let count = 0;
+        for(let i = -offset; i <= offset; i += s) addTile(count++, i, offset, 0);
+        for(let i = offset - s; i >= -offset; i -= s) addTile(count++, offset, i, 1);
+        for(let i = offset - s; i >= -offset; i -= s) addTile(count++, i, -offset, 2);
+        for(let i = -offset + s; i < offset; i += s) addTile(count++, -offset, i, 3);
+
+        tiles[0].type = TILE_TYPES.START; tiles[0].mat.color.setHex(CONFIG.tileColors.start);
+        tiles[6].type = TILE_TYPES.HOSPITAL; tiles[6].mat.color.setHex(CONFIG.tileColors.hospital);
+        tiles[12].type = TILE_TYPES.SHOP; tiles[12].mat.color.setHex(CONFIG.tileColors.shop);
+        tiles[16].type = TILE_TYPES.JAIL; tiles[16].mat.color.setHex(CONFIG.tileColors.jail);
+        if(tiles[22]) { tiles[22].type = TILE_TYPES.SHOP; tiles[22].mat.color.setHex(CONFIG.tileColors.shop); }
+
+        const q1 = Math.floor(tiles.length / 4);
+        const q3 = Math.floor(tiles.length * 0.75);
+        if(tiles[q1].type === TILE_TYPES.PROPERTY) { tiles[q1].type = TILE_TYPES.CHANCE; tiles[q1].mat.color.setHex(CONFIG.tileColors.chance); }
+        if(tiles[q3].type === TILE_TYPES.PROPERTY) { tiles[q3].type = TILE_TYPES.CHANCE; tiles[q3].mat.color.setHex(CONFIG.tileColors.chance); }
+    }
+
+    function createOffMapBuildings() {
+        const hGroup = new THREE.Group(); hGroup.position.copy(hospitalPos);
+        const hBase = new THREE.Mesh(new THREE.BoxGeometry(6, 1, 6), new THREE.MeshStandardMaterial({color: 0xeeeeee}));
+        const hMain = new THREE.Mesh(new THREE.BoxGeometry(5, 4, 5), new THREE.MeshStandardMaterial({color: 0xffffff})); hMain.position.y = 2.5;
+        hGroup.add(hBase, hMain); scene.add(hGroup);
+        const pGroup = new THREE.Group(); pGroup.position.copy(prisonPos);
+        const pBase = new THREE.Mesh(new THREE.BoxGeometry(6, 1, 6), new THREE.MeshStandardMaterial({color: 0x555555}));
+        const pMain = new THREE.Mesh(new THREE.BoxGeometry(5, 3, 5), new THREE.MeshStandardMaterial({color: 0x333333})); pMain.position.y = 2;
+        for(let i=-2; i<=2; i+=1) { const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2), new THREE.MeshBasicMaterial({color: 0x999999})); bar.position.set(i*0.8, 2, 2.6); pGroup.add(bar); }
+        pGroup.add(pBase, pMain); scene.add(pGroup);
+    }
+
+    function createDecoration() {
+        const planeGeo = new THREE.PlaneGeometry(100, 100);
+        const planeMat = new THREE.MeshStandardMaterial({ color: 0xbdc3c7 });
+        const floor = new THREE.Mesh(planeGeo, planeMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -0.1;
+        floor.receiveShadow = true;
+        scene.add(floor);
+        const centerGroup = new THREE.Group();
+        const grassGeo = new THREE.BoxGeometry(16, 0.5, 16);
+        const grassMat = new THREE.MeshStandardMaterial({ color: 0x27ae60 });
+        const grass = new THREE.Mesh(grassGeo, grassMat);
+        centerGroup.add(grass);
+        const fGeo = new THREE.CylinderGeometry(3, 3, 1, 8);
+        const fMat = new THREE.MeshStandardMaterial({ color: 0x3498db });
+        const f = new THREE.Mesh(fGeo, fMat);
+        f.position.y = 0.5;
+        centerGroup.add(f);
+        scene.add(centerGroup);
+    }
+
+    // --- Main Logic ---
+
+    function startGame() {
+        const humans = parseInt(document.getElementById('num-humans').value) || 1;
+        const ai = parseInt(document.getElementById('num-ai').value) || 0;
+        const total = Math.min(Math.max(humans + ai, 1), 4);
+
+        if (total < 1) return alert("Need at least 1 player!");
+
+        document.getElementById('setup-screen').style.display = 'none';
+        document.getElementById('dice-panel').style.display = 'flex';
+        document.getElementById('turn-indicator').style.display = 'flex'; 
+
+        initThreeJS();
+        createBoard();
+        createDecoration();
+        createOffMapBuildings();
+        createDice(); 
+        
+        for(let i=0; i<humans; i++) createPlayer(i, `Player ${i+1}`, false);
+        for(let i=0; i<ai; i++) createPlayer(humans+i, `AI ${i+1}`, true);
+
+        for(let i=0; i<4; i++) {
+            const card = document.getElementById(`p${i+1}-card`);
+            if (i < total) {
+                card.style.display = 'block';
+                card.style.top = (i < 2) ? '20px' : 'auto';
+                card.style.bottom = (i >= 2) ? '20px' : 'auto';
+                card.style.left = (i % 2 === 0) ? '20px' : 'auto';
+                card.style.right = (i % 2 !== 0) ? '20px' : 'auto';
+            } else {
+                card.style.display = 'none';
+            }
+        }
+        
+        if (players.length > 0) {
+            players[0].cursor.visible = true;
+            updateTurnIndicator(); 
+        }
+
+        updateUI();
+        updatePlayerPositions();
+        animate();
+    }
+
+    function initThreeJS() {
+        const container = document.getElementById('game-container');
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xd0d8e0);
+        
+        const aspect = window.innerWidth / window.innerHeight;
+        const d = 40;
+        camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+        camera.position.set(20, 30, 20); 
+        camera.lookAt(scene.position);
+        camera.zoom = 1; 
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        const amb = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(amb);
+        const dir = new THREE.DirectionalLight(0xffffff, 0.6);
+        dir.position.set(10, 20, 5);
+        dir.castShadow = true;
+        dir.shadow.mapSize.width = 2048;
+        dir.shadow.mapSize.height = 2048;
+        scene.add(dir);
+
+        window.addEventListener('wheel', (e) => {
+            if(!camera) return;
+            if(document.getElementById('setup-screen').style.display === 'none') {
+                e.preventDefault();
+            }
+            const zoomSpeed = 0.001;
+            camera.zoom -= e.deltaY * zoomSpeed;
+            camera.zoom = Math.max(0.5, Math.min(camera.zoom, 3.0)); 
+            camera.updateProjectionMatrix();
+        }, { passive: false });
+
+        // Mouse Events for Placement & Pan
+        window.addEventListener('contextmenu', e => e.preventDefault()); 
+
+        window.addEventListener('mousedown', (e) => {
+            if (e.button === 2) { 
+                isPanning = true;
+                document.body.style.cursor = 'grabbing';
+            }
+            
+            // Placement Logic
+            if (placementMode.active && e.button === 0) {
+                // Raycast
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+                
+                const intersections = raycaster.intersectObjects(tiles.map(t => t.base), false);
+                if (intersections.length > 0) {
+                    const hitObj = intersections[0].object;
+                    const tile = tiles.find(t => t.base === hitObj);
+                    if(tile) {
+                        const p = players[currentPlayer];
+                        // Perform Placement
+                        tile.setItem(placementMode.item);
+                        showFloatMsg(p, "Item Placed!");
+                        
+                        // Cleanup
+                        if(placementMode.ghost) { scene.remove(placementMode.ghost); placementMode.ghost = null; }
+                        placementMode.active = false;
+                        document.getElementById('instruction-overlay').style.display = 'none';
+                        
+                        // Consume turn? No, standard is use item THEN roll.
+                        // Just consume item from inventory was done in useItem logic...
+                        // Wait, we need to handle inventory removal here because we delayed it
+                        p.inventory.splice(placementMode.invIndex, 1);
+                        hasUsedTool = true;
+                        updateTurnIndicator(); // Refresh button state
+                    }
+                }
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isPanning) {
+                const panSpeed = 0.05 / camera.zoom;
+                manualPanOffset.x -= e.movementX * panSpeed;
+                manualPanOffset.z += e.movementX * panSpeed;
+                manualPanOffset.x -= e.movementY * panSpeed;
+                manualPanOffset.z -= e.movementY * panSpeed;
+            }
+
+            if (placementMode.active) {
+                 mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                 mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                 raycaster.setFromCamera(mouse, camera);
+                 const intersections = raycaster.intersectObjects(tiles.map(t => t.base), false);
+                 if (intersections.length > 0) {
+                     if (!placementMode.ghost) {
+                         const g = new THREE.SphereGeometry(0.5);
+                         const m = new THREE.MeshBasicMaterial({color: 0x00ff00, transparent: true, opacity: 0.5});
+                         placementMode.ghost = new THREE.Mesh(g, m);
+                         scene.add(placementMode.ghost);
+                     }
+                     const pos = intersections[0].object.parent.position;
+                     placementMode.ghost.position.set(pos.x, 1, pos.z);
+                     placementMode.ghost.visible = true;
+                 } else if (placementMode.ghost) {
+                     placementMode.ghost.visible = false;
+                 }
+            }
+        });
+
+        window.addEventListener('mouseup', (e) => {
+            if (e.button === 2) {
+                isPanning = false;
+                document.body.style.cursor = 'default';
+            }
+        });
+    }
+
+    // --- Interaction Logic ---
+
+    function openInventory() {
+        if(!canUseTools || hasUsedTool) return;
+        const p = players[currentPlayer];
+        const list = document.getElementById('inventory-list');
+        list.innerHTML = '';
+        if (p.inventory.length === 0) { showFloatMsg(p, "Empty"); return; }
+        
+        p.inventory.forEach((itemId, index) => {
+            const item = Object.values(ITEMS).find(i => i.id === itemId);
+            const div = document.createElement('div');
+            div.className = 'inv-item';
+            div.innerText = `${item.name}: ${item.desc}`;
+            div.onclick = () => useItem(p, itemId, index);
+            list.appendChild(div);
+        });
+        showModal("Your Bag", "Select item to use:", ["CANCEL"], () => {});
+    }
+
+    function useItem(player, itemId, invIndex) {
+        document.getElementById('game-modal').style.display = 'none';
+        
+        if (itemId === 'custom_roll') {
+            player.inventory.splice(invIndex, 1);
+            const input = prompt("Dice 1-6:", "6");
+            const val = Math.min(6, Math.max(1, parseInt(input)||6));
+            rollDice(val);
+        } 
+        else if (itemId === 'roadblock' || itemId === 'bomb') {
+            // Enter Placement Mode
+            placementMode = { active: true, item: itemId, invIndex: invIndex, ghost: null };
+            document.getElementById('instruction-overlay').style.display = 'block';
+            showFloatMsg(player, "Click a tile to place");
+        } 
+        else if (itemId === 'timer_bomb') {
+            player.inventory.splice(invIndex, 1);
+            const targets = players.filter(p => p !== player && !p.inJail);
+            const target = targets.length > 0 ? targets[0] : player;
+            target.timerBomb = { active: true, steps: 10 };
+            target.bombVis.visible = true;
+            showSpeechBubble(target, "Tick Tock...");
+            hasUsedTool = true;
+            updateTurnIndicator();
+        }
+    }
+
+    function rollDice(forceVal = null) {
+        if (isRolling) return;
+        isRolling = true;
+        canUseTools = false; 
+        document.getElementById('items-btn').disabled = true;
+        document.getElementById('roll-btn').disabled = true;
+
+        const p = players[currentPlayer];
+        if (p.skipTurns > 0) {
+            cameraTarget.copy(p.mesh.position);
+            p.skipTurns--;
+            showSpeechBubble(p, "Sick...");
+            addLog(`${p.name} is sick. (Skips: ${p.skipTurns})`, '#7f8c8d');
+            setTimeout(() => nextTurn(), 1500);
+            return;
+        }
+        
+        if (p.inJail) {
+            showSpeechBubble(p, "Boring...");
+            p.inJail = false;
+            nextTurn();
+            return;
+        }
+
+        if (p.mesh.position.distanceTo(hospitalPos) < 5) {
+             const t = tiles[p.tileIndex];
+             p.mesh.position.set(t.x, 0.5, t.z);
+             cameraTarget.copy(p.mesh.position);
+        }
+
+        const randX = (Math.random() - 0.5) * 8;
+        const randZ = (Math.random() - 0.5) * 8;
+        diceMesh.position.set(randX, 15, randZ);
+        diceMesh.visible = true;
+        const result = forceVal || (Math.floor(Math.random() * 6) + 1);
+        
+        let targetRot = {x:0, y:0, z:0};
+        if(result===1) targetRot = {x:0, y:0, z:Math.PI/2}; 
+        if(result===2) targetRot = {x:0, y:0, z:-Math.PI/2}; 
+        if(result===3) targetRot = {x:0, y:0, z:0}; 
+        if(result===4) targetRot = {x:Math.PI, y:0, z:0}; 
+        if(result===5) targetRot = {x:-Math.PI/2, y:0, z:0}; 
+        if(result===6) targetRot = {x:Math.PI, y:0, z:0}; 
+
+        new TWEEN.Tween(diceMesh.position).to({y: 1}, 800).easing(TWEEN.Easing.Bounce.Out).onComplete(() => {
+            setTimeout(() => { diceMesh.visible = false; performMove(p, result); }, 500);
+        }).start();
+        new TWEEN.Tween(diceMesh.rotation).to({x: targetRot.x + Math.PI*4, y: targetRot.y + Math.PI*4, z: targetRot.z + Math.PI*4}, 800).easing(TWEEN.Easing.Quadratic.Out).start();
+    }
+
+    function performMove(p, steps) {
+        SOUNDS.roll(); 
+        movePlayerSteps(p, steps);
+    }
+
+    function movePlayerSteps(player, steps) {
+        let stepsLeft = steps;
+        function step() {
+            if (player.timerBomb.active) {
+                player.timerBomb.steps--;
+                if(player.timerBomb.steps<=0) { explodeBomb(player); return; }
+            }
+            if (stepsLeft > 0) {
+                stepsLeft--;
+                let nextIdx = (player.tileIndex + 1) % tiles.length;
+                if (tiles[nextIdx].hasRoadblock) {
+                    tiles[nextIdx].clearItem();
+                    showSpeechBubble(player, "Blocked!");
+                    addLog("Roadblock hit!", "#e74c3c");
+                    player.hopTo(nextIdx, () => handleLand(player)); 
+                    return; 
+                }
+                if (tiles[nextIdx].hasBomb) {
+                    tiles[nextIdx].clearItem();
+                    SOUNDS.explode();
+                    showSpeechBubble(player, "BOOM!");
+                    tiles[nextIdx].destroyBuilding();
+                    player.hopTo(nextIdx, () => { changeMoney(player, -200); handleLand(player); });
+                    return;
+                }
+                if (nextIdx === 0) {
+                    changeMoney(player, 2000);
+                    animateMoneyTransfer('system', player);
+                    addLog(`${player.name} passed GO: +$2000`, getPlayerColor(player));
+                    showSpeechBubble(player, "Salary!");
+                    SOUNDS.buy();
+                }
+                player.hopTo(nextIdx, step);
+            } else {
+                handleLand(player);
+            }
+        }
+        step();
+    }
+
+    function explodeBomb(player) {
+        SOUNDS.explode();
+        showSpeechBubble(player, "KABOOM!");
+        player.timerBomb.active = false;
+        player.bombVis.visible = false;
+        tiles[player.tileIndex].destroyBuilding();
+        changeMoney(player, -500);
+        player.skipTurns = 3;
+        addLog(`${player.name} exploded! To Hospital.`, "#e74c3c");
+        new TWEEN.Tween(player.mesh.position).to({ x: hospitalPos.x, y: 0.5, z: hospitalPos.z }, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
+        cameraTarget.copy(hospitalPos);
+        setTimeout(nextTurn, 2000);
+    }
+
+    function moveThief() {
+        if (!activeThief) return;
+        const steps = Math.floor(Math.random() * 4) + 3;
+        let stepsLeft = steps;
+        
+        function step() {
+            if (stepsLeft > 0) {
+                stepsLeft--;
+                let nextIdx = (activeThief.tileIndex + 1) % tiles.length;
+                
+                // Lap Logic: if wrapping from 31 to 0
+                if (activeThief.tileIndex === tiles.length - 1 && nextIdx === 0) {
+                    activeThief.hasLapped = true;
+                }
+
+                players.forEach(p => {
+                    if (p.id !== activeThief.ownerId && p.tileIndex === nextIdx && !p.inJail && p.skipTurns === 0) {
+                        changeMoney(p, -500);
+                        changeMoney(players[activeThief.ownerId], 500);
+                        animateMoneyTransfer(p, players[activeThief.ownerId]);
+                        const ownerName = players[activeThief.ownerId].name;
+                        addLog(`Thief stole $500 from ${p.name}`, getPlayerColor(players[activeThief.ownerId]));
+                        showSpeechBubble(p, "Hey!");
+                        SOUNDS.steal();
+                    }
+                });
+
+                activeThief.hopTo(nextIdx, step);
+            } else {
+                // End of move check
+                if (activeThief.hasLapped && activeThief.tileIndex >= 16) {
+                    // Retire Thief
+                    new TWEEN.Tween(activeThief.mesh.position).to({x: prisonPos.x, y: prisonPos.y, z: prisonPos.z}, 1000).start();
+                    addLog(`Thief retired to prison.`, "#95a5a6");
+                    activeThief = null;
+                    setTimeout(advancePlayer, 1500);
+                } else {
+                    setTimeout(advancePlayer, 1500);
+                }
+            }
+        }
+        
+        if (activeThief.mesh.position.distanceTo(prisonPos) < 5) {
+             const t = tiles[16];
+             activeThief.mesh.position.set(t.x, 0.5, t.z);
+             activeThief.tileIndex = 16;
+        }
+        step();
+    }
+
+    function handleLand(player) {
+        isRolling = false;
+        updatePlayerPositions();
+        const tile = tiles[player.tileIndex];
+
+        if (tile.type === TILE_TYPES.SHOP) {
+            if (player.isAI) {
+                if (player.money > 1000) buyItem(player, ITEMS[Object.keys(ITEMS)[Math.floor(Math.random()*4)]]);
+                nextTurn();
+            } else {
+                const list = document.getElementById('inventory-list');
+                list.innerHTML = '';
+                Object.values(ITEMS).forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'inv-item';
+                    div.innerText = `${item.name} ($${item.price})`;
+                    div.onclick = () => {
+                        if(tiles[player.tileIndex].type === TILE_TYPES.SHOP) {
+                            buyItem(player, item);
+                            document.getElementById('game-modal').style.display = 'none';
+                            nextTurn(); // End turn after buy
+                        }
+                    };
+                    list.appendChild(div);
+                });
+                showModal("Convenience Store", "Buy Tools?", ["LEAVE"], () => nextTurn());
+            }
+            return;
+        }
+
+        if (tile.type === TILE_TYPES.HOSPITAL) {
+            SOUNDS.event();
+            changeMoney(player, -500);
+            animateMoneyTransfer(player, 'system');
+            player.skipTurns = 3;
+            addLog(`${player.name} paid $500 Hospital fees`, getPlayerColor(player));
+            showSpeechBubble(player, "Ouch...");
+            new TWEEN.Tween(player.mesh.position).to({ x: hospitalPos.x, y: 0.5, z: hospitalPos.z }, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
+            cameraTarget.copy(hospitalPos);
+            setTimeout(nextTurn, 2000);
+            return;
+        }
+
+        if (tile.type === TILE_TYPES.CHANCE) {
+            SOUNDS.event();
+            const events = [
+                { text: "Found $500!", effect: (p) => { changeMoney(p, 500); animateMoneyTransfer('system', p); addLog(`${p.name} found $500`, getPlayerColor(p)); showSpeechBubble(p, "Lucky!"); } },
+                { text: "Coffee Spill. -$200", effect: (p) => { changeMoney(p, -200); animateMoneyTransfer(p, 'system'); addLog(`${p.name} lost $200`, getPlayerColor(p)); showSpeechBubble(p, "Hot!"); } },
+                { text: "Bonus! +$1000", effect: (p) => { changeMoney(p, 1000); animateMoneyTransfer('system', p); addLog(`${p.name} won bonus`, getPlayerColor(p)); showSpeechBubble(p, "Yesss!"); } }
+            ];
+            const evt = events[Math.floor(Math.random() * events.length)];
+            showModal("Fate Card", evt.text, ["OK"], () => { evt.effect(player); nextTurn(); });
+            return;
+        }
+
+        if (tile.type === TILE_TYPES.JAIL) {
+            SOUNDS.event();
+            addLog(`${player.name} is visiting Prison`, getPlayerColor(player));
+            if (!activeThief) {
+                showModal("Prison", "Hire Thief ($2000)?", ["HIRE", "PASS"], (choice) => {
+                    if (choice && player.money >= 2000) {
+                        changeMoney(player, -2000);
+                        animateMoneyTransfer(player, 'system');
+                        activeThief = new Thief(player.id, player.tileIndex);
+                        addLog(`${player.name} hired a Thief!`, getPlayerColor(player));
+                        showSpeechBubble(player, "Go!");
+                    } 
+                    nextTurn();
+                });
+            } else {
+                showSpeechBubble(player, "Visiting.");
+                setTimeout(nextTurn, 1000);
+            }
+            return;
+        }
+
+        if (tile.type === TILE_TYPES.START) {
+            nextTurn();
+            return;
+        }
+
+        if (tile.type === TILE_TYPES.PROPERTY) {
+            if (tile.owner === null) {
+                if (player.money >= tile.price) {
+                    if (player.isAI) { if(player.money>1000) buyProperty(player, tile); nextTurn(); }
+                    else showModal("For Sale", `Buy $${tile.price}?`, ["YES", "NO"], (c) => { if(c) buyProperty(player, tile); nextTurn(); });
+                } else { nextTurn(); }
+            } else if (tile.owner === player.id) {
+                const cost = tile.price * 0.5;
+                if (player.money >= cost && tile.level < 3) {
+                    if (player.isAI) { if(player.money>2000) upgradeProperty(player, tile); nextTurn(); }
+                    else showModal("Upgrade", `Build $${cost}?`, ["YES", "NO"], (c) => { if(c) upgradeProperty(player, tile); nextTurn(); });
+                } else { nextTurn(); }
+            } else {
+                const rent = tile.rent;
+                const owner = players[tile.owner];
+                addLog(`${player.name} paid $${rent} rent`, getPlayerColor(player));
+                showSpeechBubble(player, "My wallet!");
+                SOUNDS.pay();
+                changeMoney(player, -rent);
+                changeMoney(players[tile.owner], rent);
+                animateMoneyTransfer(player, owner);
+                
+                if (player.money < 0) {
+                    showModal("GAME OVER", `${player.name} is bankrupt!`, ["RESTART"], () => location.reload());
+                } else {
+                    setTimeout(nextTurn, 1000);
+                }
+            }
+        }
+    }
+
+    function buyProperty(player, tile) {
+        changeMoney(player, -tile.price);
+        animateMoneyTransfer(player, 'system');
+        player.properties++;
+        tile.setOwner(player.id);
+        addLog(`${player.name} bought property`, getPlayerColor(player));
+        showSpeechBubble(player, "Mine!");
+        SOUNDS.buy();
+        createConfetti();
+    }
+
+    function upgradeProperty(player, tile) {
+        const cost = tile.price * 0.5;
+        changeMoney(player, -cost);
+        animateMoneyTransfer(player, 'system');
+        if(tile.upgrade()) {
+            addLog(`${player.name} upgraded building`, getPlayerColor(player));
+            SOUNDS.upgrade();
+            showSpeechBubble(player, "Expand!");
+            createConfetti();
+        }
+    }
+
+    function nextTurn() {
+        isRolling = false;
+        canUseTools = false;
+        hasUsedTool = false;
+        const p = players[currentPlayer];
+        if (activeThief && activeThief.ownerId === p.id) {
+            moveThief();
+        } else {
+            advancePlayer();
+        }
+    }
+
+    function advancePlayer() {
+        currentPlayer = (currentPlayer + 1) % players.length;
+        manualPanOffset.set(0,0,0);
+        players.forEach((p, i) => { 
+            document.getElementById(`p${i+1}-card`).classList.toggle('active', currentPlayer === i); 
+            p.cursor.visible = (i === currentPlayer);
+        });
+        updateTurnIndicator();
+        cameraTarget = players[currentPlayer].mesh.position;
+        
+        canUseTools = true; 
+        document.getElementById('items-btn').disabled = false;
+        document.getElementById('roll-btn').disabled = false;
+
+        if (players[currentPlayer].isAI) {
+            document.getElementById('items-btn').disabled = true;
+            document.getElementById('roll-btn').disabled = true;
+            setTimeout(rollDice, 1000);
+        }
+    }
+
+    function buyItem(player, item) {
+        if (player.money >= item.price) {
+            changeMoney(player, -item.price);
+            player.inventory.push(item.id);
+            addLog(`${player.name} bought ${item.name}`, getPlayerColor(player));
+            showFloatMsg(player, "+ " + item.name);
+        } else {
+            showFloatMsg(player, "No Funds");
+        }
+    }
+
+    function showModal(title, text, buttons, callback) {
+        const modal = document.getElementById('game-modal');
+        document.getElementById('m-title').innerText = title;
+        document.getElementById('m-text').innerText = text;
+        const btnContainer = document.getElementById('m-buttons');
+        btnContainer.innerHTML = '';
+        buttons.forEach(btnText => {
+            const btn = document.createElement('button');
+            btn.innerText = btnText;
+            btn.className = 'modal-btn';
+            if(btnText === 'YES' || btnText === 'OK' || btnText === 'HIRE') btn.classList.add('btn-yes');
+            if(btnText === 'NO' || btnText === 'PASS' || btnText === 'SKIP' || btnText === 'CANCEL' || btnText === 'LEAVE') btn.classList.add('btn-no');
+            btn.onclick = () => {
+                modal.style.display = 'none';
+                callback(btnText === 'YES' || btnText === 'OK' || btnText === 'HIRE' || btnText === 'RESTART');
+            };
+            btnContainer.appendChild(btn);
+        });
+        modal.style.display = 'block';
+    }
+
+    function createConfetti() {
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    }
+
+    function checkOcclusion() {
+        if (!players.length) return;
+        buildings.forEach(b => b.material.opacity = 0.8);
+        const p = players[currentPlayer];
+        const pPos = p.mesh.position.clone();
+        pPos.y += 1; 
+        const dir = pPos.clone().sub(camera.position).normalize();
+        const dist = camera.position.distanceTo(pPos);
+        raycaster.set(camera.position, dir);
+        const intersects = raycaster.intersectObjects(buildings);
+        for(let i=0; i < intersects.length; i++) {
+            if (intersects[i].distance < dist - 2) { 
+                intersects[i].object.material.opacity = 0.3;
+            }
+        }
+    }
+
+    function getPlayerColor(p) {
+        return '#' + new THREE.Color(p.color).getHexString();
+    }
+
+    function animate(time) {
+        requestAnimationFrame(animate);
+        TWEEN.update(time);
+        checkOcclusion(); 
+        
+        if (players.length > 0) {
+            const activeP = players[currentPlayer];
+            if (activeP && activeP.cursor.visible) {
+                activeP.cursor.position.y = 3.2 + Math.sin(time * 0.005) * 0.2;
+                activeP.cursor.rotation.y += 0.05;
+            }
+        }
+
+        activeBubbles.forEach(b => {
+            const pos = b.target.position.clone();
+            pos.y += b.offsetY;
+            pos.project(camera);
+            const x = (pos.x * .5 + .5) * window.innerWidth;
+            const y = (-(pos.y * .5) + .5) * window.innerHeight;
+            b.element.style.left = x + 'px';
+            b.element.style.top = y + 'px';
+        });
+
+        const targetPos = cameraTarget.clone().add(new THREE.Vector3(20, 20, 20)).add(manualPanOffset); 
+        camera.position.lerp(targetPos, 0.1); 
+        const lookPos = cameraTarget.clone().add(manualPanOffset);
+        camera.lookAt(lookPos);
+
+        renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+        if (!camera || !renderer) return; 
+        const aspect = window.innerWidth / window.innerHeight;
+        const d = 40;
+        camera.left = -d * aspect;
+        camera.right = d * aspect;
+        camera.top = d;
+        camera.bottom = -d;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+</script>
+</body>
+</html>
