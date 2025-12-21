@@ -223,7 +223,6 @@
         }
         .player-card.active {
             transform: scale(1.05);
-            /* Border color will be set dynamically via JS */
             z-index: 5;
             background: rgba(255, 255, 255, 0.9);
             box-shadow: 0 0 15px rgba(0,0,0,0.3);
@@ -245,7 +244,6 @@
             width: 30px; height: 24px; border-radius: 10px 10px 0 0;
             position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
             border: 2px solid #333; z-index: 1;
-            /* Background color set by JS */
         }
 
         .p-info-col {
@@ -420,57 +418,23 @@
 
         /* --- MOBILE MEDIA QUERIES --- */
         @media (max-width: 768px) {
-            /* Hide top indicator on mobile to save space */
             #turn-indicator { display: none !important; }
-            
-            /* Reposition Player Cards for Mobile */
-            .player-card {
-                width: 160px;
-                padding: 8px;
-                font-size: 0.8rem;
-                border-width: 2px;
-                flex-direction: row;
-                align-items: center;
-            }
-            
+            .player-card { width: 160px; padding: 8px; font-size: 0.8rem; border-width: 2px; flex-direction: row; align-items: center; }
             .p-card-icon { width: 30px; height: 30px; }
             .p-card-head { width: 16px; height: 16px; }
             .p-card-body { width: 24px; height: 18px; border-radius: 8px 8px 0 0; }
-            
             .p-name { font-size: 0.9rem; }
             .p-money { font-size: 1rem; }
-            
-            /* Corners */
             #p1-card { top: 10px; left: 10px; }
             #p2-card { top: 10px; right: 10px; }
             #p3-card { bottom: 130px; left: 10px; }
             #p4-card { bottom: 130px; right: 10px; }
-
-            /* Adjust Logs */
-            #log-container {
-                bottom: 180px; 
-                left: 10px;
-                max-width: 200px;
-            }
-            #log-panel {
-                width: 200px;
-                max-height: 120px;
-                font-size: 0.8rem;
-            }
-            
-            /* Adjust Controls */
-            #dice-panel {
-                bottom: 20px;
-                gap: 20px;
-            }
-            
+            #log-container { bottom: 180px; left: 10px; max-width: 200px; }
+            #log-panel { width: 200px; max-height: 120px; font-size: 0.8rem; }
+            #dice-panel { bottom: 20px; gap: 20px; }
             #roll-btn { width: 80px; height: 80px; font-size: 1.2rem; }
             #items-btn { width: 60px; height: 60px; font-size: 0.8rem; }
-            
-            #instruction-overlay {
-                font-size: 1.2rem;
-                top: 60px;
-            }
+            #instruction-overlay { font-size: 1.2rem; top: 60px; }
         }
 
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
@@ -514,7 +478,7 @@
             <div id="turn-text">PLAYER 1</div>
         </div>
         
-        <div id="instruction-overlay">TAP TILE TO PLACE ITEM</div>
+        <div id="instruction-overlay">CLICK TILE TO PLACE ITEM</div>
 
         <div id="log-container">
             <button id="log-toggle-btn" onclick="toggleLog()">LOGS ▼</button>
@@ -528,15 +492,14 @@
 
         <!-- Debug Panel -->
         <div id="debug-panel">
-            <div style="color:white; font-weight:bold; margin-bottom:5px; text-shadow:1px 1px 0 #000;">DEBUG</div>
-            <button class="debug-btn" onclick="debugAddTool('custom_roll')">+ Roll</button>
-            <button class="debug-btn" onclick="debugAddTool('roadblock')">+ Block</button>
-            <button class="debug-btn" onclick="debugAddTool('bomb')">+ Mine</button>
-            <button class="debug-btn" onclick="debugAddTool('timer_bomb')">+ T-Bomb</button>
+            <div style="color:white; font-weight:bold; margin-bottom:5px; text-shadow:1px 1px 0 #000;">DEBUG TOOLS</div>
+            <button class="debug-btn" onclick="debugAddTool('custom_roll')">+ Custom Roll</button>
+            <button class="debug-btn" onclick="debugAddTool('roadblock')">+ Roadblock</button>
+            <button class="debug-btn" onclick="debugAddTool('bomb')">+ Land Mine</button>
+            <button class="debug-btn" onclick="debugAddTool('timer_bomb')">+ Time Bomb</button>
         </div>
 
-        <!-- Player Cards -->
-        <!-- P1 -->
+        <!-- Player Cards with Diff Indicator -->
         <div id="p1-card" class="player-card">
             <div class="p-card-icon" id="p1-icon">
                 <div class="p-card-head"></div>
@@ -552,7 +515,6 @@
             </div>
         </div>
         
-        <!-- P2 -->
         <div id="p2-card" class="player-card">
             <div class="p-card-icon" id="p2-icon">
                 <div class="p-card-head"></div>
@@ -568,7 +530,6 @@
             </div>
         </div>
 
-        <!-- P3 -->
         <div id="p3-card" class="player-card">
             <div class="p-card-icon" id="p3-icon">
                 <div class="p-card-head"></div>
@@ -584,7 +545,6 @@
             </div>
         </div>
 
-        <!-- P4 -->
         <div id="p4-card" class="player-card">
             <div class="p-card-icon" id="p4-icon">
                 <div class="p-card-head"></div>
@@ -620,27 +580,9 @@
         boardWidth: 8,  
         boardHeight: 8, 
         colors: [0xff4757, 0x3742fa, 0x2ed573, 0xffa502], 
-        tileColors: {
-            empty: 0xecf0f1,
-            start: 0x2ecc71,
-            chance: 0xf39c12,
-            jail: 0x34495e,
-            hospital: 0xffffff,
-            shop: 0x9b59b6,
-            police: 0x2980b9
-        }
+        tileColors: { empty: 0xecf0f1, start: 0x2ecc71, chance: 0xf39c12, jail: 0x34495e, hospital: 0xffffff, shop: 0x9b59b6, police: 0x2980b9 }
     };
-
-    const TILE_TYPES = {
-        START: 0,
-        PROPERTY: 1,
-        CHANCE: 2,
-        JAIL: 3,
-        HOSPITAL: 4,
-        SHOP: 5,
-        POLICE_STATION: 6
-    };
-
+    const TILE_TYPES = { START: 0, PROPERTY: 1, CHANCE: 2, JAIL: 3, HOSPITAL: 4, SHOP: 5, POLICE_STATION: 6 };
     const ITEMS = {
         CUSTOM_ROLL: { id: 'custom_roll', name: 'Custom Roll', price: 200, desc: 'Choose dice 1-6' },
         ROADBLOCK: { id: 'roadblock', name: 'Block Sign', price: 200, desc: 'Stop any player here' },
@@ -656,34 +598,29 @@
     let isRolling = false;
     let canUseTools = true;
     let hasUsedTool = false;
-    let cameraTarget = new THREE.Vector3();
-    let manualPanOffset = new THREE.Vector3(); 
-    let raycaster = new THREE.Raycaster();
-    let mouse = new THREE.Vector2();
+    let cameraTarget = null;
+    let manualPanOffset = null; 
+    let raycaster = null;
+    let mouse = null; 
     let buildings = []; 
     let diceMesh; 
     let isPanning = false; 
     let activeThief = null; 
     let activePolice = null; 
     let activeBubbles = []; 
-    let hospitalPos = new THREE.Vector3(-25, 0, -25);
-    let prisonPos = new THREE.Vector3(25, 0, -25);
+    let hospitalPos = null; 
+    let prisonPos = null;
     let placementMode = { active: false, item: null, invIndex: -1, ghost: null };
-
-    // --- 3. AUDIO SYSTEM ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // --- 3. HELPERS ---
     function playTone(freq, type, duration, vol=0.1) {
         if(audioCtx.state === 'suspended') audioCtx.resume();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
         gain.gain.setValueAtTime(vol, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + duration);
+        osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + duration);
     }
     const SOUNDS = {
         roll: () => { for(let i=0; i<5; i++) setTimeout(() => playTone(200 + Math.random()*100, 'square', 0.05, 0.1), i*60); },
@@ -695,209 +632,86 @@
         steal: () => { playTone(900, 'sawtooth', 0.1); setTimeout(()=>playTone(1200, 'sawtooth', 0.2), 100); },
         explode: () => { playTone(100, 'sawtooth', 0.5); setTimeout(()=>playTone(50, 'square', 0.8), 100); }
     };
-
-    // --- 4. UTILITY & UI FUNCTIONS ---
-
+    function midPos(s, e) { return s.clone().lerp(e, 0.5).add(new THREE.Vector3(0, 2, 0)); }
+    function getPlayerColor(p) { return '#' + new THREE.Color(p.color).getHexString(); }
     function createLabel(text) {
-        const canvas = document.createElement('canvas');
-        canvas.width = 256;
-        canvas.height = 64;
-        const ctx = canvas.getContext('2d');
-        ctx.font = "Bold 32px 'Rubik', sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.shadowColor = "black";
-        ctx.shadowBlur = 4;
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = "black";
-        ctx.strokeText(text, 128, 32);
-        ctx.fillStyle = "white";
-        ctx.fillText(text, 128, 32);
+        const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 64;
+        const ctx = canvas.getContext('2d'); ctx.font = "Bold 32px 'Rubik', sans-serif";
+        ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.shadowColor = "black";
+        ctx.shadowBlur = 4; ctx.lineWidth = 4; ctx.strokeStyle = "black";
+        ctx.strokeText(text, 128, 32); ctx.fillStyle = "white"; ctx.fillText(text, 128, 32);
         const texture = new THREE.CanvasTexture(canvas);
         const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
-        const sprite = new THREE.Sprite(mat);
-        sprite.scale.set(4, 1, 1);
-        return sprite;
+        const sprite = new THREE.Sprite(mat); sprite.scale.set(4, 1, 1); return sprite;
     }
-
     function createDiceFace(number) {
-        const canvas = document.createElement('canvas');
-        canvas.width = 64;
-        canvas.height = 64;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#ecf0f1';
-        ctx.fillRect(0,0,64,64);
-        ctx.strokeStyle = '#bdc3c7';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(0,0,64,64);
-        ctx.fillStyle = (number === 1) ? '#e74c3c' : '#2c3e50';
-        const s = 64;
-        const dotSize = 6;
+        const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64;
+        const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ecf0f1'; ctx.fillRect(0,0,64,64);
+        ctx.strokeStyle = '#bdc3c7'; ctx.lineWidth = 4; ctx.strokeRect(0,0,64,64);
+        ctx.fillStyle = (number === 1) ? '#e74c3c' : '#2c3e50'; const s = 64; const dotSize = 6;
         function drawDot(x, y) { ctx.beginPath(); ctx.arc(x, y, dotSize, 0, Math.PI*2); ctx.fill(); }
-        if(number === 1) { drawDot(s/2, s/2); }
-        if(number === 2) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.75); }
-        if(number === 3) { drawDot(s*0.25, s*0.25); drawDot(s/2, s/2); drawDot(s*0.75, s*0.75); }
-        if(number === 4) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); }
-        if(number === 5) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); drawDot(s/2, s/2); }
-        if(number === 6) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.5); drawDot(s*0.75, s*0.5); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); }
+        if(number===1) { drawDot(s/2, s/2); }
+        if(number===2) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.75); }
+        if(number===3) { drawDot(s*0.25, s*0.25); drawDot(s/2, s/2); drawDot(s*0.75, s*0.75); }
+        if(number===4) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); }
+        if(number===5) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); drawDot(s/2, s/2); }
+        if(number===6) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.5); drawDot(s*0.75, s*0.5); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); }
         return new THREE.CanvasTexture(canvas);
     }
-
-    function createDice() {
-        const mats = [
-            new THREE.MeshBasicMaterial({ map: createDiceFace(1) }),
-            new THREE.MeshBasicMaterial({ map: createDiceFace(2) }),
-            new THREE.MeshBasicMaterial({ map: createDiceFace(3) }),
-            new THREE.MeshBasicMaterial({ map: createDiceFace(4) }),
-            new THREE.MeshBasicMaterial({ map: createDiceFace(5) }),
-            new THREE.MeshBasicMaterial({ map: createDiceFace(6) })
-        ];
-        const geo = new THREE.BoxGeometry(2, 2, 2);
-        diceMesh = new THREE.Mesh(geo, mats);
-        diceMesh.position.set(0, -100, 0); 
-        diceMesh.castShadow = true;
-        scene.add(diceMesh);
-    }
-
     function addLog(text, colorHex) {
-        const panel = document.getElementById('log-panel');
-        const entry = document.createElement('div');
-        entry.className = 'log-entry';
-        entry.innerText = text;
-        entry.style.borderLeftColor = colorHex;
-        panel.prepend(entry);
-        while (panel.children.length > 50) {
-            panel.removeChild(panel.lastChild);
-        }
+        const panel = document.getElementById('log-panel'); const entry = document.createElement('div');
+        entry.className = 'log-entry'; entry.innerText = text; entry.style.borderLeftColor = colorHex;
+        panel.prepend(entry); while (panel.children.length > 50) { panel.removeChild(panel.lastChild); }
     }
-    
-    function toggleLog() {
-        const panel = document.getElementById('log-panel');
-        const btn = document.getElementById('log-toggle-btn');
-        panel.classList.toggle('collapsed');
-        btn.innerText = panel.classList.contains('collapsed') ? 'LOGS ▼' : 'LOGS ▲';
-    }
-
     function showSpeechBubble(player, text) {
-        const bubble = document.createElement('div');
-        bubble.className = 'speech-bubble';
-        bubble.innerText = text;
-        document.body.appendChild(bubble);
-        const bubbleObj = {
-            element: bubble,
-            target: player.mesh,
-            offsetY: 2.5 
-        };
+        const bubble = document.createElement('div'); bubble.className = 'speech-bubble';
+        bubble.innerText = text; document.body.appendChild(bubble);
+        const bubbleObj = { element: bubble, target: player.mesh, offsetY: 2.5 };
         activeBubbles.push(bubbleObj);
-        setTimeout(() => {
-            bubble.remove();
-            activeBubbles = activeBubbles.filter(b => b !== bubbleObj);
-        }, 2000);
+        setTimeout(() => { bubble.remove(); activeBubbles = activeBubbles.filter(b => b !== bubbleObj); }, 2000);
     }
-
     function showFloatMsg(player, text, color='#ffffff') {
-        const div = document.createElement('div');
-        div.className = 'float-msg';
-        div.innerText = text;
-        div.style.color = color;
-        const pos = player.mesh.position.clone();
-        pos.y += 2;
-        pos.project(camera);
-        const x = (pos.x * .5 + .5) * window.innerWidth;
-        const y = (-(pos.y * .5) + .5) * window.innerHeight;
-        div.style.left = x + 'px';
-        div.style.top = y + 'px';
-        document.body.appendChild(div);
-        setTimeout(() => div.remove(), 1500);
+        const div = document.createElement('div'); div.className = 'float-msg';
+        div.innerText = text; div.style.color = color;
+        const pos = player.mesh.position.clone(); pos.y += 2; pos.project(camera);
+        const x = (pos.x * .5 + .5) * window.innerWidth; const y = (-(pos.y * .5) + .5) * window.innerHeight;
+        div.style.left = x + 'px'; div.style.top = y + 'px';
+        document.body.appendChild(div); setTimeout(() => div.remove(), 1500);
     }
-
+    function toScreenPosition(vector, camera) {
+        const v = vector.clone(); v.project(camera);
+        return { x: (v.x * 0.5 + 0.5) * window.innerWidth, y: (-(v.y * 0.5) + 0.5) * window.innerHeight };
+    }
+    function changeMoney(player, amount) {
+        player.money += amount;
+        const diffEl = document.getElementById(`p${player.id+1}-diff`);
+        if (diffEl) {
+            const sign = amount >= 0 ? '+' : ''; diffEl.innerText = `${sign}${amount}`;
+            diffEl.className = 'money-diff show ' + (amount >= 0 ? 'positive' : 'negative');
+        }
+        new TWEEN.Tween(player).to({ displayedMoney: player.money }, 2500).easing(TWEEN.Easing.Quadratic.Out)
+            .onUpdate(() => updateUI()).onComplete(() => { if (diffEl) diffEl.classList.remove('show'); }).start();
+    }
+    function createConfetti() { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); }
     function animateMoneyTransfer(from, to) {
         let startPos, endPos;
         const centerScreen = toScreenPosition(new THREE.Vector3(0,0,0), camera);
-        if (from === 'system') {
-            startPos = { x: centerScreen.x, y: centerScreen.y };
-        } else if (from instanceof Player) {
-            const el = document.getElementById(`p${from.id+1}-card`);
-            if (el) { const rect = el.getBoundingClientRect(); startPos = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 }; }
-        }
-        if (to === 'system') {
-            endPos = { x: centerScreen.x, y: centerScreen.y };
-        } else if (to instanceof Player) {
-            const el = document.getElementById(`p${to.id+1}-card`);
-            if (el) { const rect = el.getBoundingClientRect(); endPos = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 }; }
-        }
+        if (from === 'system') { startPos = { x: centerScreen.x, y: centerScreen.y }; } 
+        else if (from instanceof Player) { const el = document.getElementById(`p${from.id+1}-card`); if (el) { const rect = el.getBoundingClientRect(); startPos = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 }; } }
+        if (to === 'system') { endPos = { x: centerScreen.x, y: centerScreen.y }; } 
+        else if (to instanceof Player) { const el = document.getElementById(`p${to.id+1}-card`); if (el) { const rect = el.getBoundingClientRect(); endPos = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 }; } }
         if (!startPos || !endPos) return;
         for(let i=0; i<5; i++) {
-            const p = document.createElement('div');
-            p.className = 'money-particle';
-            document.body.appendChild(p);
-            p.style.left = startPos.x + 'px';
-            p.style.top = startPos.y + 'px';
+            const p = document.createElement('div'); p.className = 'money-particle'; document.body.appendChild(p);
+            p.style.left = startPos.x + 'px'; p.style.top = startPos.y + 'px';
             setTimeout(() => {
-                const spread = 20;
-                p.style.left = (endPos.x + (Math.random()-0.5)*spread) + 'px';
+                const spread = 20; p.style.left = (endPos.x + (Math.random()-0.5)*spread) + 'px';
                 p.style.top = (endPos.y + (Math.random()-0.5)*spread) + 'px';
                 p.style.transform = `scale(0.5) rotate(${Math.random()*360}deg)`;
                 setTimeout(() => p.remove(), 1000); 
             }, i * 100);
         }
     }
-
-    function toScreenPosition(vector, camera) {
-        const v = vector.clone();
-        v.project(camera);
-        return {
-            x: (v.x * 0.5 + 0.5) * window.innerWidth,
-            y: (-(v.y * 0.5) + 0.5) * window.innerHeight
-        };
-    }
-
-    function changeMoney(player, amount) {
-        player.money += amount;
-        
-        // Show Diff
-        const diffEl = document.getElementById(`p${player.id+1}-diff`);
-        if (diffEl) {
-            const sign = amount >= 0 ? '+' : '';
-            diffEl.innerText = `${sign}${amount}`;
-            diffEl.className = 'money-diff show ' + (amount >= 0 ? 'positive' : 'negative');
-        }
-
-        new TWEEN.Tween(player)
-            .to({ displayedMoney: player.money }, 2500) 
-            .easing(TWEEN.Easing.Quadratic.Out)
-            .onUpdate(() => updateUI())
-            .onComplete(() => {
-                 if (diffEl) diffEl.classList.remove('show');
-            })
-            .start();
-    }
-
-    function createConfetti() {
-        confetti({
-            particleCount: 100,
-            spread: 70,
-            origin: { y: 0.6 }
-        });
-    }
-
-    function midPos(s, e) {
-        return s.clone().lerp(e, 0.5).add(new THREE.Vector3(0, 2, 0));
-    }
-
-    function getPlayerColor(p) {
-        return '#' + new THREE.Color(p.color).getHexString();
-    }
-    
-    function adjustZoom(delta) {
-        if (!camera) return;
-        camera.zoom += delta;
-        camera.zoom = Math.max(0.5, Math.min(camera.zoom, 3.0));
-        camera.updateProjectionMatrix();
-    }
-
-    // --- UI Update Functions ---
-
     function updateTurnIndicator() {
         if (players.length === 0) return;
         const p = players[currentPlayer];
@@ -905,126 +719,82 @@
         document.getElementById('turn-body').style.backgroundColor = colorHex;
         document.getElementById('turn-text').innerText = p.name;
         document.getElementById('turn-text').style.color = colorHex;
-        
-        // Update Card Colors
         players.forEach((pl, i) => {
              const card = document.getElementById(`p${i+1}-card`);
-             // Only apply border color if active
-             if(i === currentPlayer) {
-                 card.style.borderColor = colorHex;
-             } else {
-                 card.style.borderColor = "#333";
-             }
+             if(i === currentPlayer) { card.style.borderColor = colorHex; } else { card.style.borderColor = "#333"; }
         });
-        
         const el = document.getElementById('turn-indicator');
         el.style.transform = 'translateX(-50%) scale(1.1)';
         setTimeout(() => el.style.transform = 'translateX(-50%) scale(1)', 150);
-        
         if (p.isAI) {
-            document.getElementById('roll-btn').disabled = true;
-            document.getElementById('items-btn').disabled = true;
+            document.getElementById('roll-btn').disabled = true; document.getElementById('items-btn').disabled = true;
             setTimeout(() => rollDice(), 1000);
         } else {
-            // Check flags
-            document.getElementById('roll-btn').disabled = false;
-            document.getElementById('items-btn').disabled = hasUsedTool || !canUseTools;
+            document.getElementById('roll-btn').disabled = false; document.getElementById('items-btn').disabled = hasUsedTool || !canUseTools;
         }
     }
-
     function updateUI() {
         players.forEach((p, i) => {
-            const elId = `p${i+1}`;
-            document.getElementById(`${elId}-name`).innerText = p.name;
+            const elId = `p${i+1}`; document.getElementById(`${elId}-name`).innerText = p.name;
             document.getElementById(`${elId}-money`).innerText = '$' + Math.floor(p.displayedMoney);
             document.getElementById(`${elId}-assets`).innerText = 'Props: ' + p.properties;
         });
     }
-
     function updatePlayerPositions() {
-        const groups = {};
-        players.forEach(p => { if(!groups[p.tileIndex]) groups[p.tileIndex] = []; groups[p.tileIndex].push(p); });
+        const groups = {}; players.forEach(p => { if(!groups[p.tileIndex]) groups[p.tileIndex] = []; groups[p.tileIndex].push(p); });
         for (const [tIdx, group] of Object.entries(groups)) {
             if (tIdx < tiles.length) {
-                const t = tiles[tIdx];
-                const count = group.length;
+                const t = tiles[tIdx]; const count = group.length;
                 if (count > 1) {
                     const radius = 1.0;
                     group.forEach((p, i) => {
                         const angle = (i / count) * Math.PI * 2;
-                        p.mesh.position.x = t.x + Math.cos(angle) * radius;
-                        p.mesh.position.z = t.z + Math.sin(angle) * radius;
+                        p.mesh.position.x = t.x + Math.cos(angle) * radius; p.mesh.position.z = t.z + Math.sin(angle) * radius;
                     });
-                } else if(count === 1 && !isRolling) {
-                     // Center single player if not moving
-                     // Note: We don't force reset here to avoid jitter during tween, logic handles it
                 }
             }
         }
     }
-
     function checkOcclusion() {
         if (!players.length) return;
         buildings.forEach(b => b.material.opacity = 0.8);
-        const p = players[currentPlayer];
-        const pPos = p.mesh.position.clone();
-        pPos.y += 1; 
+        const p = players[currentPlayer]; const pPos = p.mesh.position.clone(); pPos.y += 1; 
         const dir = pPos.clone().sub(camera.position).normalize();
-        const dist = camera.position.distanceTo(pPos);
         raycaster.set(camera.position, dir);
         const intersects = raycaster.intersectObjects(buildings);
-        for(let i=0; i < intersects.length; i++) {
-            if (intersects[i].distance < dist - 2) { 
-                intersects[i].object.material.opacity = 0.3;
-            }
-        }
+        for(let i=0; i < intersects.length; i++) { if (intersects[i].distance < dist - 2) { intersects[i].object.material.opacity = 0.3; } }
     }
-
     function showModal(title, text, buttons, callback) {
-        // ALWAYS CLEAR INVENTORY LIST to avoid pollution from Shop
-        document.getElementById('inventory-list').innerHTML = '';
-        
+        document.getElementById('inventory-list').innerHTML = ''; // Clear previous list
         const modal = document.getElementById('game-modal');
-        document.getElementById('m-title').innerText = title;
-        document.getElementById('m-text').innerText = text;
-        const btnContainer = document.getElementById('m-buttons');
-        btnContainer.innerHTML = '';
+        document.getElementById('m-title').innerText = title; document.getElementById('m-text').innerText = text;
+        const btnContainer = document.getElementById('m-buttons'); btnContainer.innerHTML = '';
         buttons.forEach(btnText => {
-            const btn = document.createElement('button');
-            btn.innerText = btnText;
-            btn.className = 'modal-btn';
+            const btn = document.createElement('button'); btn.innerText = btnText; btn.className = 'modal-btn';
             if(btnText === 'YES' || btnText === 'OK' || btnText === 'HIRE') btn.classList.add('btn-yes');
             if(btnText === 'NO' || btnText === 'PASS' || btnText === 'SKIP' || btnText === 'CANCEL' || btnText === 'LEAVE') btn.classList.add('btn-no');
-            btn.onclick = () => {
-                modal.style.display = 'none';
-                callback(btnText === 'YES' || btnText === 'OK' || btnText === 'HIRE' || btnText === 'RESTART');
-            };
+            btn.onclick = () => { modal.style.display = 'none'; callback(btnText === 'YES' || btnText === 'OK' || btnText === 'HIRE' || btnText === 'RESTART'); };
             btnContainer.appendChild(btn);
         });
         modal.style.display = 'block';
     }
+    function toggleLog() {
+        const panel = document.getElementById('log-panel'); const btn = document.getElementById('log-toggle-btn');
+        panel.classList.toggle('collapsed');
+        btn.innerText = panel.classList.contains('collapsed') ? 'LOGS ▼' : 'LOGS ▲';
+    }
+    function adjustZoom(delta) {
+        if (!camera) return;
+        camera.zoom += delta; camera.zoom = Math.max(0.5, Math.min(camera.zoom, 3.0)); camera.updateProjectionMatrix();
+    }
 
     // --- 5. CLASSES ---
-
     class Tile {
         constructor(index, x, z, type, side) {
-            this.index = index;
-            this.x = x;
-            this.z = z;
-            this.type = type;
-            this.owner = null;
-            this.level = 0; 
-            this.price = 500 + Math.floor(Math.random() * 3) * 100;
-            this.rent = 100;
-            this.side = side; 
-            
-            this.hasRoadblock = false;
-            this.hasBomb = false;
-            this.itemMesh = null;
-
-            this.mesh = new THREE.Group();
-            this.mesh.position.set(x, 0, z);
-
+            this.index = index; this.x = x; this.z = z; this.type = type; this.owner = null; this.level = 0; 
+            this.price = 500 + Math.floor(Math.random() * 3) * 100; this.rent = 100; this.side = side; 
+            this.hasRoadblock = false; this.hasBomb = false; this.itemMesh = null;
+            this.mesh = new THREE.Group(); this.mesh.position.set(x, 0, z);
             const roadGeo = new THREE.BoxGeometry(CONFIG.tileSize - 0.2, 0.2, CONFIG.tileSize - 0.2);
             let color = CONFIG.tileColors.empty;
             if(type === TILE_TYPES.START) color = CONFIG.tileColors.start;
@@ -1032,335 +802,144 @@
             if(type === TILE_TYPES.JAIL) color = CONFIG.tileColors.jail;
             if(type === TILE_TYPES.HOSPITAL) color = CONFIG.tileColors.hospital;
             if(type === TILE_TYPES.SHOP) color = CONFIG.tileColors.shop;
-
             this.mat = new THREE.MeshStandardMaterial({ color: color });
-            this.base = new THREE.Mesh(roadGeo, this.mat);
-            this.base.receiveShadow = true;
-            this.mesh.add(this.base);
-            
-            // HOSPITAL CROSS on road
+            this.base = new THREE.Mesh(roadGeo, this.mat); this.base.receiveShadow = true; this.mesh.add(this.base);
             if(type === TILE_TYPES.HOSPITAL) {
                  const crossV = new THREE.Mesh(new THREE.BoxGeometry(2, 0.3, 0.6), new THREE.MeshBasicMaterial({color: 0xff0000}));
                  const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.3, 2), new THREE.MeshBasicMaterial({color: 0xff0000}));
-                 crossV.position.y = 0.1;
-                 crossH.position.y = 0.1;
-                 this.mesh.add(crossV, crossH);
+                 crossV.position.y = 0.1; crossH.position.y = 0.1; this.mesh.add(crossV, crossH);
             }
-
             if (type !== TILE_TYPES.PROPERTY && type !== TILE_TYPES.HOSPITAL) this.addIcon(type);
-
-            let bx = 0, bz = 0;
-            const offsetDist = CONFIG.tileSize; 
-            if (side === 0) bz = offsetDist;
-            if (side === 1) bx = offsetDist;
-            if (side === 2) bz = -offsetDist;
-            if (side === 3) bx = -offsetDist;
-
-            this.buildingGroup = new THREE.Group();
-            this.buildingGroup.position.set(bx, 0, bz);
-            this.mesh.add(this.buildingGroup);
-
+            let bx = 0, bz = 0; const offsetDist = CONFIG.tileSize; 
+            if (side === 0) bz = offsetDist; if (side === 1) bx = offsetDist; if (side === 2) bz = -offsetDist; if (side === 3) bx = -offsetDist;
+            this.buildingGroup = new THREE.Group(); this.buildingGroup.position.set(bx, 0, bz); this.mesh.add(this.buildingGroup);
             const lotGeo = new THREE.PlaneGeometry(CONFIG.tileSize * 0.9, CONFIG.tileSize * 0.9);
             const lotMat = new THREE.MeshStandardMaterial({ color: 0x95a5a6 });
-            const lot = new THREE.Mesh(lotGeo, lotMat);
-            lot.rotation.x = -Math.PI/2;
-            lot.position.y = 0.05;
-            this.buildingGroup.add(lot);
-
-            scene.add(this.mesh);
+            const lot = new THREE.Mesh(lotGeo, lotMat); lot.rotation.x = -Math.PI/2; lot.position.y = 0.05;
+            this.buildingGroup.add(lot); scene.add(this.mesh);
         }
-
         setItem(type) {
             if (this.itemMesh) { this.mesh.remove(this.itemMesh); this.itemMesh = null; }
-            this.hasRoadblock = false;
-            this.hasBomb = false;
-
+            this.hasRoadblock = false; this.hasBomb = false;
             if (type === 'roadblock') {
-                this.hasRoadblock = true;
-                const g = new THREE.CylinderGeometry(0.5, 0.5, 0.2, 8);
-                const m = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-                this.itemMesh = new THREE.Mesh(g, m);
-                this.itemMesh.position.y = 0.5;
-                this.mesh.add(this.itemMesh);
+                this.hasRoadblock = true; const g = new THREE.CylinderGeometry(0.5, 0.5, 0.2, 8); const m = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+                this.itemMesh = new THREE.Mesh(g, m); this.itemMesh.position.y = 0.5; this.mesh.add(this.itemMesh);
             } else if (type === 'bomb') {
-                this.hasBomb = true;
-                const g = new THREE.SphereGeometry(0.5);
-                const m = new THREE.MeshBasicMaterial({ color: 0x000000 });
-                this.itemMesh = new THREE.Mesh(g, m);
-                this.itemMesh.position.y = 0.5;
-                this.mesh.add(this.itemMesh);
+                this.hasBomb = true; const g = new THREE.SphereGeometry(0.5); const m = new THREE.MeshBasicMaterial({ color: 0x000000 });
+                this.itemMesh = new THREE.Mesh(g, m); this.itemMesh.position.y = 0.5; this.mesh.add(this.itemMesh);
             }
         }
-
-        clearItem() {
-            this.hasRoadblock = false;
-            this.hasBomb = false;
-            if (this.itemMesh) { this.mesh.remove(this.itemMesh); this.itemMesh = null; }
-        }
-
+        clearItem() { this.hasRoadblock = false; this.hasBomb = false; if (this.itemMesh) { this.mesh.remove(this.itemMesh); this.itemMesh = null; } }
         addIcon(type) {
             let color = 0xffffff;
-            if(type===TILE_TYPES.START) color=0x00ff00;
-            if(type===TILE_TYPES.JAIL) color=0x000000;
-            if(type===TILE_TYPES.HOSPITAL) color=0xff0000;
-            if(type===TILE_TYPES.SHOP) color=0x9b59b6; 
+            if(type===TILE_TYPES.START) color=0x00ff00; if(type===TILE_TYPES.JAIL) color=0x000000;
+            if(type===TILE_TYPES.HOSPITAL) color=0xff0000; if(type===TILE_TYPES.SHOP) color=0x9b59b6; 
             if(type===TILE_TYPES.POLICE_STATION) color=0x3498db;
-            
-            const geo = new THREE.CylinderGeometry(0.5, 0.5, 0.2, 8);
-            const mat = new THREE.MeshBasicMaterial({ color: color });
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.y = 0.4;
-            
+            const geo = new THREE.CylinderGeometry(0.5, 0.5, 0.2, 8); const mat = new THREE.MeshBasicMaterial({ color: color });
+            const mesh = new THREE.Mesh(geo, mat); mesh.position.y = 0.4;
             if(type===TILE_TYPES.HOSPITAL) {
-                const cGeo = new THREE.BoxGeometry(0.8, 0.2, 0.3);
-                const cMesh = new THREE.Mesh(cGeo, mat);
-                const cMesh2 = new THREE.Mesh(cGeo, mat);
-                cMesh2.rotation.y = Math.PI/2;
-                cMesh.position.y = 0.5;
-                cMesh2.position.y = 0.5;
-                this.mesh.add(cMesh, cMesh2);
+                const cGeo = new THREE.BoxGeometry(0.8, 0.2, 0.3); const cMesh = new THREE.Mesh(cGeo, mat); const cMesh2 = new THREE.Mesh(cGeo, mat);
+                cMesh2.rotation.y = Math.PI/2; cMesh.position.y = 0.5; cMesh2.position.y = 0.5; this.mesh.add(cMesh, cMesh2);
             } else if (type===TILE_TYPES.SHOP) {
-                const roofGeo = new THREE.ConeGeometry(0.8, 1, 4);
-                const roofMesh = new THREE.Mesh(roofGeo, mat);
-                roofMesh.position.y = 1.0;
-                this.mesh.add(mesh, roofMesh);
-            } else {
-                this.mesh.add(mesh);
-            }
+                const roofGeo = new THREE.ConeGeometry(0.8, 1, 4); const roofMesh = new THREE.Mesh(roofGeo, mat);
+                roofMesh.position.y = 1.0; this.mesh.add(mesh, roofMesh);
+            } else { this.mesh.add(mesh); }
         }
-
-        setOwner(playerId) {
-            this.owner = playerId;
-            this.upgrade();
-        }
-
-        upgrade() {
-            if (this.level < 3) {
-                this.level++;
-                this.rent = this.price * 0.8 * this.level;
-                this.updateBuildingVisual();
-                return true;
-            }
-            return false;
-        }
-
-        destroyBuilding() {
-            this.level = 0;
-            this.owner = null;
-            this.updateBuildingVisual();
-        }
-
+        setOwner(playerId) { this.owner = playerId; this.upgrade(); }
+        upgrade() { if (this.level < 3) { this.level++; this.rent = this.price * 0.8 * this.level; this.updateBuildingVisual(); return true; } return false; }
+        destroyBuilding() { this.level = 0; this.owner = null; this.updateBuildingVisual(); }
         updateBuildingVisual() {
-            while(this.buildingGroup.children.length > 1){ 
-                this.buildingGroup.remove(this.buildingGroup.children[1]); 
-            }
+            while(this.buildingGroup.children.length > 1){ this.buildingGroup.remove(this.buildingGroup.children[1]); }
             const pColor = this.owner !== null ? players[this.owner].color : 0xffffff;
             const buildingColor = new THREE.Color(pColor).multiplyScalar(0.8);
             const floorHeight = 1.5;
             const totalHeight = Math.max(0.1, this.level * floorHeight);
-            
             if (this.level > 0) {
                 const geo = new THREE.BoxGeometry(2.5, totalHeight, 2.5);
-                const mat = new THREE.MeshStandardMaterial({ 
-                    color: buildingColor,
-                    transparent: true,
-                    opacity: 0.8 // Requested 0.8 opacity
-                });
-                
-                const mesh = new THREE.Mesh(geo, mat);
-                mesh.position.y = totalHeight / 2;
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
-                
-                this.buildingGroup.add(mesh);
-                buildings.push(mesh); 
-
-                mesh.scale.set(1, 0, 1);
-                new TWEEN.Tween(mesh.scale).to({y:1}, 500).easing(TWEEN.Easing.Bounce.Out).start();
+                const mat = new THREE.MeshStandardMaterial({ color: buildingColor, transparent: true, opacity: 0.8 });
+                const mesh = new THREE.Mesh(geo, mat); mesh.position.y = totalHeight / 2; mesh.castShadow = true; mesh.receiveShadow = true;
+                this.buildingGroup.add(mesh); buildings.push(mesh); 
+                mesh.scale.set(1, 0, 1); new TWEEN.Tween(mesh.scale).to({y:1}, 500).easing(TWEEN.Easing.Bounce.Out).start();
             }
         }
     }
-
     class Thief {
         constructor(ownerId, tileIndex) {
-            this.ownerId = ownerId;
-            this.tileIndex = tileIndex;
-            
+            this.ownerId = ownerId; this.tileIndex = tileIndex;
             this.mesh = new THREE.Group();
-            const bodyGeo = new THREE.CylinderGeometry(0.4, 0.4, 1.0, 8);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.position.y = 0.5;
-            this.mesh.add(body);
-            
-            const headGeo = new THREE.SphereGeometry(0.4, 16, 16);
-            const headMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
-            const head = new THREE.Mesh(headGeo, headMat);
-            head.position.y = 1.2;
-            this.mesh.add(head);
-            
-            const maskGeo = new THREE.BoxGeometry(0.6, 0.2, 0.4);
-            const maskMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-            const mask = new THREE.Mesh(maskGeo, maskMat);
-            mask.position.set(0, 1.2, 0.2);
-            this.mesh.add(mask);
-
-            this.mesh.position.copy(prisonPos);
-            scene.add(this.mesh);
-            
-            this.hasLapped = false; // Track progress
+            const bodyGeo = new THREE.CylinderGeometry(0.4, 0.4, 1.0, 8); const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat); body.position.y = 0.5; this.mesh.add(body);
+            const headGeo = new THREE.SphereGeometry(0.4, 16, 16); const headMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            const head = new THREE.Mesh(headGeo, headMat); head.position.y = 1.2; this.mesh.add(head);
+            const maskGeo = new THREE.BoxGeometry(0.6, 0.2, 0.4); const maskMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const mask = new THREE.Mesh(maskGeo, maskMat); mask.position.set(0, 1.2, 0.2); this.mesh.add(mask);
+            this.mesh.position.copy(prisonPos); scene.add(this.mesh); this.hasLapped = false; 
         }
-
         hopTo(tileIndex, onComplete) {
-            const nextTile = tiles[tileIndex];
-            const startPos = this.mesh.position.clone();
+            const nextTile = tiles[tileIndex]; const startPos = this.mesh.position.clone();
             const endPos = new THREE.Vector3(nextTile.x, 0.5, nextTile.z);
-            
-            new TWEEN.Tween(this.mesh.position)
-                .to({ x: midPos(startPos,endPos).x, y: midPos(startPos,endPos).y, z: midPos(startPos,endPos).z }, 100) 
-                .easing(TWEEN.Easing.Quadratic.Out)
-                .onComplete(() => {
-                    new TWEEN.Tween(this.mesh.position)
-                        .to({ x: endPos.x, y: endPos.y, z: endPos.z }, 100)
-                        .easing(TWEEN.Easing.Quadratic.In)
-                        .onComplete(() => {
-                            this.tileIndex = tileIndex;
-                            if (onComplete) onComplete();
-                        })
-                        .start();
-                })
-                .start();
+            new TWEEN.Tween(this.mesh.position).to({ x: midPos(startPos,endPos).x, y: midPos(startPos,endPos).y, z: midPos(startPos,endPos).z }, 100).easing(TWEEN.Easing.Quadratic.Out)
+                .onComplete(() => { new TWEEN.Tween(this.mesh.position).to({ x: endPos.x, y: endPos.y, z: endPos.z }, 100).easing(TWEEN.Easing.Quadratic.In).onComplete(() => { this.tileIndex = tileIndex; if (onComplete) onComplete(); }).start(); }).start();
             this.mesh.lookAt(endPos.x, 0.5, endPos.z);
         }
     }
-
     class Player {
         constructor(id, name, color, isAI) {
-            this.id = id;
-            this.name = name;
-            this.color = color;
-            this.isAI = isAI;
-            this.money = 5000;
-            this.displayedMoney = 5000;
-            this.tileIndex = 0;
-            this.properties = 0;
-            this.inJail = false;
-            this.skipTurns = 0;
-            this.inventory = []; 
-            this.timerBomb = { active: false, steps: 0 };
-
+            this.id = id; this.name = name; this.color = color; this.isAI = isAI;
+            this.money = 5000; this.displayedMoney = 5000; this.tileIndex = 0; this.properties = 0;
+            this.inJail = false; this.skipTurns = 0; this.inventory = []; this.timerBomb = { active: false, steps: 0 };
             this.mesh = new THREE.Group();
-            
-            // Body
-            const bodyGeo = new THREE.CylinderGeometry(0.5, 0.6, 1.2, 8);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: color });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.position.y = 0.6;
-            body.castShadow = true;
-            this.mesh.add(body);
-
-            // Head
-            const headGeo = new THREE.SphereGeometry(0.5, 16, 16);
-            const headMat = new THREE.MeshStandardMaterial({ color: 0xffcd94 });
-            const head = new THREE.Mesh(headGeo, headMat);
-            head.position.y = 1.4;
-            head.castShadow = true;
-            this.mesh.add(head);
-
-            // Name Tag
-            this.nameTag = createLabel(name);
-            this.nameTag.position.y = 2.2;
-            this.mesh.add(this.nameTag);
-
-            // Timer Bomb Visual
+            const bodyGeo = new THREE.CylinderGeometry(0.5, 0.6, 1.2, 8); const bodyMat = new THREE.MeshStandardMaterial({ color: color });
+            const body = new THREE.Mesh(bodyGeo, bodyMat); body.position.y = 0.6; body.castShadow = true; this.mesh.add(body);
+            const headGeo = new THREE.SphereGeometry(0.5, 16, 16); const headMat = new THREE.MeshStandardMaterial({ color: 0xffcd94 });
+            const head = new THREE.Mesh(headGeo, headMat); head.position.y = 1.4; head.castShadow = true; this.mesh.add(head);
+            this.nameTag = createLabel(name); this.nameTag.position.y = 2.2; this.mesh.add(this.nameTag);
             this.bombVis = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshBasicMaterial({color:0x000000}));
-            this.bombVis.position.set(0, 2.5, 0);
-            this.bombVis.visible = false;
-            this.mesh.add(this.bombVis);
-
-            // Turn Cursor
-            const cGeo = new THREE.ConeGeometry(0.3, 0.6, 4);
-            const cMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-            this.cursor = new THREE.Mesh(cGeo, cMat);
-            this.cursor.rotation.z = Math.PI; 
-            this.cursor.position.y = 3.2; 
-            this.cursor.visible = false;
-            this.mesh.add(this.cursor);
-
-            const startTile = tiles[0];
-            this.mesh.position.set(startTile.x, 0.5, startTile.z);
-            
-            scene.add(this.mesh);
+            this.bombVis.position.set(0, 2.5, 0); this.bombVis.visible = false; this.mesh.add(this.bombVis);
+            const cGeo = new THREE.ConeGeometry(0.3, 0.6, 4); const cMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            this.cursor = new THREE.Mesh(cGeo, cMat); this.cursor.rotation.z = Math.PI; this.cursor.position.y = 3.2; this.cursor.visible = false; this.mesh.add(this.cursor);
+            const startTile = tiles[0]; this.mesh.position.set(startTile.x, 0.5, startTile.z); scene.add(this.mesh);
         }
-
         hopTo(tileIndex, onComplete) {
-            const nextTile = tiles[tileIndex];
-            SOUNDS.jump();
-
-            const startPos = this.mesh.position.clone();
-            const endPos = new THREE.Vector3(nextTile.x, 0.5, nextTile.z);
-            
-            new TWEEN.Tween(this.mesh.position)
-                .to({ x: midPos(startPos,endPos).x, y: midPos(startPos,endPos).y, z: midPos(startPos,endPos).z }, 150)
-                .easing(TWEEN.Easing.Quadratic.Out)
-                .onComplete(() => {
-                    new TWEEN.Tween(this.mesh.position)
-                        .to({ x: endPos.x, y: endPos.y, z: endPos.z }, 150)
-                        .easing(TWEEN.Easing.Quadratic.In)
-                        .onComplete(() => {
-                            this.tileIndex = tileIndex;
-                            updatePlayerPositions(); 
-                            if (onComplete) onComplete();
-                        })
-                        .start();
-                })
-                .start();
+            const nextTile = tiles[tileIndex]; SOUNDS.jump();
+            const startPos = this.mesh.position.clone(); const endPos = new THREE.Vector3(nextTile.x, 0.5, nextTile.z);
+            new TWEEN.Tween(this.mesh.position).to({ x: midPos(startPos,endPos).x, y: midPos(startPos,endPos).y, z: midPos(startPos,endPos).z }, 150).easing(TWEEN.Easing.Quadratic.Out)
+                .onComplete(() => { new TWEEN.Tween(this.mesh.position).to({ x: endPos.x, y: endPos.y, z: endPos.z }, 150).easing(TWEEN.Easing.Quadratic.In)
+                .onComplete(() => { this.tileIndex = tileIndex; updatePlayerPositions(); if (onComplete) onComplete(); }).start(); }).start();
             this.mesh.lookAt(endPos.x, 0.5, endPos.z);
         }
     }
 
-    // --- Core Functions ---
+    // --- 6. SETUP FUNCTIONS ---
 
-    function addTile(index, x, z, side) {
-        const tile = new Tile(index, x, z, TILE_TYPES.PROPERTY, side);
-        tiles.push(tile);
+    function createDice() {
+        const mats = [ new THREE.MeshBasicMaterial({ map: createDiceFace(1) }), new THREE.MeshBasicMaterial({ map: createDiceFace(2) }),
+            new THREE.MeshBasicMaterial({ map: createDiceFace(3) }), new THREE.MeshBasicMaterial({ map: createDiceFace(4) }),
+            new THREE.MeshBasicMaterial({ map: createDiceFace(5) }), new THREE.MeshBasicMaterial({ map: createDiceFace(6) }) ];
+        const geo = new THREE.BoxGeometry(2, 2, 2); diceMesh = new THREE.Mesh(geo, mats);
+        diceMesh.position.set(0, -100, 0); diceMesh.castShadow = true; scene.add(diceMesh);
     }
-
-    function createPlayer(id, name, isAI) {
-        players.push(new Player(id, name, CONFIG.colors[id % 4], isAI));
-        if (id === 0) cameraTarget.copy(players[0].mesh.position);
-    }
-
+    function createPlayer(id, name, isAI) { players.push(new Player(id, name, CONFIG.colors[id % 4], isAI)); if (id === 0) cameraTarget.copy(players[0].mesh.position); }
+    function addTile(index, x, z, side) { const tile = new Tile(index, x, z, TILE_TYPES.PROPERTY, side); tiles.push(tile); }
     function createBoard() {
-        const w = CONFIG.boardWidth;
-        const s = CONFIG.tileSize;
-        const offset = (w * s) / 2 - (s/2);
-        let count = 0;
+        const w = CONFIG.boardWidth; const s = CONFIG.tileSize; const offset = (w * s) / 2 - (s/2); let count = 0;
         for(let i = -offset; i <= offset; i += s) addTile(count++, i, offset, 0);
         for(let i = offset - s; i >= -offset; i -= s) addTile(count++, offset, i, 1);
         for(let i = offset - s; i >= -offset; i -= s) addTile(count++, i, -offset, 2);
         for(let i = -offset + s; i < offset; i += s) addTile(count++, -offset, i, 3);
-
         tiles[0].type = TILE_TYPES.START; tiles[0].mat.color.setHex(CONFIG.tileColors.start);
         tiles[6].type = TILE_TYPES.HOSPITAL; tiles[6].mat.color.setHex(CONFIG.tileColors.hospital);
         tiles[12].type = TILE_TYPES.SHOP; tiles[12].mat.color.setHex(CONFIG.tileColors.shop);
         tiles[16].type = TILE_TYPES.JAIL; tiles[16].mat.color.setHex(CONFIG.tileColors.jail);
         if(tiles[22]) { tiles[22].type = TILE_TYPES.SHOP; tiles[22].mat.color.setHex(CONFIG.tileColors.shop); }
-        // Police Station at 24
         if(tiles[24]) { tiles[24].type = TILE_TYPES.POLICE_STATION; tiles[24].mat.color.setHex(CONFIG.tileColors.police); }
-        // Shop at 20
         if(tiles[20]) { tiles[20].type = TILE_TYPES.SHOP; tiles[20].mat.color.setHex(CONFIG.tileColors.shop); }
-        // Shop at 28
         if(tiles[28]) { tiles[28].type = TILE_TYPES.SHOP; tiles[28].mat.color.setHex(CONFIG.tileColors.shop); }
-        // Shop at 4
         if(tiles[4]) { tiles[4].type = TILE_TYPES.SHOP; tiles[4].mat.color.setHex(CONFIG.tileColors.shop); }
-
-        const q1 = Math.floor(tiles.length / 4);
-        const q3 = Math.floor(tiles.length * 0.75);
+        const q1 = Math.floor(tiles.length / 4); const q3 = Math.floor(tiles.length * 0.75);
         if(tiles[q1].type === TILE_TYPES.PROPERTY) { tiles[q1].type = TILE_TYPES.CHANCE; tiles[q1].mat.color.setHex(CONFIG.tileColors.chance); }
         if(tiles[q3].type === TILE_TYPES.PROPERTY) { tiles[q3].type = TILE_TYPES.CHANCE; tiles[q3].mat.color.setHex(CONFIG.tileColors.chance); }
     }
-
     function createOffMapBuildings() {
         const hGroup = new THREE.Group(); hGroup.position.copy(hospitalPos);
         const hBase = new THREE.Mesh(new THREE.BoxGeometry(6, 1, 6), new THREE.MeshStandardMaterial({color: 0xeeeeee}));
@@ -1372,7 +951,6 @@
         for(let i=-2; i<=2; i+=1) { const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2), new THREE.MeshBasicMaterial({color: 0x999999})); bar.position.set(i*0.8, 2, 2.6); pGroup.add(bar); }
         pGroup.add(pBase, pMain); scene.add(pGroup);
     }
-
     function createDecoration() {
         const planeGeo = new THREE.PlaneGeometry(100, 100); const planeMat = new THREE.MeshStandardMaterial({ color: 0xbdc3c7 });
         const floor = new THREE.Mesh(planeGeo, planeMat); floor.rotation.x = -Math.PI / 2; floor.position.y = -0.1; floor.receiveShadow = true; scene.add(floor);
@@ -1391,9 +969,16 @@
 
         if (total < 1) return alert("Need at least 1 player!");
 
+        // Initialize Three.js objects HERE, after library load
+        cameraTarget = new THREE.Vector3();
+        manualPanOffset = new THREE.Vector3(); 
+        raycaster = new THREE.Raycaster();
+        mouse = new THREE.Vector2();
+        hospitalPos = new THREE.Vector3(-25, 0, -25);
+        prisonPos = new THREE.Vector3(25, 0, -25);
+
         document.getElementById('setup-screen').style.display = 'none';
         document.getElementById('dice-panel').style.display = 'flex';
-        // document.getElementById('turn-indicator').style.display = 'flex'; // Hidden on mobile via CSS
         
         if(document.getElementById('debug-mode').checked) {
             document.getElementById('debug-panel').style.display = 'flex';
@@ -1411,7 +996,7 @@
         for(let i=0; i<4; i++) {
             const card = document.getElementById(`p${i+1}-card`);
             if (i < total) {
-                card.style.display = 'flex'; // Changed to flex for row layout
+                card.style.display = 'flex'; 
             } else {
                 card.style.display = 'none';
             }
@@ -1466,7 +1051,6 @@
             camera.updateProjectionMatrix();
         }, { passive: false });
 
-        // Mouse Events for Placement & Pan
         window.addEventListener('contextmenu', e => e.preventDefault()); 
 
         window.addEventListener('mousedown', (e) => {
@@ -1477,7 +1061,6 @@
             
             // Placement Logic
             if (placementMode.active && e.button === 0) {
-                // Raycast
                 mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
                 mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
                 raycaster.setFromCamera(mouse, camera);
@@ -1488,21 +1071,16 @@
                     const tile = tiles.find(t => t.base === hitObj);
                     if(tile) {
                         const p = players[currentPlayer];
-                        // Perform Placement
                         tile.setItem(placementMode.item);
                         showFloatMsg(p, "Item Placed!");
                         
-                        // Cleanup
                         if(placementMode.ghost) { scene.remove(placementMode.ghost); placementMode.ghost = null; }
                         placementMode.active = false;
                         document.getElementById('instruction-overlay').style.display = 'none';
                         
-                        // Consume turn? No, standard is use item THEN roll.
-                        // Just consume item from inventory was done in useItem logic...
-                        // Wait, we need to handle inventory removal here because we delayed it
                         p.inventory.splice(placementMode.invIndex, 1);
                         hasUsedTool = true;
-                        updateTurnIndicator(); // Refresh button state
+                        updateTurnIndicator(); 
                     }
                 }
             }
@@ -1547,13 +1125,23 @@
     }
 
     // --- Interaction Logic ---
+    function buyItem(player, item) {
+        if (player.money >= item.price) {
+            changeMoney(player, -item.price);
+            player.inventory.push(item.id);
+            addLog(`${player.name} bought ${item.name}`, getPlayerColor(player));
+            showFloatMsg(player, "+ " + item.name);
+        } else {
+            showFloatMsg(player, "No Funds");
+        }
+    }
 
     function openInventory() {
         if(!canUseTools || hasUsedTool) return;
         const p = players[currentPlayer];
+        showModal("Your Bag", "Select item to use:", ["CANCEL"], () => {});
         const list = document.getElementById('inventory-list');
-        list.innerHTML = '';
-        if (p.inventory.length === 0) { showFloatMsg(p, "Empty"); return; }
+        if (p.inventory.length === 0) { list.innerHTML = '<div style="padding:10px;">Empty</div>'; return; }
         
         p.inventory.forEach((itemId, index) => {
             const item = Object.values(ITEMS).find(i => i.id === itemId);
@@ -1563,7 +1151,6 @@
             div.onclick = () => useItem(p, itemId, index);
             list.appendChild(div);
         });
-        showModal("Your Bag", "Select item to use:", ["CANCEL"], () => {});
     }
 
     function useItem(player, itemId, invIndex) {
@@ -1576,7 +1163,6 @@
             rollDice(val);
         } 
         else if (itemId === 'roadblock' || itemId === 'bomb') {
-            // Enter Placement Mode
             placementMode = { active: true, item: itemId, invIndex: invIndex, ghost: null };
             document.getElementById('instruction-overlay').style.display = 'block';
             showFloatMsg(player, "Click a tile to place");
