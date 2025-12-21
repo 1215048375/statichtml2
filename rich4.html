@@ -150,7 +150,7 @@
         }
 
         #log-toggle-btn {
-            background: rgba(50, 50, 50, 0.2); /* Changed opacity to 0.2 */
+            background: rgba(50, 50, 50, 0.2);
             color: white;
             border: 2px solid rgba(255,255,255,0.2);
             padding: 5px 10px;
@@ -207,7 +207,7 @@
         /* Player Stats Panels */
         @keyframes breathe {
             0% { box-shadow: 0 0 0 0px var(--active-color); }
-            50% { box-shadow: 0 0 0 6px var(--active-color); } /* Fat border effect */
+            50% { box-shadow: 0 0 0 6px var(--active-color); }
             100% { box-shadow: 0 0 0 0px var(--active-color); }
         }
 
@@ -226,7 +226,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            --active-color: #333; /* Default, overridden by JS */
+            --active-color: #333;
         }
         .player-card.active {
             transform: scale(1.05);
@@ -236,27 +236,10 @@
             border-color: var(--active-color) !important;
         }
 
-        /* Puppet Icon in Card */
-        .p-card-icon {
-            width: 40px;
-            height: 40px;
-            position: relative;
-            flex-shrink: 0;
-        }
-        .p-card-head {
-            width: 20px; height: 20px; background: #ffcd94; border-radius: 50%;
-            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-            border: 2px solid #333; z-index: 2;
-        }
-        .p-card-body {
-            width: 30px; height: 24px; border-radius: 10px 10px 0 0;
-            position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
-            border: 2px solid #333; z-index: 1;
-        }
-
-        .p-info-col {
-            flex-grow: 1;
-        }
+        .p-card-icon { width: 40px; height: 40px; position: relative; flex-shrink: 0; }
+        .p-card-head { width: 20px; height: 20px; background: #ffcd94; border-radius: 50%; position: absolute; top: 0; left: 50%; transform: translateX(-50%); border: 2px solid #333; z-index: 2; }
+        .p-card-body { width: 30px; height: 24px; border-radius: 10px 10px 0 0; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); border: 2px solid #333; z-index: 1; }
+        .p-info-col { flex-grow: 1; }
 
         #p1-card { top: 20px; left: 20px; }
         #p2-card { top: 20px; right: 20px; }
@@ -268,12 +251,7 @@
         .p-money { font-size: 1.3rem; color: #27ae60; font-weight: bold; line-height: 1; }
         .p-assets { font-size: 0.85rem; color: #555; }
         
-        .money-diff {
-            font-size: 1rem;
-            font-weight: 900;
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
+        .money-diff { font-size: 1rem; font-weight: 900; opacity: 0; transition: opacity 0.5s; }
         .money-diff.show { opacity: 1; }
         .money-diff.positive { color: #2ecc71; }
         .money-diff.negative { color: #e74c3c; }
@@ -290,6 +268,7 @@
             gap: 15px;
             width: 100%;
             justify-content: center;
+            align-items: center;
         }
 
         button.game-btn {
@@ -309,6 +288,22 @@
         }
         #roll-btn { background: rgba(231, 76, 60, 0.8); box-shadow: 0 10px 0 #c0392b; animation: pulse 2s infinite; width: 100px; height: 100px; font-size: 1.5rem; }
         #items-btn { background: rgba(52, 152, 219, 0.8); box-shadow: 0 10px 0 #2980b9; font-size: 1rem; }
+        
+        /* New Toggle Button for Dice Count */
+        #dice-count-toggle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(243, 156, 18, 0.9);
+            border: 4px solid #fff;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #d35400;
+            display: none; /* Hidden by default */
+        }
+        #dice-count-toggle:active { transform: translateY(4px); box-shadow: none; }
 
         button.game-btn:active { transform: translateY(10px); box-shadow: none !important; }
         button.game-btn:disabled { background: rgba(149, 165, 166, 0.8); box-shadow: 0 5px 0 #7f8c8d; cursor: not-allowed; animation: none; }
@@ -318,7 +313,7 @@
             position: absolute;
             top: 80px;
             right: 10px;
-            display: none; /* Hidden by default */
+            display: none; 
             flex-direction: column;
             gap: 8px;
             pointer-events: auto;
@@ -504,6 +499,7 @@
             <button class="debug-btn" onclick="debugAddTool('roadblock')">+ Roadblock</button>
             <button class="debug-btn" onclick="debugAddTool('bomb')">+ Land Mine</button>
             <button class="debug-btn" onclick="debugAddTool('timer_bomb')">+ Time Bomb</button>
+            <button class="debug-btn" onclick="debugAddTool('motorbike')">+ Moto</button>
         </div>
 
         <!-- Player Cards with Diff Indicator -->
@@ -569,6 +565,7 @@
 
         <div id="dice-panel">
             <button id="items-btn" class="game-btn" onclick="openInventory()">ITEMS</button>
+            <button id="dice-count-toggle" onclick="toggleDiceCount()">1 Die</button>
             <button id="roll-btn" class="game-btn" onclick="rollDice()">ROLL</button>
         </div>
 
@@ -587,35 +584,18 @@
         boardWidth: 8,  
         boardHeight: 8, 
         colors: [0xff4757, 0x3742fa, 0x2ed573, 0xffa502], 
-        tileColors: {
-            empty: 0xecf0f1,
-            start: 0x2ecc71,
-            chance: 0xf39c12,
-            jail: 0x34495e,
-            hospital: 0xffffff,
-            shop: 0x9b59b6,
-            police: 0x2980b9
-        }
+        tileColors: { empty: 0xecf0f1, start: 0x2ecc71, chance: 0xf39c12, jail: 0x34495e, hospital: 0xffffff, shop: 0x9b59b6, police: 0x2980b9 }
     };
-
-    const TILE_TYPES = {
-        START: 0,
-        PROPERTY: 1,
-        CHANCE: 2,
-        JAIL: 3,
-        HOSPITAL: 4,
-        SHOP: 5,
-        POLICE_STATION: 6
-    };
-
+    const TILE_TYPES = { START: 0, PROPERTY: 1, CHANCE: 2, JAIL: 3, HOSPITAL: 4, SHOP: 5, POLICE_STATION: 6 };
     const ITEMS = {
         CUSTOM_ROLL: { id: 'custom_roll', name: 'Custom Roll', price: 200, desc: 'Choose dice 1-6' },
         ROADBLOCK: { id: 'roadblock', name: 'Block Sign', price: 200, desc: 'Stop any player here' },
         BOMB: { id: 'bomb', name: 'Land Mine', price: 200, desc: 'Destroy building on tile' },
-        TIMER_BOMB: { id: 'timer_bomb', name: 'Time Bomb', price: 200, desc: 'Explodes after 10 steps' }
+        TIMER_BOMB: { id: 'timer_bomb', name: 'Time Bomb', price: 200, desc: 'Explodes after 10 steps' },
+        MOTORBIKE: { id: 'motorbike', name: 'Motorbike', price: 500, desc: 'Roll 1 or 2 dice. Crashes on impact.' }
     };
 
-    // --- 2. GAME STATE VARIABLES ---
+    // --- 2. GLOBALS ---
     let scene, camera, renderer;
     let tiles = []; 
     let players = [];
@@ -628,7 +608,7 @@
     let raycaster = null;
     let mouse = null; 
     let buildings = []; 
-    let diceMesh; 
+    let diceMesh, diceMesh2; 
     let isPanning = false; 
     let activeThief = null; 
     let activePolice = null; 
@@ -669,6 +649,19 @@
         const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
         const sprite = new THREE.Sprite(mat); sprite.scale.set(4, 1, 1); return sprite;
     }
+    
+    function getDiceRotation(faceValue) {
+        switch(faceValue) {
+            case 1: return {x:0, y:0, z:Math.PI/2};
+            case 2: return {x:0, y:0, z:-Math.PI/2};
+            case 3: return {x:0, y:0, z:0};
+            case 4: return {x:Math.PI, y:0, z:0};
+            case 5: return {x:-Math.PI/2, y:0, z:0};
+            case 6: return {x:Math.PI/2, y:0, z:0};
+            default: return {x:0, y:0, z:0};
+        }
+    }
+
     function createDiceFace(number) {
         const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64;
         const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ecf0f1'; ctx.fillRect(0,0,64,64);
@@ -676,13 +669,14 @@
         ctx.fillStyle = (number === 1) ? '#e74c3c' : '#2c3e50'; const s = 64; const dotSize = 6;
         function drawDot(x, y) { ctx.beginPath(); ctx.arc(x, y, dotSize, 0, Math.PI*2); ctx.fill(); }
         if(number===1) { drawDot(s/2, s/2); }
-        if(number===2) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.75); }
-        if(number===3) { drawDot(s*0.25, s*0.25); drawDot(s/2, s/2); drawDot(s*0.75, s*0.75); }
-        if(number===4) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); }
-        if(number===5) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); drawDot(s/2, s/2); }
-        if(number===6) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.5); drawDot(s*0.75, s*0.5); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); }
+        else if(number===2) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.75); }
+        else if(number===3) { drawDot(s*0.25, s*0.25); drawDot(s/2, s/2); drawDot(s*0.75, s*0.75); }
+        else if(number===4) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); }
+        else if(number===5) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); drawDot(s/2, s/2); }
+        else if(number===6) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.5); drawDot(s*0.75, s*0.5); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); }
         return new THREE.CanvasTexture(canvas);
     }
+    
     function addLog(text, colorHex) {
         const panel = document.getElementById('log-panel'); const entry = document.createElement('div');
         entry.className = 'log-entry'; entry.innerText = text; entry.style.borderLeftColor = colorHex;
@@ -744,6 +738,16 @@
         document.getElementById('turn-body').style.backgroundColor = colorHex;
         document.getElementById('turn-text').innerText = p.name;
         document.getElementById('turn-text').style.color = colorHex;
+        
+        // Show/Hide Toggle Button
+        const toggleBtn = document.getElementById('dice-count-toggle');
+        if (p.hasMotorbike && !p.isAI) {
+            toggleBtn.style.display = 'block';
+            toggleBtn.innerText = p.diceCount + (p.diceCount > 1 ? " Dice" : " Die");
+        } else {
+            toggleBtn.style.display = 'none';
+        }
+
         players.forEach((pl, i) => {
              const card = document.getElementById(`p${i+1}-card`);
              if(i === currentPlayer) {
@@ -850,6 +854,30 @@
     function adjustZoom(delta) {
         if (!camera) return;
         camera.zoom += delta; camera.zoom = Math.max(0.5, Math.min(camera.zoom, 3.0)); camera.updateProjectionMatrix();
+    }
+    
+    function toggleDiceCount() {
+        const p = players[currentPlayer];
+        if (p.hasMotorbike) {
+            p.diceCount = (p.diceCount === 1) ? 2 : 1;
+            document.getElementById('dice-count-toggle').innerText = p.diceCount + (p.diceCount > 1 ? " Dice" : " Die");
+        }
+    }
+
+    function animateDie(mesh, value, targetPos) {
+        mesh.visible = true;
+        mesh.position.set(targetPos.x, 15, targetPos.z);
+        const rot = getDiceRotation(value);
+        
+        new TWEEN.Tween(mesh.position)
+            .to({ y: 1 }, 800)
+            .easing(TWEEN.Easing.Bounce.Out)
+            .start();
+            
+        new TWEEN.Tween(mesh.rotation)
+            .to({ x: rot.x + Math.PI*4, y: rot.y + Math.PI*4, z: rot.z + Math.PI*4 }, 800)
+            .easing(TWEEN.Easing.Quadratic.Out)
+            .start();
     }
 
     // --- 5. CLASSES ---
@@ -973,12 +1001,27 @@
             this.id = id; this.name = name; this.color = color; this.isAI = isAI;
             this.money = 5000; this.displayedMoney = 5000; this.tileIndex = 0; this.properties = 0;
             this.inJail = false; this.skipTurns = 0; this.inventory = []; this.timerBomb = { active: false, steps: 0 };
+            this.hasMotorbike = false; this.diceCount = 1;
+
             this.mesh = new THREE.Group();
             const bodyGeo = new THREE.CylinderGeometry(0.5, 0.6, 1.2, 8); const bodyMat = new THREE.MeshStandardMaterial({ color: color });
             const body = new THREE.Mesh(bodyGeo, bodyMat); body.position.y = 0.6; body.castShadow = true; this.mesh.add(body);
             const headGeo = new THREE.SphereGeometry(0.5, 16, 16); const headMat = new THREE.MeshStandardMaterial({ color: 0xffcd94 });
             const head = new THREE.Mesh(headGeo, headMat); head.position.y = 1.4; head.castShadow = true; this.mesh.add(head);
             this.nameTag = createLabel(name); this.nameTag.position.y = 2.2; this.mesh.add(this.nameTag);
+            
+            // Motorbike Mesh (hidden by default)
+            this.motorbikeGroup = new THREE.Group();
+            this.motorbikeGroup.visible = false;
+            const w1 = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.2, 16), new THREE.MeshStandardMaterial({color: 0x333333}));
+            w1.rotation.x = Math.PI/2; w1.position.set(0, 0.3, 0.5);
+            const w2 = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.2, 16), new THREE.MeshStandardMaterial({color: 0x333333}));
+            w2.rotation.x = Math.PI/2; w2.position.set(0, 0.3, -0.5);
+            const chassis = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 1.2), new THREE.MeshStandardMaterial({color: 0xff0000}));
+            chassis.position.y = 0.6;
+            this.motorbikeGroup.add(w1, w2, chassis);
+            this.mesh.add(this.motorbikeGroup);
+            
             this.bombVis = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshBasicMaterial({color:0x000000}));
             this.bombVis.position.set(0, 2.5, 0); this.bombVis.visible = false; this.mesh.add(this.bombVis);
             const cGeo = new THREE.ConeGeometry(0.3, 0.6, 4); const cMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
@@ -1001,8 +1044,13 @@
         const mats = [ new THREE.MeshBasicMaterial({ map: createDiceFace(1) }), new THREE.MeshBasicMaterial({ map: createDiceFace(2) }),
             new THREE.MeshBasicMaterial({ map: createDiceFace(3) }), new THREE.MeshBasicMaterial({ map: createDiceFace(4) }),
             new THREE.MeshBasicMaterial({ map: createDiceFace(5) }), new THREE.MeshBasicMaterial({ map: createDiceFace(6) }) ];
-        const geo = new THREE.BoxGeometry(2, 2, 2); diceMesh = new THREE.Mesh(geo, mats);
+        const geo = new THREE.BoxGeometry(2, 2, 2); 
+        
+        diceMesh = new THREE.Mesh(geo, mats);
         diceMesh.position.set(0, -100, 0); diceMesh.castShadow = true; scene.add(diceMesh);
+
+        diceMesh2 = new THREE.Mesh(geo, mats);
+        diceMesh2.position.set(0, -100, 0); diceMesh2.castShadow = true; diceMesh2.visible = false; scene.add(diceMesh2);
     }
     function createPlayer(id, name, isAI) { players.push(new Player(id, name, CONFIG.colors[id % 4], isAI)); if (id === 0) cameraTarget.copy(players[0].mesh.position); }
     function addTile(index, x, z, side) { const tile = new Tile(index, x, z, TILE_TYPES.PROPERTY, side); tiles.push(tile); }
@@ -1216,6 +1264,14 @@
             player.inventory.push(item.id);
             addLog(`${player.name} bought ${item.name}`, getPlayerColor(player));
             showFloatMsg(player, "+ " + item.name);
+            
+            // Auto Equip Motorbike Logic
+            if(item.id === 'motorbike') {
+                 player.hasMotorbike = true;
+                 player.motorbikeGroup.visible = true;
+                 updateTurnIndicator();
+            }
+
         } else {
             showFloatMsg(player, "No Funds");
         }
@@ -1320,24 +1376,48 @@
              cameraTarget.copy(p.mesh.position);
         }
 
-        const randX = (Math.random() - 0.5) * 8;
-        const randZ = (Math.random() - 0.5) * 8;
+        const randX = (Math.random() - 0.5) * 4;
+        const randZ = (Math.random() - 0.5) * 4;
         diceMesh.position.set(randX, 15, randZ);
         diceMesh.visible = true;
-        const result = forceVal || (Math.floor(Math.random() * 6) + 1);
         
-        let targetRot = {x:0, y:0, z:0};
-        if(result===1) targetRot = {x:0, y:0, z:Math.PI/2}; 
-        if(result===2) targetRot = {x:0, y:0, z:-Math.PI/2}; 
-        if(result===3) targetRot = {x:0, y:0, z:0}; 
-        if(result===4) targetRot = {x:Math.PI, y:0, z:0}; 
-        if(result===5) targetRot = {x:-Math.PI/2, y:0, z:0}; 
-        if(result===6) targetRot = {x:Math.PI/2, y:0, z:0}; 
+        // --- DICE LOGIC FIX ---
+        // If has motorbike and using 2 dice
+        let result = 0;
+        let val1 = 0;
+        let val2 = 0;
+        
+        if(p.hasMotorbike && p.diceCount === 2) {
+             if(forceVal) {
+                 result = forceVal;
+                 val1 = forceVal;
+             } else {
+                 val1 = Math.floor(Math.random() * 6) + 1;
+                 val2 = Math.floor(Math.random() * 6) + 1;
+                 result = val1 + val2;
+             }
+        } else {
+             // 1 Die logic
+             val1 = forceVal || (Math.floor(Math.random() * 6) + 1);
+             result = val1;
+        }
 
-        new TWEEN.Tween(diceMesh.position).to({y: 1}, 800).easing(TWEEN.Easing.Bounce.Out).onComplete(() => {
-            setTimeout(() => { diceMesh.visible = false; performMove(p, result); }, 500);
-        }).start();
-        new TWEEN.Tween(diceMesh.rotation).to({x: targetRot.x + Math.PI*4, y: targetRot.y + Math.PI*4, z: targetRot.z + Math.PI*4}, 800).easing(TWEEN.Easing.Quadratic.Out).start();
+        // Animate Die 1
+        animateDie(diceMesh, val1, {x: randX, z: randZ});
+
+        // Animate Die 2 if needed (and not custom rolled single value)
+        if (p.hasMotorbike && p.diceCount === 2 && !forceVal) {
+             diceMesh2.visible = true;
+             animateDie(diceMesh2, val2, {x: randX + 2.5, z: randZ + 1}); 
+        } else {
+             diceMesh2.visible = false;
+        }
+
+        setTimeout(() => {
+             diceMesh.visible = false;
+             diceMesh2.visible = false;
+             performMove(p, result);
+        }, 1000);
     }
 
     function performMove(p, steps) {
@@ -1359,6 +1439,15 @@
                     tiles[nextIdx].clearItem();
                     showSpeechBubble(player, "Blocked!");
                     addLog("Roadblock hit!", "#e74c3c");
+                    
+                    // Crash Logic
+                    if(player.hasMotorbike) {
+                        player.hasMotorbike = false;
+                        player.motorbikeGroup.visible = false;
+                        showFloatMsg(player, "Bike Crashed!");
+                        player.diceCount = 1; // Reset dice count
+                    }
+                    
                     player.hopTo(nextIdx, () => handleLand(player)); 
                     return; 
                 }
@@ -1366,6 +1455,15 @@
                     tiles[nextIdx].clearItem();
                     SOUNDS.explode();
                     showSpeechBubble(player, "BOOM!");
+                    
+                    // Crash Logic
+                    if(player.hasMotorbike) {
+                         player.hasMotorbike = false;
+                         player.motorbikeGroup.visible = false;
+                         showFloatMsg(player, "Bike Destroyed!");
+                         player.diceCount = 1;
+                    }
+
                     tiles[nextIdx].destroyBuilding();
                     player.hopTo(nextIdx, () => { changeMoney(player, -200); handleLand(player); });
                     return;
@@ -1673,6 +1771,51 @@
         p.inventory.push(itemId);
         const item = Object.values(ITEMS).find(i => i.id === itemId);
         showFloatMsg(p, `+ ${item.name}`);
+        
+        // Auto Equip logic for debug
+        if(itemId === 'motorbike') {
+             p.hasMotorbike = true;
+             p.motorbikeGroup.visible = true;
+             updateTurnIndicator();
+        }
+    }
+    
+    function toggleLog() {
+        const panel = document.getElementById('log-panel');
+        const btn = document.getElementById('log-toggle-btn');
+        panel.classList.toggle('collapsed');
+        btn.innerText = panel.classList.contains('collapsed') ? 'LOGS ▼' : 'LOGS ▲';
+    }
+    
+    function adjustZoom(delta) {
+        if (!camera) return;
+        camera.zoom += delta;
+        camera.zoom = Math.max(0.5, Math.min(camera.zoom, 3.0));
+        camera.updateProjectionMatrix();
+    }
+    
+    function toggleDiceCount() {
+        const p = players[currentPlayer];
+        if (p.hasMotorbike) {
+            p.diceCount = (p.diceCount === 1) ? 2 : 1;
+            document.getElementById('dice-count-toggle').innerText = p.diceCount + (p.diceCount > 1 ? " Dice" : " Die");
+        }
+    }
+
+    function animateDie(mesh, value, targetPos) {
+        mesh.visible = true;
+        mesh.position.set(targetPos.x, 15, targetPos.z);
+        const rot = getDiceRotation(value);
+        
+        new TWEEN.Tween(mesh.position)
+            .to({ y: 1 }, 800)
+            .easing(TWEEN.Easing.Bounce.Out)
+            .start();
+            
+        new TWEEN.Tween(mesh.rotation)
+            .to({ x: rot.x + Math.PI*4, y: rot.y + Math.PI*4, z: rot.z + Math.PI*4 }, 800)
+            .easing(TWEEN.Easing.Quadratic.Out)
+            .start();
     }
 
     function animate(time) {
@@ -1725,6 +1868,7 @@
     window.debugAddTool = debugAddTool;
     window.toggleLog = toggleLog;
     window.adjustZoom = adjustZoom;
+    window.toggleDiceCount = toggleDiceCount;
 
 </script>
 </body>
