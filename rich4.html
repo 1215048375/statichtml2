@@ -150,7 +150,7 @@
         }
 
         #log-toggle-btn {
-            background: rgba(50, 50, 50, 0.8);
+            background: rgba(50, 50, 50, 0.2); /* Changed opacity to 0.2 */
             color: white;
             border: 2px solid rgba(255,255,255,0.2);
             padding: 5px 10px;
@@ -205,6 +205,12 @@
         @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
 
         /* Player Stats Panels */
+        @keyframes breathe {
+            0% { box-shadow: 0 0 0 0px var(--active-color); }
+            50% { box-shadow: 0 0 0 6px var(--active-color); } /* Fat border effect */
+            100% { box-shadow: 0 0 0 0px var(--active-color); }
+        }
+
         .player-card {
             position: absolute;
             width: 220px; 
@@ -220,12 +226,14 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            --active-color: #333; /* Default, overridden by JS */
         }
         .player-card.active {
             transform: scale(1.05);
             z-index: 5;
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            background: rgba(255, 255, 255, 0.95);
+            animation: breathe 1.5s infinite ease-in-out;
+            border-color: var(--active-color) !important;
         }
 
         /* Puppet Icon in Card */
@@ -270,7 +278,6 @@
         .money-diff.positive { color: #2ecc71; }
         .money-diff.negative { color: #e74c3c; }
 
-
         /* Controls */
         #dice-panel {
             position: absolute;
@@ -300,8 +307,8 @@
             margin: 0 5px;
             -webkit-tap-highlight-color: transparent;
         }
-        #roll-btn { background: rgba(231, 76, 60, 0.95); box-shadow: 0 10px 0 #c0392b; animation: pulse 2s infinite; width: 100px; height: 100px; font-size: 1.5rem; }
-        #items-btn { background: rgba(52, 152, 219, 0.95); box-shadow: 0 10px 0 #2980b9; font-size: 1rem; }
+        #roll-btn { background: rgba(231, 76, 60, 0.8); box-shadow: 0 10px 0 #c0392b; animation: pulse 2s infinite; width: 100px; height: 100px; font-size: 1.5rem; }
+        #items-btn { background: rgba(52, 152, 219, 0.8); box-shadow: 0 10px 0 #2980b9; font-size: 1rem; }
 
         button.game-btn:active { transform: translateY(10px); box-shadow: none !important; }
         button.game-btn:disabled { background: rgba(149, 165, 166, 0.8); box-shadow: 0 5px 0 #7f8c8d; cursor: not-allowed; animation: none; }
@@ -580,9 +587,27 @@
         boardWidth: 8,  
         boardHeight: 8, 
         colors: [0xff4757, 0x3742fa, 0x2ed573, 0xffa502], 
-        tileColors: { empty: 0xecf0f1, start: 0x2ecc71, chance: 0xf39c12, jail: 0x34495e, hospital: 0xffffff, shop: 0x9b59b6, police: 0x2980b9 }
+        tileColors: {
+            empty: 0xecf0f1,
+            start: 0x2ecc71,
+            chance: 0xf39c12,
+            jail: 0x34495e,
+            hospital: 0xffffff,
+            shop: 0x9b59b6,
+            police: 0x2980b9
+        }
     };
-    const TILE_TYPES = { START: 0, PROPERTY: 1, CHANCE: 2, JAIL: 3, HOSPITAL: 4, SHOP: 5, POLICE_STATION: 6 };
+
+    const TILE_TYPES = {
+        START: 0,
+        PROPERTY: 1,
+        CHANCE: 2,
+        JAIL: 3,
+        HOSPITAL: 4,
+        SHOP: 5,
+        POLICE_STATION: 6
+    };
+
     const ITEMS = {
         CUSTOM_ROLL: { id: 'custom_roll', name: 'Custom Roll', price: 200, desc: 'Choose dice 1-6' },
         ROADBLOCK: { id: 'roadblock', name: 'Block Sign', price: 200, desc: 'Stop any player here' },
@@ -721,7 +746,15 @@
         document.getElementById('turn-text').style.color = colorHex;
         players.forEach((pl, i) => {
              const card = document.getElementById(`p${i+1}-card`);
-             if(i === currentPlayer) { card.style.borderColor = colorHex; } else { card.style.borderColor = "#333"; }
+             if(i === currentPlayer) {
+                 card.style.borderColor = colorHex;
+                 card.style.setProperty('--active-color', colorHex);
+                 card.classList.add('active');
+             } else {
+                 card.style.borderColor = "#333";
+                 card.style.removeProperty('--active-color');
+                 card.classList.remove('active');
+             }
         });
         const el = document.getElementById('turn-indicator');
         el.style.transform = 'translateX(-50%) scale(1.1)';
@@ -759,11 +792,42 @@
         if (!players.length) return;
         buildings.forEach(b => b.material.opacity = 0.8);
         const p = players[currentPlayer]; const pPos = p.mesh.position.clone(); pPos.y += 1; 
+        
+        // Fix: Calculate distance
+        const dist = camera.position.distanceTo(pPos);
+
         const dir = pPos.clone().sub(camera.position).normalize();
         raycaster.set(camera.position, dir);
         const intersects = raycaster.intersectObjects(buildings);
-        for(let i=0; i < intersects.length; i++) { if (intersects[i].distance < dist - 2) { intersects[i].object.material.opacity = 0.3; } }
+        for(let i=0; i < intersects.length; i++) {
+            if (intersects[i].distance < dist - 2) { 
+                intersects[i].object.material.opacity = 0.3;
+            }
+        }
     }
+    
+    function showDiceSelector(callback) {
+        document.getElementById('inventory-list').innerHTML = '';
+        const modal = document.getElementById('game-modal');
+        document.getElementById('m-title').innerText = "Custom Roll";
+        document.getElementById('m-text').innerText = "Select result:";
+        const btnContainer = document.getElementById('m-buttons');
+        btnContainer.innerHTML = '';
+        
+        for (let i = 1; i <= 6; i++) {
+            const btn = document.createElement('button');
+            btn.innerText = i;
+            btn.className = 'modal-btn';
+            btn.style.width = '50px'; 
+            btn.onclick = () => {
+                modal.style.display = 'none';
+                callback(i);
+            };
+            btnContainer.appendChild(btn);
+        }
+        modal.style.display = 'block';
+    }
+
     function showModal(title, text, buttons, callback) {
         document.getElementById('inventory-list').innerHTML = ''; // Clear previous list
         const modal = document.getElementById('game-modal');
@@ -804,12 +868,13 @@
             if(type === TILE_TYPES.SHOP) color = CONFIG.tileColors.shop;
             this.mat = new THREE.MeshStandardMaterial({ color: color });
             this.base = new THREE.Mesh(roadGeo, this.mat); this.base.receiveShadow = true; this.mesh.add(this.base);
+            
             if(type === TILE_TYPES.HOSPITAL) {
-                 const crossV = new THREE.Mesh(new THREE.BoxGeometry(2, 0.3, 0.6), new THREE.MeshBasicMaterial({color: 0xff0000}));
-                 const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.3, 2), new THREE.MeshBasicMaterial({color: 0xff0000}));
-                 crossV.position.y = 0.1; crossH.position.y = 0.1; this.mesh.add(crossV, crossH);
+                 const crossV = new THREE.Mesh(new THREE.BoxGeometry(2, 0.05, 0.8), new THREE.MeshBasicMaterial({color: 0xff0000}));
+                 const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 2), new THREE.MeshBasicMaterial({color: 0xff0000}));
+                 crossV.position.y = 0.11; crossH.position.y = 0.11; this.mesh.add(crossV, crossH);
             }
-            if (type !== TILE_TYPES.PROPERTY && type !== TILE_TYPES.HOSPITAL) this.addIcon(type);
+            if (type !== TILE_TYPES.PROPERTY) this.addIcon(type);
             let bx = 0, bz = 0; const offsetDist = CONFIG.tileSize; 
             if (side === 0) bz = offsetDist; if (side === 1) bx = offsetDist; if (side === 2) bz = -offsetDist; if (side === 3) bx = -offsetDist;
             this.buildingGroup = new THREE.Group(); this.buildingGroup.position.set(bx, 0, bz); this.mesh.add(this.buildingGroup);
@@ -831,19 +896,40 @@
         }
         clearItem() { this.hasRoadblock = false; this.hasBomb = false; if (this.itemMesh) { this.mesh.remove(this.itemMesh); this.itemMesh = null; } }
         addIcon(type) {
-            let color = 0xffffff;
-            if(type===TILE_TYPES.START) color=0x00ff00; if(type===TILE_TYPES.JAIL) color=0x000000;
-            if(type===TILE_TYPES.HOSPITAL) color=0xff0000; if(type===TILE_TYPES.SHOP) color=0x9b59b6; 
-            if(type===TILE_TYPES.POLICE_STATION) color=0x3498db;
-            const geo = new THREE.CylinderGeometry(0.5, 0.5, 0.2, 8); const mat = new THREE.MeshBasicMaterial({ color: color });
-            const mesh = new THREE.Mesh(geo, mat); mesh.position.y = 0.4;
-            if(type===TILE_TYPES.HOSPITAL) {
-                const cGeo = new THREE.BoxGeometry(0.8, 0.2, 0.3); const cMesh = new THREE.Mesh(cGeo, mat); const cMesh2 = new THREE.Mesh(cGeo, mat);
-                cMesh2.rotation.y = Math.PI/2; cMesh.position.y = 0.5; cMesh2.position.y = 0.5; this.mesh.add(cMesh, cMesh2);
-            } else if (type===TILE_TYPES.SHOP) {
-                const roofGeo = new THREE.ConeGeometry(0.8, 1, 4); const roofMesh = new THREE.Mesh(roofGeo, mat);
-                roofMesh.position.y = 1.0; this.mesh.add(mesh, roofMesh);
-            } else { this.mesh.add(mesh); }
+            if (type === TILE_TYPES.HOSPITAL) {
+                const group = new THREE.Group(); const mat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+                const v = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.2, 0.4), mat); const h = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 0.4), mat);
+                v.position.y = 0.6; h.position.y = 0.6; group.add(v, h); this.mesh.add(group);
+                const base = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.2, 16), new THREE.MeshStandardMaterial({color: 0xffffff}));
+                base.position.y = 0.1; this.mesh.add(base); return;
+            }
+            if (type === TILE_TYPES.SHOP) {
+                const coinGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.2, 16); const coinMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.2 });
+                const coin = new THREE.Mesh(coinGeo, coinMat); coin.rotation.z = Math.PI / 2; coin.rotation.y = Math.PI / 4; coin.position.y = 1.0;
+                const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.0), new THREE.MeshStandardMaterial({color: 0x555555})); stand.position.y = 0.5;
+                this.mesh.add(stand, coin); return;
+            }
+            if (type === TILE_TYPES.POLICE_STATION) {
+                const bar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.2, 0.4), new THREE.MeshStandardMaterial({color: 0x333333})); bar.position.y = 1.0;
+                const red = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshStandardMaterial({color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.5})); red.position.set(-0.4, 1.2, 0);
+                const blue = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshStandardMaterial({color: 0x0000ff, emissive: 0x0000ff, emissiveIntensity: 0.5})); blue.position.set(0.4, 1.2, 0);
+                const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.0), new THREE.MeshStandardMaterial({color: 0x555555})); stand.position.y = 0.5;
+                this.mesh.add(stand, bar, red, blue); return;
+            }
+            if (type === TILE_TYPES.JAIL) {
+                const cageGroup = new THREE.Group(); const barMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                [[-0.6,-0.6], [0.6,-0.6], [0.6,0.6], [-0.6,0.6]].forEach(p => { const post = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.5), barMat); post.position.set(p[0], 0.75, p[1]); cageGroup.add(post); });
+                const top = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.1, 1.4), barMat); top.position.y = 1.5; cageGroup.add(top);
+                this.mesh.add(cageGroup); return;
+            }
+            if (type === TILE_TYPES.START) {
+                const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1, 4), new THREE.MeshStandardMaterial({color: 0x00ff00})); arrow.position.y = 1; arrow.rotation.z = Math.PI; this.mesh.add(arrow); return;
+            }
+            let color = 0xffffff; if(type===TILE_TYPES.CHANCE) color=0xffa502;
+            const geo = new THREE.BoxGeometry(0.6, 0.6, 0.6); const mat = new THREE.MeshStandardMaterial({ color: color });
+            const box = new THREE.Mesh(geo, mat); box.rotation.y = Math.PI/4; box.rotation.x = Math.PI/4; box.position.y = 0.8;
+            const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.8), new THREE.MeshStandardMaterial({color: 0xaaaaaa})); stand.position.y = 0.4;
+            this.mesh.add(stand, box);
         }
         setOwner(playerId) { this.owner = playerId; this.upgrade(); }
         upgrade() { if (this.level < 3) { this.level++; this.rent = this.price * 0.8 * this.level; this.updateBuildingVisual(); return true; } return false; }
@@ -852,8 +938,7 @@
             while(this.buildingGroup.children.length > 1){ this.buildingGroup.remove(this.buildingGroup.children[1]); }
             const pColor = this.owner !== null ? players[this.owner].color : 0xffffff;
             const buildingColor = new THREE.Color(pColor).multiplyScalar(0.8);
-            const floorHeight = 1.5;
-            const totalHeight = Math.max(0.1, this.level * floorHeight);
+            const totalHeight = Math.max(0.1, this.level * 1.5);
             if (this.level > 0) {
                 const geo = new THREE.BoxGeometry(2.5, totalHeight, 2.5);
                 const mat = new THREE.MeshStandardMaterial({ color: buildingColor, transparent: true, opacity: 0.8 });
@@ -1139,7 +1224,10 @@
     function openInventory() {
         if(!canUseTools || hasUsedTool) return;
         const p = players[currentPlayer];
+        // 1. Show Modal first (clears list)
         showModal("Your Bag", "Select item to use:", ["CANCEL"], () => {});
+        
+        // 2. Populate list
         const list = document.getElementById('inventory-list');
         if (p.inventory.length === 0) { list.innerHTML = '<div style="padding:10px;">Empty</div>'; return; }
         
@@ -1158,11 +1246,12 @@
         
         if (itemId === 'custom_roll') {
             player.inventory.splice(invIndex, 1);
-            const input = prompt("Dice 1-6:", "6");
-            const val = Math.min(6, Math.max(1, parseInt(input)||6));
-            rollDice(val);
+            showDiceSelector((num) => {
+                rollDice(num);
+            });
         } 
         else if (itemId === 'roadblock' || itemId === 'bomb') {
+            // Enter Placement Mode
             placementMode = { active: true, item: itemId, invIndex: invIndex, ghost: null };
             document.getElementById('instruction-overlay').style.display = 'block';
             showFloatMsg(player, "Click a tile to place");
@@ -1177,6 +1266,28 @@
             hasUsedTool = true;
             updateTurnIndicator();
         }
+    }
+
+    function showDiceSelector(callback) {
+        document.getElementById('inventory-list').innerHTML = '';
+        const modal = document.getElementById('game-modal');
+        document.getElementById('m-title').innerText = "Custom Roll";
+        document.getElementById('m-text').innerText = "Select result:";
+        const btnContainer = document.getElementById('m-buttons');
+        btnContainer.innerHTML = '';
+        
+        for (let i = 1; i <= 6; i++) {
+            const btn = document.createElement('button');
+            btn.innerText = i;
+            btn.className = 'modal-btn';
+            btn.style.width = '50px'; 
+            btn.onclick = () => {
+                modal.style.display = 'none';
+                callback(i);
+            };
+            btnContainer.appendChild(btn);
+        }
+        modal.style.display = 'block';
     }
 
     function rollDice(forceVal = null) {
@@ -1221,7 +1332,7 @@
         if(result===3) targetRot = {x:0, y:0, z:0}; 
         if(result===4) targetRot = {x:Math.PI, y:0, z:0}; 
         if(result===5) targetRot = {x:-Math.PI/2, y:0, z:0}; 
-        if(result===6) targetRot = {x:Math.PI, y:0, z:0}; 
+        if(result===6) targetRot = {x:Math.PI/2, y:0, z:0}; 
 
         new TWEEN.Tween(diceMesh.position).to({y: 1}, 800).easing(TWEEN.Easing.Bounce.Out).onComplete(() => {
             setTimeout(() => { diceMesh.visible = false; performMove(p, result); }, 500);
@@ -1361,8 +1472,10 @@
                 if (player.money > 1000) buyItem(player, ITEMS[Object.keys(ITEMS)[Math.floor(Math.random()*4)]]);
                 nextTurn();
             } else {
+                // 1. Show Modal first
+                showModal("Convenience Store", "Buy Tools?", ["LEAVE"], () => nextTurn());
+                // 2. Populate list
                 const list = document.getElementById('inventory-list');
-                list.innerHTML = '';
                 Object.values(ITEMS).forEach(item => {
                     const div = document.createElement('div');
                     div.className = 'inv-item';
@@ -1376,7 +1489,6 @@
                     };
                     list.appendChild(div);
                 });
-                showModal("Convenience Store", "Buy Tools?", ["LEAVE"], () => nextTurn());
             }
             return;
         }
@@ -1506,15 +1618,9 @@
     }
 
     function advancePlayer() {
-        // Police Logic: New Round Check
         const prevPlayer = currentPlayer;
         currentPlayer = (currentPlayer + 1) % players.length;
-        
-        // If wrapped to player 0, it's a new "Round" roughly
-        if (currentPlayer === 0) {
-            managePolice();
-        }
-
+        if (currentPlayer === 0) { managePolice(); }
         manualPanOffset.set(0,0,0);
         players.forEach((p, i) => { 
             document.getElementById(`p${i+1}-card`).classList.toggle('active', currentPlayer === i); 
@@ -1567,20 +1673,6 @@
         p.inventory.push(itemId);
         const item = Object.values(ITEMS).find(i => i.id === itemId);
         showFloatMsg(p, `+ ${item.name}`);
-    }
-    
-    function toggleLog() {
-        const panel = document.getElementById('log-panel');
-        const btn = document.getElementById('log-toggle-btn');
-        panel.classList.toggle('collapsed');
-        btn.innerText = panel.classList.contains('collapsed') ? 'LOGS ▼' : 'LOGS ▲';
-    }
-    
-    function adjustZoom(delta) {
-        if (!camera) return;
-        camera.zoom += delta;
-        camera.zoom = Math.max(0.5, Math.min(camera.zoom, 3.0));
-        camera.updateProjectionMatrix();
     }
 
     function animate(time) {
