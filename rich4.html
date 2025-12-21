@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Office Richman 4 - Tycoon Edition</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;700;900&display=swap');
@@ -14,6 +14,7 @@
             background-color: #2c3e50;
             user-select: none;
             -webkit-user-select: none;
+            touch-action: none; /* Prevent browser zooming/scrolling */
         }
 
         #game-container {
@@ -61,6 +62,7 @@
             text-align: center;
             box-shadow: 0 10px 0 rgba(0,0,0,0.2);
             min-width: 300px;
+            max-width: 90%;
             backdrop-filter: blur(5px);
         }
 
@@ -102,6 +104,7 @@
             transition: transform 0.2s;
             z-index: 100;
             display: none; 
+            white-space: nowrap;
         }
 
         #turn-puppet-icon { width: 40px; height: 40px; position: relative; }
@@ -110,28 +113,58 @@
         #turn-text { font-weight: 900; font-size: 1.5rem; color: #333; text-transform: uppercase; }
 
         /* Log Panel */
-        #log-panel {
+        #log-container {
             position: absolute;
-            bottom: 30px;
+            bottom: 120px; /* Above controls */
             left: 20px;
+            z-index: 90;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            pointer-events: auto;
+        }
+
+        #log-toggle-btn {
+            background: rgba(50, 50, 50, 0.8);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            backdrop-filter: blur(2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        #log-panel {
             width: 320px;
             max-height: 150px; 
             overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 6px;
-            pointer-events: auto;
-            z-index: 90;
-            background: rgba(0, 0, 0, 0.1);
+            background: rgba(0, 0, 0, 0.5);
             padding: 10px;
             border-radius: 10px;
             border: 2px solid rgba(255,255,255,0.1);
+            transition: max-height 0.3s, opacity 0.3s;
         }
+        
+        #log-panel.collapsed {
+            max-height: 0;
+            padding: 0;
+            opacity: 0;
+            border: none;
+            overflow: hidden;
+        }
+
         #log-panel::-webkit-scrollbar { width: 4px; }
         #log-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 2px; }
 
         .log-entry {
-            background: rgba(30, 30, 30, 0.6);
+            background: rgba(30, 30, 30, 0.8);
             backdrop-filter: blur(2px);
             color: white;
             padding: 6px 10px;
@@ -149,7 +182,7 @@
         /* Player Stats Panels */
         .player-card {
             position: absolute;
-            width: 220px; /* Slightly wider for diff */
+            width: 220px; 
             padding: 15px;
             background: rgba(255, 255, 255, 0.6);
             backdrop-filter: blur(4px);
@@ -158,13 +191,14 @@
             border: 3px solid #333;
             transition: transform 0.3s;
             display: none; 
+            transform-origin: center;
         }
         .player-card.active {
-            transform: scale(1.1);
+            transform: scale(1.05);
             border-color: #f1c40f;
             box-shadow: 0 0 20px rgba(241, 196, 15, 0.5);
             z-index: 5;
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.85);
         }
         #p1-card { top: 20px; left: 20px; }
         #p2-card { top: 20px; right: 20px; }
@@ -196,7 +230,9 @@
             text-align: center;
             pointer-events: auto;
             display: none; 
-            gap: 10px;
+            gap: 15px;
+            width: 100%;
+            justify-content: center;
         }
 
         button.game-btn {
@@ -211,13 +247,42 @@
             box-shadow: 0 10px 0 rgba(0,0,0,0.2);
             transition: transform 0.1s;
             backdrop-filter: blur(2px);
-            margin: 0 5px;
+            /* Prevent touch selection */
+            -webkit-tap-highlight-color: transparent;
         }
-        #roll-btn { background: rgba(231, 76, 60, 0.9); box-shadow: 0 10px 0 #c0392b; animation: pulse 2s infinite; width: 100px; height: 100px; font-size: 1.5rem; }
-        #items-btn { background: rgba(52, 152, 219, 0.9); box-shadow: 0 10px 0 #2980b9; font-size: 1rem; }
+        #roll-btn { background: rgba(231, 76, 60, 0.95); box-shadow: 0 10px 0 #c0392b; animation: pulse 2s infinite; width: 100px; height: 100px; font-size: 1.5rem; }
+        #items-btn { background: rgba(52, 152, 219, 0.95); box-shadow: 0 10px 0 #2980b9; font-size: 1rem; }
 
         button.game-btn:active { transform: translateY(10px); box-shadow: none !important; }
         button.game-btn:disabled { background: rgba(149, 165, 166, 0.8); box-shadow: 0 5px 0 #7f8c8d; cursor: not-allowed; animation: none; }
+
+        /* Debug Panel */
+        #debug-panel {
+            position: absolute;
+            top: 80px;
+            right: 10px;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: auto;
+            z-index: 150;
+        }
+        
+        .debug-btn {
+            padding: 6px 10px;
+            background: rgba(0,0,0,0.7);
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            transition: background 0.2s;
+        }
+        .debug-btn:hover { background: rgba(0,255,0,0.2); }
+        .debug-btn:active { transform: translateY(2px); }
 
         /* Dialog / Modal */
         #game-modal {
@@ -226,30 +291,32 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(5px);
-            padding: 30px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            padding: 25px;
             border-radius: 20px;
             border: 4px solid #333;
             text-align: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
             pointer-events: auto;
-            min-width: 300px;
-            z-index: 100;
+            min-width: 280px;
+            max-width: 90%;
+            z-index: 1000; /* Ensure on top */
         }
         .modal-title { font-size: 1.5rem; font-weight: 900; color: #2c3e50; margin-bottom: 10px; }
         .modal-text { font-size: 1.1rem; color: #333; margin-bottom: 20px; font-weight: 600; }
         
         .modal-btn {
-            padding: 10px 30px;
+            padding: 12px 25px;
             font-weight: 900;
             border: none;
             border-radius: 50px;
             cursor: pointer;
             font-size: 1rem;
-            margin: 0 10px;
+            margin: 5px;
             transition: transform 0.1s;
-            opacity: 0.9;
+            opacity: 1;
+            min-width: 80px;
         }
         .btn-yes { background: #2ecc71; color: white; box-shadow: 0 4px 0 #27ae60; }
         .btn-no { background: #e74c3c; color: white; box-shadow: 0 4px 0 #c0392b; }
@@ -266,20 +333,92 @@
             overflow-y: auto;
         }
         .inv-item {
-            background: rgba(255,255,255,0.8);
-            padding: 10px;
+            background: rgba(255,255,255,0.9);
+            padding: 12px;
             border-radius: 8px;
             cursor: pointer;
             border: 2px solid #ccc;
             font-weight: bold;
+            color: #333;
         }
         .inv-item:hover { background: white; border-color: #3498db; }
 
-        .float-msg { position: absolute; font-weight: 900; color: #fff; text-shadow: 2px 2px 0 #000; pointer-events: none; animation: floatUp 1.5s forwards; font-size: 1.2rem; }
+        .float-msg { position: absolute; font-weight: 900; color: #fff; text-shadow: 2px 2px 0 #000; pointer-events: none; animation: floatUp 1.5s forwards; font-size: 1.2rem; white-space: nowrap; }
         .money-particle { position: absolute; width: 30px; height: 30px; background: #27ae60; border-radius: 50%; border: 2px solid white; color: white; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); pointer-events: none; z-index: 200; transition: top 1s ease-in-out, left 1s ease-in-out, transform 1s ease-in-out; }
         .money-particle::after { content: '$'; }
         .speech-bubble { position: absolute; background: rgba(255, 255, 255, 0.9); border: 3px solid #333; border-radius: 15px; padding: 5px 15px; color: #333; font-weight: 900; font-size: 1rem; pointer-events: none; transform: translate(-50%, -150%); white-space: nowrap; z-index: 150; box-shadow: 0 5px 10px rgba(0,0,0,0.2); animation: popBubble 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .speech-bubble::after { content: ''; position: absolute; bottom: -8px; left: 50%; margin-left: -8px; border-width: 8px 8px 0; border-style: solid; border-color: #333 transparent; display: block; width: 0; }
+
+        /* Instruction Overlay */
+        #instruction-overlay {
+            position: absolute;
+            top: 80px; 
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: #ffeb3b;
+            font-size: 1.5rem;
+            font-weight: 900;
+            text-shadow: 2px 2px 0 #000;
+            pointer-events: none;
+            display: none;
+            z-index: 150;
+            animation: pulse 1s infinite;
+        }
+
+        /* --- MOBILE MEDIA QUERIES --- */
+        @media (max-width: 768px) {
+            #turn-indicator {
+                top: 10px;
+                padding: 5px 20px;
+                transform: translateX(-50%) scale(0.9);
+            }
+            
+            /* Reposition Player Cards for Mobile */
+            .player-card {
+                width: 140px;
+                padding: 10px;
+                font-size: 0.8rem;
+                border-width: 2px;
+            }
+            .p-name { font-size: 1rem; margin-bottom: 2px; }
+            .p-money { font-size: 1.1rem; }
+            .p-assets { font-size: 0.75rem; }
+            
+            /* Corners, but pushed closer to edge */
+            #p1-card { top: 10px; left: 10px; }
+            #p2-card { top: 10px; right: 10px; }
+            
+            /* P3/P4 sit above controls area */
+            #p3-card { bottom: 130px; left: 10px; }
+            #p4-card { bottom: 130px; right: 10px; }
+
+            /* Adjust Logs */
+            #log-container {
+                bottom: 130px; 
+                left: 10px;
+                max-width: 200px;
+            }
+            #log-panel {
+                width: 200px;
+                max-height: 120px;
+                font-size: 0.8rem;
+            }
+            
+            /* Adjust Controls */
+            #dice-panel {
+                bottom: 20px;
+                gap: 20px;
+            }
+            
+            #roll-btn { width: 90px; height: 90px; font-size: 1.2rem; }
+            #items-btn { width: 70px; height: 70px; font-size: 0.9rem; }
+            
+            #instruction-overlay {
+                font-size: 1.2rem;
+                top: 60px;
+            }
+        }
 
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-50px); } }
@@ -308,6 +447,10 @@
                 <label>AI Rivals:</label>
                 <input type="number" id="num-ai" class="setup-input" value="1" min="0" max="3">
             </div>
+            <div class="setup-row">
+                <label>Debug Mode:</label>
+                <input type="checkbox" id="debug-mode" class="setup-input" style="width:auto; height: 20px;">
+            </div>
             <button class="modal-btn btn-ok" onclick="startGame()">START GAME</button>
         </div>
     </div>
@@ -317,8 +460,22 @@
             <div id="turn-puppet-icon"><div id="turn-head"></div><div id="turn-body"></div></div>
             <div id="turn-text">PLAYER 1</div>
         </div>
+        
+        <div id="instruction-overlay">TAP TILE TO PLACE ITEM</div>
 
-        <div id="log-panel"></div>
+        <div id="log-container">
+            <button id="log-toggle-btn" onclick="toggleLog()">LOGS ▼</button>
+            <div id="log-panel" class="collapsed"></div>
+        </div>
+
+        <!-- Debug Panel -->
+        <div id="debug-panel">
+            <div style="color:white; font-weight:bold; margin-bottom:5px; text-shadow:1px 1px 0 #000;">DEBUG</div>
+            <button class="debug-btn" onclick="debugAddTool('custom_roll')">+ Roll</button>
+            <button class="debug-btn" onclick="debugAddTool('roadblock')">+ Block</button>
+            <button class="debug-btn" onclick="debugAddTool('bomb')">+ Mine</button>
+            <button class="debug-btn" onclick="debugAddTool('timer_bomb')">+ T-Bomb</button>
+        </div>
 
         <!-- Player Cards with Diff Indicator -->
         <div id="p1-card" class="player-card">
@@ -371,7 +528,7 @@
     </div>
 
 <script>
-    // --- Configuration ---
+    // --- 1. CONFIGURATION & CONSTANTS ---
     const CONFIG = {
         tileSize: 4,
         boardWidth: 8,  
@@ -383,7 +540,8 @@
             chance: 0xf39c12,
             jail: 0x34495e,
             hospital: 0xffffff,
-            shop: 0x9b59b6
+            shop: 0x9b59b6,
+            police: 0x2980b9
         }
     };
 
@@ -393,7 +551,8 @@
         CHANCE: 2,
         JAIL: 3,
         HOSPITAL: 4,
-        SHOP: 5
+        SHOP: 5,
+        POLICE_STATION: 6
     };
 
     const ITEMS = {
@@ -403,7 +562,29 @@
         TIMER_BOMB: { id: 'timer_bomb', name: 'Time Bomb', price: 200, desc: 'Explodes after 10 steps' }
     };
 
-    // --- Sound System ---
+    // --- 2. GAME STATE VARIABLES ---
+    let scene, camera, renderer;
+    let tiles = []; 
+    let players = [];
+    let currentPlayer = 0;
+    let isRolling = false;
+    let canUseTools = true;
+    let hasUsedTool = false;
+    let cameraTarget = new THREE.Vector3();
+    let manualPanOffset = new THREE.Vector3(); 
+    let raycaster = new THREE.Raycaster();
+    let mouse = new THREE.Vector2();
+    let buildings = []; 
+    let diceMesh; 
+    let isPanning = false; 
+    let activeThief = null; 
+    let activePolice = null; 
+    let activeBubbles = []; 
+    let hospitalPos = new THREE.Vector3(-25, 0, -25);
+    let prisonPos = new THREE.Vector3(25, 0, -25);
+    let placementMode = { active: false, item: null, invIndex: -1, ghost: null };
+
+    // --- 3. AUDIO SYSTEM ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playTone(freq, type, duration, vol=0.1) {
         if(audioCtx.state === 'suspended') audioCtx.resume();
@@ -429,289 +610,7 @@
         explode: () => { playTone(100, 'sawtooth', 0.5); setTimeout(()=>playTone(50, 'square', 0.8), 100); }
     };
 
-    // --- Game State ---
-    let scene, camera, renderer;
-    let tiles = []; 
-    let players = [];
-    let currentPlayer = 0;
-    let isRolling = false;
-    let canUseTools = true;
-    let hasUsedTool = false;
-    let cameraTarget = new THREE.Vector3();
-    let manualPanOffset = new THREE.Vector3(); 
-    let raycaster = new THREE.Raycaster();
-    let mouse = new THREE.Vector2();
-    let buildings = []; 
-    let diceMesh; 
-    let isPanning = false; 
-    let activeThief = null; 
-    let activeBubbles = []; 
-    let hospitalPos = new THREE.Vector3(-25, 0, -25);
-    let prisonPos = new THREE.Vector3(25, 0, -25);
-    
-    // Placement State
-    let placementMode = { active: false, item: null, invIndex: -1, ghost: null };
-
-    // --- Helper Functions ---
-    function midPos(s, e) {
-        return s.clone().lerp(e, 0.5).add(new THREE.Vector3(0, 2, 0));
-    }
-
-    function getPlayerColor(p) {
-        return '#' + new THREE.Color(p.color).getHexString();
-    }
-
-    function createLabel(text) {
-        const canvas = document.createElement('canvas');
-        canvas.width = 256;
-        canvas.height = 64;
-        const ctx = canvas.getContext('2d');
-        ctx.font = "Bold 32px 'Rubik', sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.shadowColor = "black";
-        ctx.shadowBlur = 4;
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = "black";
-        ctx.strokeText(text, 128, 32);
-        ctx.fillStyle = "white";
-        ctx.fillText(text, 128, 32);
-        const texture = new THREE.CanvasTexture(canvas);
-        const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
-        const sprite = new THREE.Sprite(mat);
-        sprite.scale.set(4, 1, 1);
-        return sprite;
-    }
-
-    function createDiceFace(number) {
-        const canvas = document.createElement('canvas');
-        canvas.width = 64;
-        canvas.height = 64;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#ecf0f1';
-        ctx.fillRect(0,0,64,64);
-        ctx.strokeStyle = '#bdc3c7';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(0,0,64,64);
-        ctx.fillStyle = (number === 1) ? '#e74c3c' : '#2c3e50';
-        const s = 64;
-        const dotSize = 6;
-        function drawDot(x, y) { ctx.beginPath(); ctx.arc(x, y, dotSize, 0, Math.PI*2); ctx.fill(); }
-        if(number === 1) { drawDot(s/2, s/2); }
-        if(number === 2) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.75); }
-        if(number === 3) { drawDot(s*0.25, s*0.25); drawDot(s/2, s/2); drawDot(s*0.75, s*0.75); }
-        if(number === 4) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); }
-        if(number === 5) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); drawDot(s/2, s/2); }
-        if(number === 6) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.5); drawDot(s*0.75, s*0.5); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); }
-        return new THREE.CanvasTexture(canvas);
-    }
-
-    function createDice() {
-        const mats = [
-            new THREE.MeshBasicMaterial({ map: createDiceFace(1) }),
-            new THREE.MeshBasicMaterial({ map: createDiceFace(2) }),
-            new THREE.MeshBasicMaterial({ map: createDiceFace(3) }),
-            new THREE.MeshBasicMaterial({ map: createDiceFace(4) }),
-            new THREE.MeshBasicMaterial({ map: createDiceFace(5) }),
-            new THREE.MeshBasicMaterial({ map: createDiceFace(6) })
-        ];
-        const geo = new THREE.BoxGeometry(2, 2, 2);
-        diceMesh = new THREE.Mesh(geo, mats);
-        diceMesh.position.set(0, -100, 0); 
-        diceMesh.castShadow = true;
-        scene.add(diceMesh);
-    }
-
-    function addLog(text, colorHex) {
-        const panel = document.getElementById('log-panel');
-        const entry = document.createElement('div');
-        entry.className = 'log-entry';
-        entry.innerText = text;
-        entry.style.borderLeftColor = colorHex;
-        panel.prepend(entry);
-        while (panel.children.length > 50) {
-            panel.removeChild(panel.lastChild);
-        }
-    }
-
-    function showSpeechBubble(player, text) {
-        const bubble = document.createElement('div');
-        bubble.className = 'speech-bubble';
-        bubble.innerText = text;
-        document.body.appendChild(bubble);
-        const bubbleObj = {
-            element: bubble,
-            target: player.mesh,
-            offsetY: 2.5 
-        };
-        activeBubbles.push(bubbleObj);
-        setTimeout(() => {
-            bubble.remove();
-            activeBubbles = activeBubbles.filter(b => b !== bubbleObj);
-        }, 2000);
-    }
-
-    function showFloatMsg(player, text, color='#ffffff') {
-        const div = document.createElement('div');
-        div.className = 'float-msg';
-        div.innerText = text;
-        div.style.color = color;
-        const pos = player.mesh.position.clone();
-        pos.y += 2;
-        pos.project(camera);
-        const x = (pos.x * .5 + .5) * window.innerWidth;
-        const y = (-(pos.y * .5) + .5) * window.innerHeight;
-        div.style.left = x + 'px';
-        div.style.top = y + 'px';
-        document.body.appendChild(div);
-        setTimeout(() => div.remove(), 1500);
-    }
-
-    function animateMoneyTransfer(from, to) {
-        let startPos, endPos;
-        const centerScreen = toScreenPosition(new THREE.Vector3(0,0,0), camera);
-        if (from === 'system') {
-            startPos = { x: centerScreen.x, y: centerScreen.y };
-        } else if (from instanceof Player) {
-            const el = document.getElementById(`p${from.id+1}-card`);
-            if (el) { const rect = el.getBoundingClientRect(); startPos = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 }; }
-        }
-        if (to === 'system') {
-            endPos = { x: centerScreen.x, y: centerScreen.y };
-        } else if (to instanceof Player) {
-            const el = document.getElementById(`p${to.id+1}-card`);
-            if (el) { const rect = el.getBoundingClientRect(); endPos = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 }; }
-        }
-        if (!startPos || !endPos) return;
-        for(let i=0; i<5; i++) {
-            const p = document.createElement('div');
-            p.className = 'money-particle';
-            document.body.appendChild(p);
-            p.style.left = startPos.x + 'px';
-            p.style.top = startPos.y + 'px';
-            setTimeout(() => {
-                const spread = 20;
-                p.style.left = (endPos.x + (Math.random()-0.5)*spread) + 'px';
-                p.style.top = (endPos.y + (Math.random()-0.5)*spread) + 'px';
-                p.style.transform = `scale(0.5) rotate(${Math.random()*360}deg)`;
-                setTimeout(() => p.remove(), 1000); 
-            }, i * 100);
-        }
-    }
-
-    function toScreenPosition(vector, camera) {
-        const v = vector.clone();
-        v.project(camera);
-        return {
-            x: (v.x * 0.5 + 0.5) * window.innerWidth,
-            y: (-(v.y * 0.5) + 0.5) * window.innerHeight
-        };
-    }
-
-    function changeMoney(player, amount) {
-        player.money += amount;
-        
-        // Show Diff
-        const diffEl = document.getElementById(`p${player.id+1}-diff`);
-        if (diffEl) {
-            const sign = amount >= 0 ? '+' : '';
-            diffEl.innerText = `${sign}${amount}`;
-            diffEl.className = 'money-diff show ' + (amount >= 0 ? 'positive' : 'negative');
-        }
-
-        new TWEEN.Tween(player)
-            .to({ displayedMoney: player.money }, 2500) 
-            .easing(TWEEN.Easing.Quadratic.Out)
-            .onUpdate(() => updateUI())
-            .onComplete(() => {
-                 if (diffEl) diffEl.classList.remove('show');
-            })
-            .start();
-    }
-
-    function createConfetti() {
-        confetti({
-            particleCount: 100,
-            spread: 70,
-            origin: { y: 0.6 }
-        });
-    }
-
-    // --- UI Update Functions (Must be defined early) ---
-
-    function updateTurnIndicator() {
-        if (players.length === 0) return;
-        const p = players[currentPlayer];
-        const colorHex = '#' + new THREE.Color(p.color).getHexString();
-        document.getElementById('turn-body').style.backgroundColor = colorHex;
-        document.getElementById('turn-text').innerText = p.name;
-        document.getElementById('turn-text').style.color = colorHex;
-        
-        const el = document.getElementById('turn-indicator');
-        el.style.transform = 'translateX(-50%) scale(1.1)';
-        setTimeout(() => el.style.transform = 'translateX(-50%) scale(1)', 150);
-        
-        // AI Logic
-        if (p.isAI) {
-            document.getElementById('roll-btn').disabled = true;
-            document.getElementById('items-btn').disabled = true;
-            setTimeout(() => rollDice(), 1000);
-        } else {
-            // Check flags
-            document.getElementById('roll-btn').disabled = false;
-            document.getElementById('items-btn').disabled = hasUsedTool || !canUseTools;
-        }
-    }
-
-    function updateUI() {
-        players.forEach((p, i) => {
-            const elId = `p${i+1}`;
-            document.getElementById(`${elId}-name`).innerText = p.name;
-            document.getElementById(`${elId}-money`).innerText = '$' + Math.floor(p.displayedMoney);
-            document.getElementById(`${elId}-assets`).innerText = 'Props: ' + p.properties;
-        });
-    }
-
-    function updatePlayerPositions() {
-        const groups = {};
-        players.forEach(p => { if(!groups[p.tileIndex]) groups[p.tileIndex] = []; groups[p.tileIndex].push(p); });
-        for (const [tIdx, group] of Object.entries(groups)) {
-            if (tIdx < tiles.length) {
-                const t = tiles[tIdx];
-                const count = group.length;
-                if (count > 1) {
-                    const radius = 1.0;
-                    group.forEach((p, i) => {
-                        const angle = (i / count) * Math.PI * 2;
-                        p.mesh.position.x = t.x + Math.cos(angle) * radius;
-                        p.mesh.position.z = t.z + Math.sin(angle) * radius;
-                    });
-                } else if(count === 1 && !isRolling) {
-                     // Center single player if not moving
-                     // Note: We don't force reset here to avoid jitter during tween, logic handles it
-                }
-            }
-        }
-    }
-
-    function checkOcclusion() {
-        if (!players.length) return;
-        buildings.forEach(b => b.material.opacity = 0.8);
-        const p = players[currentPlayer];
-        const pPos = p.mesh.position.clone();
-        pPos.y += 1; 
-        const dir = pPos.clone().sub(camera.position).normalize();
-        const dist = camera.position.distanceTo(pPos);
-        raycaster.set(camera.position, dir);
-        const intersects = raycaster.intersectObjects(buildings);
-        for(let i=0; i < intersects.length; i++) {
-            if (intersects[i].distance < dist - 2) { 
-                intersects[i].object.material.opacity = 0.3;
-            }
-        }
-    }
-
-    // --- Classes ---
+    // --- 4. CLASSES ---
 
     class Tile {
         constructor(index, x, z, type, side) {
@@ -727,10 +626,8 @@
             this.hasRoadblock = false;
             this.hasBomb = false;
             this.itemMesh = null;
-
             this.mesh = new THREE.Group();
             this.mesh.position.set(x, 0, z);
-
             const roadGeo = new THREE.BoxGeometry(CONFIG.tileSize - 0.2, 0.2, CONFIG.tileSize - 0.2);
             let color = CONFIG.tileColors.empty;
             if(type === TILE_TYPES.START) color = CONFIG.tileColors.start;
@@ -738,98 +635,81 @@
             if(type === TILE_TYPES.JAIL) color = CONFIG.tileColors.jail;
             if(type === TILE_TYPES.HOSPITAL) color = CONFIG.tileColors.hospital;
             if(type === TILE_TYPES.SHOP) color = CONFIG.tileColors.shop;
-
             this.mat = new THREE.MeshStandardMaterial({ color: color });
             this.base = new THREE.Mesh(roadGeo, this.mat);
             this.base.receiveShadow = true;
             this.mesh.add(this.base);
-            
-            // HOSPITAL CROSS on road
             if(type === TILE_TYPES.HOSPITAL) {
                  const crossV = new THREE.Mesh(new THREE.BoxGeometry(2, 0.3, 0.6), new THREE.MeshBasicMaterial({color: 0xff0000}));
                  const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.3, 2), new THREE.MeshBasicMaterial({color: 0xff0000}));
-                 crossV.position.y = 0.1;
-                 crossH.position.y = 0.1;
+                 crossV.position.y = 0.1; crossH.position.y = 0.1;
                  this.mesh.add(crossV, crossH);
             }
-
             if (type !== TILE_TYPES.PROPERTY && type !== TILE_TYPES.HOSPITAL) this.addIcon(type);
-
             let bx = 0, bz = 0;
             const offsetDist = CONFIG.tileSize; 
             if (side === 0) bz = offsetDist;
             if (side === 1) bx = offsetDist;
             if (side === 2) bz = -offsetDist;
             if (side === 3) bx = -offsetDist;
-
             this.buildingGroup = new THREE.Group();
             this.buildingGroup.position.set(bx, 0, bz);
             this.mesh.add(this.buildingGroup);
-
             const lotGeo = new THREE.PlaneGeometry(CONFIG.tileSize * 0.9, CONFIG.tileSize * 0.9);
             const lotMat = new THREE.MeshStandardMaterial({ color: 0x95a5a6 });
             const lot = new THREE.Mesh(lotGeo, lotMat);
             lot.rotation.x = -Math.PI/2;
             lot.position.y = 0.05;
             this.buildingGroup.add(lot);
-
             scene.add(this.mesh);
         }
-
         setItem(type) {
             if (this.itemMesh) { this.mesh.remove(this.itemMesh); this.itemMesh = null; }
-            this.hasRoadblock = false;
-            this.hasBomb = false;
-
+            this.hasRoadblock = false; this.hasBomb = false;
             if (type === 'roadblock') {
                 this.hasRoadblock = true;
                 const g = new THREE.CylinderGeometry(0.5, 0.5, 0.2, 8);
                 const m = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-                this.itemMesh = new THREE.Mesh(g, m);
-                this.itemMesh.position.y = 0.5;
-                this.mesh.add(this.itemMesh);
+                this.itemMesh = new THREE.Mesh(g, m); this.itemMesh.position.y = 0.5; this.mesh.add(this.itemMesh);
             } else if (type === 'bomb') {
                 this.hasBomb = true;
                 const g = new THREE.SphereGeometry(0.5);
                 const m = new THREE.MeshBasicMaterial({ color: 0x000000 });
-                this.itemMesh = new THREE.Mesh(g, m);
-                this.itemMesh.position.y = 0.5;
-                this.mesh.add(this.itemMesh);
+                this.itemMesh = new THREE.Mesh(g, m); this.itemMesh.position.y = 0.5; this.mesh.add(this.itemMesh);
             }
         }
-
         clearItem() {
-            this.hasRoadblock = false;
-            this.hasBomb = false;
+            this.hasRoadblock = false; this.hasBomb = false;
             if (this.itemMesh) { this.mesh.remove(this.itemMesh); this.itemMesh = null; }
         }
-
         addIcon(type) {
             let color = 0xffffff;
             if(type===TILE_TYPES.START) color=0x00ff00;
             if(type===TILE_TYPES.JAIL) color=0x000000;
+            if(type===TILE_TYPES.HOSPITAL) color=0xff0000;
             if(type===TILE_TYPES.SHOP) color=0x9b59b6; 
-            
+            if(type===TILE_TYPES.POLICE_STATION) color=0x3498db;
             const geo = new THREE.CylinderGeometry(0.5, 0.5, 0.2, 8);
             const mat = new THREE.MeshBasicMaterial({ color: color });
             const mesh = new THREE.Mesh(geo, mat);
             mesh.position.y = 0.4;
-            
-            if (type===TILE_TYPES.SHOP) {
+            if(type===TILE_TYPES.HOSPITAL) {
+                const cGeo = new THREE.BoxGeometry(0.8, 0.2, 0.3);
+                const cMesh = new THREE.Mesh(cGeo, mat);
+                const cMesh2 = new THREE.Mesh(cGeo, mat);
+                cMesh2.rotation.y = Math.PI/2; cMesh.position.y = 0.5; cMesh2.position.y = 0.5;
+                this.mesh.add(cMesh, cMesh2);
+            } else if (type===TILE_TYPES.SHOP) {
                 const roofGeo = new THREE.ConeGeometry(0.8, 1, 4);
                 const roofMesh = new THREE.Mesh(roofGeo, mat);
                 roofMesh.position.y = 1.0;
                 this.mesh.add(mesh, roofMesh);
-            } else {
-                this.mesh.add(mesh);
-            }
+            } else if (type===TILE_TYPES.POLICE_STATION) {
+                 const badge = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), new THREE.MeshBasicMaterial({color: 0xffff00}));
+                 badge.position.y = 1.0; this.mesh.add(mesh, badge);
+            } else { this.mesh.add(mesh); }
         }
-
-        setOwner(playerId) {
-            this.owner = playerId;
-            this.upgrade();
-        }
-
+        setOwner(playerId) { this.owner = playerId; this.upgrade(); }
         upgrade() {
             if (this.level < 3) {
                 this.level++;
@@ -839,22 +719,17 @@
             }
             return false;
         }
-
         destroyBuilding() {
             this.level = 0;
             this.owner = null;
             this.updateBuildingVisual();
         }
-
         updateBuildingVisual() {
-            while(this.buildingGroup.children.length > 1){ 
-                this.buildingGroup.remove(this.buildingGroup.children[1]); 
-            }
+            while(this.buildingGroup.children.length > 1){ this.buildingGroup.remove(this.buildingGroup.children[1]); }
             const pColor = this.owner !== null ? players[this.owner].color : 0xffffff;
             const buildingColor = new THREE.Color(pColor).multiplyScalar(0.8);
             const floorHeight = 1.5;
             const totalHeight = Math.max(0.1, this.level * floorHeight);
-            
             if (this.level > 0) {
                 const geo = new THREE.BoxGeometry(2.5, totalHeight, 2.5);
                 const mat = new THREE.MeshStandardMaterial({ color: buildingColor, transparent: true, opacity: 0.8 });
@@ -930,7 +805,6 @@
             this.skipTurns = 0;
             this.inventory = []; 
             this.timerBomb = { active: false, steps: 0 };
-
             this.mesh = new THREE.Group();
             const bodyGeo = new THREE.CylinderGeometry(0.5, 0.6, 1.2, 8);
             const bodyMat = new THREE.MeshStandardMaterial({ color: color });
@@ -986,52 +860,203 @@
         }
     }
 
-    // --- Creation Functions ---
+    // --- 5. FUNCTIONS (Global Scope) ---
+
+    // Utility
+    function midPos(s, e) { return s.clone().lerp(e, 0.5).add(new THREE.Vector3(0, 2, 0)); }
+    function getPlayerColor(p) { return '#' + new THREE.Color(p.color).getHexString(); }
+    
+    function createLabel(text) {
+        const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 64;
+        const ctx = canvas.getContext('2d'); ctx.font = "Bold 32px 'Rubik', sans-serif";
+        ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.shadowColor = "black";
+        ctx.shadowBlur = 4; ctx.lineWidth = 4; ctx.strokeStyle = "black";
+        ctx.strokeText(text, 128, 32); ctx.fillStyle = "white"; ctx.fillText(text, 128, 32);
+        const texture = new THREE.CanvasTexture(canvas);
+        const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+        const sprite = new THREE.Sprite(mat); sprite.scale.set(4, 1, 1); return sprite;
+    }
+
+    function createDiceFace(number) {
+        const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64;
+        const ctx = canvas.getContext('2d'); ctx.fillStyle = '#ecf0f1'; ctx.fillRect(0,0,64,64);
+        ctx.strokeStyle = '#bdc3c7'; ctx.lineWidth = 4; ctx.strokeRect(0,0,64,64);
+        ctx.fillStyle = (number === 1) ? '#e74c3c' : '#2c3e50'; const s = 64; const dotSize = 6;
+        function drawDot(x, y) { ctx.beginPath(); ctx.arc(x, y, dotSize, 0, Math.PI*2); ctx.fill(); }
+        if(number===1) { drawDot(s/2, s/2); }
+        if(number===2) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.75); }
+        if(number===3) { drawDot(s*0.25, s*0.25); drawDot(s/2, s/2); drawDot(s*0.75, s*0.75); }
+        if(number===4) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); }
+        if(number===5) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); drawDot(s/2, s/2); }
+        if(number===6) { drawDot(s*0.25, s*0.25); drawDot(s*0.75, s*0.25); drawDot(s*0.25, s*0.5); drawDot(s*0.75, s*0.5); drawDot(s*0.25, s*0.75); drawDot(s*0.75, s*0.75); }
+        return new THREE.CanvasTexture(canvas);
+    }
 
     function createDice() {
-        const mats = [
-            new THREE.MeshBasicMaterial({ map: createDiceFace(1) }),
-            new THREE.MeshBasicMaterial({ map: createDiceFace(2) }),
-            new THREE.MeshBasicMaterial({ map: createDiceFace(3) }),
-            new THREE.MeshBasicMaterial({ map: createDiceFace(4) }),
-            new THREE.MeshBasicMaterial({ map: createDiceFace(5) }),
-            new THREE.MeshBasicMaterial({ map: createDiceFace(6) })
-        ];
-        const geo = new THREE.BoxGeometry(2, 2, 2);
-        diceMesh = new THREE.Mesh(geo, mats);
-        diceMesh.position.set(0, -100, 0); 
-        diceMesh.castShadow = true;
-        scene.add(diceMesh);
+        const mats = [ new THREE.MeshBasicMaterial({ map: createDiceFace(1) }), new THREE.MeshBasicMaterial({ map: createDiceFace(2) }),
+            new THREE.MeshBasicMaterial({ map: createDiceFace(3) }), new THREE.MeshBasicMaterial({ map: createDiceFace(4) }),
+            new THREE.MeshBasicMaterial({ map: createDiceFace(5) }), new THREE.MeshBasicMaterial({ map: createDiceFace(6) }) ];
+        const geo = new THREE.BoxGeometry(2, 2, 2); diceMesh = new THREE.Mesh(geo, mats);
+        diceMesh.position.set(0, -100, 0); diceMesh.castShadow = true; scene.add(diceMesh);
     }
 
-    function createPlayer(id, name, isAI) {
-        players.push(new Player(id, name, CONFIG.colors[id % 4], isAI));
-        if (id === 0) cameraTarget.copy(players[0].mesh.position);
+    function addLog(text, colorHex) {
+        const panel = document.getElementById('log-panel'); const entry = document.createElement('div');
+        entry.className = 'log-entry'; entry.innerText = text; entry.style.borderLeftColor = colorHex;
+        panel.prepend(entry); while (panel.children.length > 50) { panel.removeChild(panel.lastChild); }
+    }
+    
+    function toggleLog() {
+        const panel = document.getElementById('log-panel'); const btn = document.getElementById('log-toggle-btn');
+        panel.classList.toggle('collapsed');
+        btn.innerText = panel.classList.contains('collapsed') ? 'LOGS ▼' : 'LOGS ▲';
     }
 
-    function addTile(index, x, z, side) {
-        const tile = new Tile(index, x, z, TILE_TYPES.PROPERTY, side);
-        tiles.push(tile);
+    function showSpeechBubble(player, text) {
+        const bubble = document.createElement('div'); bubble.className = 'speech-bubble';
+        bubble.innerText = text; document.body.appendChild(bubble);
+        const bubbleObj = { element: bubble, target: player.mesh, offsetY: 2.5 };
+        activeBubbles.push(bubbleObj);
+        setTimeout(() => { bubble.remove(); activeBubbles = activeBubbles.filter(b => b !== bubbleObj); }, 2000);
     }
+
+    function showFloatMsg(player, text, color='#ffffff') {
+        const div = document.createElement('div'); div.className = 'float-msg';
+        div.innerText = text; div.style.color = color;
+        const pos = player.mesh.position.clone(); pos.y += 2; pos.project(camera);
+        const x = (pos.x * .5 + .5) * window.innerWidth; const y = (-(pos.y * .5) + .5) * window.innerHeight;
+        div.style.left = x + 'px'; div.style.top = y + 'px';
+        document.body.appendChild(div); setTimeout(() => div.remove(), 1500);
+    }
+
+    function animateMoneyTransfer(from, to) {
+        let startPos, endPos;
+        const centerScreen = toScreenPosition(new THREE.Vector3(0,0,0), camera);
+        if (from === 'system') { startPos = { x: centerScreen.x, y: centerScreen.y }; } 
+        else if (from instanceof Player) { const el = document.getElementById(`p${from.id+1}-card`); if (el) { const rect = el.getBoundingClientRect(); startPos = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 }; } }
+        if (to === 'system') { endPos = { x: centerScreen.x, y: centerScreen.y }; } 
+        else if (to instanceof Player) { const el = document.getElementById(`p${to.id+1}-card`); if (el) { const rect = el.getBoundingClientRect(); endPos = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 }; } }
+        if (!startPos || !endPos) return;
+        for(let i=0; i<5; i++) {
+            const p = document.createElement('div'); p.className = 'money-particle'; document.body.appendChild(p);
+            p.style.left = startPos.x + 'px'; p.style.top = startPos.y + 'px';
+            setTimeout(() => {
+                const spread = 20; p.style.left = (endPos.x + (Math.random()-0.5)*spread) + 'px';
+                p.style.top = (endPos.y + (Math.random()-0.5)*spread) + 'px';
+                p.style.transform = `scale(0.5) rotate(${Math.random()*360}deg)`;
+                setTimeout(() => p.remove(), 1000); 
+            }, i * 100);
+        }
+    }
+
+    function toScreenPosition(vector, camera) {
+        const v = vector.clone(); v.project(camera);
+        return { x: (v.x * 0.5 + 0.5) * window.innerWidth, y: (-(v.y * 0.5) + 0.5) * window.innerHeight };
+    }
+
+    function updateTurnIndicator() {
+        if (players.length === 0) return;
+        const p = players[currentPlayer];
+        const colorHex = '#' + new THREE.Color(p.color).getHexString();
+        document.getElementById('turn-body').style.backgroundColor = colorHex;
+        document.getElementById('turn-text').innerText = p.name;
+        document.getElementById('turn-text').style.color = colorHex;
+        const el = document.getElementById('turn-indicator');
+        el.style.transform = 'translateX(-50%) scale(1.1)';
+        setTimeout(() => el.style.transform = 'translateX(-50%) scale(1)', 150);
+        if (p.isAI) {
+            document.getElementById('roll-btn').disabled = true; document.getElementById('items-btn').disabled = true;
+            setTimeout(() => rollDice(), 1000);
+        } else {
+            document.getElementById('roll-btn').disabled = false; document.getElementById('items-btn').disabled = hasUsedTool || !canUseTools;
+        }
+    }
+
+    function updateUI() {
+        players.forEach((p, i) => {
+            const elId = `p${i+1}`; document.getElementById(`${elId}-name`).innerText = p.name;
+            document.getElementById(`${elId}-money`).innerText = '$' + Math.floor(p.displayedMoney);
+            document.getElementById(`${elId}-assets`).innerText = 'Props: ' + p.properties;
+        });
+    }
+    
+    function changeMoney(player, amount) {
+        player.money += amount;
+        const diffEl = document.getElementById(`p${player.id+1}-diff`);
+        if (diffEl) {
+            const sign = amount >= 0 ? '+' : ''; diffEl.innerText = `${sign}${amount}`;
+            diffEl.className = 'money-diff show ' + (amount >= 0 ? 'positive' : 'negative');
+        }
+        new TWEEN.Tween(player).to({ displayedMoney: player.money }, 2500).easing(TWEEN.Easing.Quadratic.Out)
+            .onUpdate(() => updateUI()).onComplete(() => { if (diffEl) diffEl.classList.remove('show'); }).start();
+    }
+
+    function updatePlayerPositions() {
+        const groups = {}; players.forEach(p => { if(!groups[p.tileIndex]) groups[p.tileIndex] = []; groups[p.tileIndex].push(p); });
+        for (const [tIdx, group] of Object.entries(groups)) {
+            if (tIdx < tiles.length) {
+                const t = tiles[tIdx]; const count = group.length;
+                if (count > 1) {
+                    const radius = 1.0;
+                    group.forEach((p, i) => {
+                        const angle = (i / count) * Math.PI * 2;
+                        p.mesh.position.x = t.x + Math.cos(angle) * radius; p.mesh.position.z = t.z + Math.sin(angle) * radius;
+                    });
+                }
+            }
+        }
+    }
+
+    function checkOcclusion() {
+        if (!players.length) return;
+        buildings.forEach(b => b.material.opacity = 0.8);
+        const p = players[currentPlayer]; const pPos = p.mesh.position.clone(); pPos.y += 1; 
+        const dir = pPos.clone().sub(camera.position).normalize();
+        raycaster.set(camera.position, dir);
+        const intersects = raycaster.intersectObjects(buildings);
+        for(let i=0; i < intersects.length; i++) { if (intersects[i].distance < camera.position.distanceTo(pPos) - 2) { intersects[i].object.material.opacity = 0.3; } }
+    }
+
+    function showModal(title, text, buttons, callback) {
+        const modal = document.getElementById('game-modal');
+        document.getElementById('m-title').innerText = title; document.getElementById('m-text').innerText = text;
+        const btnContainer = document.getElementById('m-buttons'); btnContainer.innerHTML = '';
+        buttons.forEach(btnText => {
+            const btn = document.createElement('button'); btn.innerText = btnText; btn.className = 'modal-btn';
+            if(btnText === 'YES' || btnText === 'OK' || btnText === 'HIRE') btn.classList.add('btn-yes');
+            if(btnText === 'NO' || btnText === 'PASS' || btnText === 'SKIP' || btnText === 'CANCEL' || btnText === 'LEAVE') btn.classList.add('btn-no');
+            btn.onclick = () => { modal.style.display = 'none'; callback(btnText === 'YES' || btnText === 'OK' || btnText === 'HIRE' || btnText === 'RESTART'); };
+            btnContainer.appendChild(btn);
+        });
+        modal.style.display = 'block';
+    }
+
+    function createConfetti() { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); }
+
+    function addTile(index, x, z, side) { const tile = new Tile(index, x, z, TILE_TYPES.PROPERTY, side); tiles.push(tile); }
+    function createPlayer(id, name, isAI) { players.push(new Player(id, name, CONFIG.colors[id % 4], isAI)); if (id === 0) cameraTarget.copy(players[0].mesh.position); }
 
     function createBoard() {
-        const w = CONFIG.boardWidth;
-        const s = CONFIG.tileSize;
-        const offset = (w * s) / 2 - (s/2);
-        let count = 0;
+        const w = CONFIG.boardWidth; const s = CONFIG.tileSize; const offset = (w * s) / 2 - (s/2); let count = 0;
         for(let i = -offset; i <= offset; i += s) addTile(count++, i, offset, 0);
         for(let i = offset - s; i >= -offset; i -= s) addTile(count++, offset, i, 1);
         for(let i = offset - s; i >= -offset; i -= s) addTile(count++, i, -offset, 2);
         for(let i = -offset + s; i < offset; i += s) addTile(count++, -offset, i, 3);
-
         tiles[0].type = TILE_TYPES.START; tiles[0].mat.color.setHex(CONFIG.tileColors.start);
         tiles[6].type = TILE_TYPES.HOSPITAL; tiles[6].mat.color.setHex(CONFIG.tileColors.hospital);
         tiles[12].type = TILE_TYPES.SHOP; tiles[12].mat.color.setHex(CONFIG.tileColors.shop);
         tiles[16].type = TILE_TYPES.JAIL; tiles[16].mat.color.setHex(CONFIG.tileColors.jail);
         if(tiles[22]) { tiles[22].type = TILE_TYPES.SHOP; tiles[22].mat.color.setHex(CONFIG.tileColors.shop); }
+        // Police Station at 24
+        if(tiles[24]) { tiles[24].type = TILE_TYPES.POLICE_STATION; tiles[24].mat.color.setHex(CONFIG.tileColors.police); }
+        // Shop at 20
+        if(tiles[20]) { tiles[20].type = TILE_TYPES.SHOP; tiles[20].mat.color.setHex(CONFIG.tileColors.shop); }
+        // Shop at 28
+        if(tiles[28]) { tiles[28].type = TILE_TYPES.SHOP; tiles[28].mat.color.setHex(CONFIG.tileColors.shop); }
+        // Shop at 4
+        if(tiles[4]) { tiles[4].type = TILE_TYPES.SHOP; tiles[4].mat.color.setHex(CONFIG.tileColors.shop); }
 
-        const q1 = Math.floor(tiles.length / 4);
-        const q3 = Math.floor(tiles.length * 0.75);
+        const q1 = Math.floor(tiles.length / 4); const q3 = Math.floor(tiles.length * 0.75);
         if(tiles[q1].type === TILE_TYPES.PROPERTY) { tiles[q1].type = TILE_TYPES.CHANCE; tiles[q1].mat.color.setHex(CONFIG.tileColors.chance); }
         if(tiles[q3].type === TILE_TYPES.PROPERTY) { tiles[q3].type = TILE_TYPES.CHANCE; tiles[q3].mat.color.setHex(CONFIG.tileColors.chance); }
     }
@@ -1049,191 +1074,20 @@
     }
 
     function createDecoration() {
-        const planeGeo = new THREE.PlaneGeometry(100, 100);
-        const planeMat = new THREE.MeshStandardMaterial({ color: 0xbdc3c7 });
-        const floor = new THREE.Mesh(planeGeo, planeMat);
-        floor.rotation.x = -Math.PI / 2;
-        floor.position.y = -0.1;
-        floor.receiveShadow = true;
-        scene.add(floor);
-        const centerGroup = new THREE.Group();
-        const grassGeo = new THREE.BoxGeometry(16, 0.5, 16);
-        const grassMat = new THREE.MeshStandardMaterial({ color: 0x27ae60 });
-        const grass = new THREE.Mesh(grassGeo, grassMat);
-        centerGroup.add(grass);
-        const fGeo = new THREE.CylinderGeometry(3, 3, 1, 8);
-        const fMat = new THREE.MeshStandardMaterial({ color: 0x3498db });
-        const f = new THREE.Mesh(fGeo, fMat);
-        f.position.y = 0.5;
-        centerGroup.add(f);
-        scene.add(centerGroup);
+        const planeGeo = new THREE.PlaneGeometry(100, 100); const planeMat = new THREE.MeshStandardMaterial({ color: 0xbdc3c7 });
+        const floor = new THREE.Mesh(planeGeo, planeMat); floor.rotation.x = -Math.PI / 2; floor.position.y = -0.1; floor.receiveShadow = true; scene.add(floor);
+        const centerGroup = new THREE.Group(); const grassGeo = new THREE.BoxGeometry(16, 0.5, 16); const grassMat = new THREE.MeshStandardMaterial({ color: 0x27ae60 });
+        const grass = new THREE.Mesh(grassGeo, grassMat); centerGroup.add(grass);
+        const fGeo = new THREE.CylinderGeometry(3, 3, 1, 8); const fMat = new THREE.MeshStandardMaterial({ color: 0x3498db });
+        const f = new THREE.Mesh(fGeo, fMat); f.position.y = 0.5; centerGroup.add(f); scene.add(centerGroup);
     }
 
-    // --- Main Logic ---
-
-    function startGame() {
-        const humans = parseInt(document.getElementById('num-humans').value) || 1;
-        const ai = parseInt(document.getElementById('num-ai').value) || 0;
-        const total = Math.min(Math.max(humans + ai, 1), 4);
-
-        if (total < 1) return alert("Need at least 1 player!");
-
-        document.getElementById('setup-screen').style.display = 'none';
-        document.getElementById('dice-panel').style.display = 'flex';
-        document.getElementById('turn-indicator').style.display = 'flex'; 
-
-        initThreeJS();
-        createBoard();
-        createDecoration();
-        createOffMapBuildings();
-        createDice(); 
-        
-        for(let i=0; i<humans; i++) createPlayer(i, `Player ${i+1}`, false);
-        for(let i=0; i<ai; i++) createPlayer(humans+i, `AI ${i+1}`, true);
-
-        for(let i=0; i<4; i++) {
-            const card = document.getElementById(`p${i+1}-card`);
-            if (i < total) {
-                card.style.display = 'block';
-                card.style.top = (i < 2) ? '20px' : 'auto';
-                card.style.bottom = (i >= 2) ? '20px' : 'auto';
-                card.style.left = (i % 2 === 0) ? '20px' : 'auto';
-                card.style.right = (i % 2 !== 0) ? '20px' : 'auto';
-            } else {
-                card.style.display = 'none';
-            }
-        }
-        
-        if (players.length > 0) {
-            players[0].cursor.visible = true;
-            updateTurnIndicator(); 
-        }
-
-        updateUI();
-        updatePlayerPositions();
-        animate();
+    function debugAddTool(itemId) {
+        const p = players[currentPlayer]; p.inventory.push(itemId);
+        const item = Object.values(ITEMS).find(i => i.id === itemId); showFloatMsg(p, `+ ${item.name}`);
     }
 
-    function initThreeJS() {
-        const container = document.getElementById('game-container');
-
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xd0d8e0);
-        
-        const aspect = window.innerWidth / window.innerHeight;
-        const d = 40;
-        camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
-        camera.position.set(20, 30, 20); 
-        camera.lookAt(scene.position);
-        camera.zoom = 1; 
-
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        container.appendChild(renderer.domElement);
-
-        const amb = new THREE.AmbientLight(0xffffff, 0.7);
-        scene.add(amb);
-        const dir = new THREE.DirectionalLight(0xffffff, 0.6);
-        dir.position.set(10, 20, 5);
-        dir.castShadow = true;
-        dir.shadow.mapSize.width = 2048;
-        dir.shadow.mapSize.height = 2048;
-        scene.add(dir);
-
-        window.addEventListener('wheel', (e) => {
-            if(!camera) return;
-            if(document.getElementById('setup-screen').style.display === 'none') {
-                e.preventDefault();
-            }
-            const zoomSpeed = 0.001;
-            camera.zoom -= e.deltaY * zoomSpeed;
-            camera.zoom = Math.max(0.5, Math.min(camera.zoom, 3.0)); 
-            camera.updateProjectionMatrix();
-        }, { passive: false });
-
-        // Mouse Events for Placement & Pan
-        window.addEventListener('contextmenu', e => e.preventDefault()); 
-
-        window.addEventListener('mousedown', (e) => {
-            if (e.button === 2) { 
-                isPanning = true;
-                document.body.style.cursor = 'grabbing';
-            }
-            
-            // Placement Logic
-            if (placementMode.active && e.button === 0) {
-                // Raycast
-                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-                raycaster.setFromCamera(mouse, camera);
-                
-                const intersections = raycaster.intersectObjects(tiles.map(t => t.base), false);
-                if (intersections.length > 0) {
-                    const hitObj = intersections[0].object;
-                    const tile = tiles.find(t => t.base === hitObj);
-                    if(tile) {
-                        const p = players[currentPlayer];
-                        // Perform Placement
-                        tile.setItem(placementMode.item);
-                        showFloatMsg(p, "Item Placed!");
-                        
-                        // Cleanup
-                        if(placementMode.ghost) { scene.remove(placementMode.ghost); placementMode.ghost = null; }
-                        placementMode.active = false;
-                        document.getElementById('instruction-overlay').style.display = 'none';
-                        
-                        // Consume turn? No, standard is use item THEN roll.
-                        // Just consume item from inventory was done in useItem logic...
-                        // Wait, we need to handle inventory removal here because we delayed it
-                        p.inventory.splice(placementMode.invIndex, 1);
-                        hasUsedTool = true;
-                        updateTurnIndicator(); // Refresh button state
-                    }
-                }
-            }
-        });
-
-        window.addEventListener('mousemove', (e) => {
-            if (isPanning) {
-                const panSpeed = 0.05 / camera.zoom;
-                manualPanOffset.x -= e.movementX * panSpeed;
-                manualPanOffset.z += e.movementX * panSpeed;
-                manualPanOffset.x -= e.movementY * panSpeed;
-                manualPanOffset.z -= e.movementY * panSpeed;
-            }
-
-            if (placementMode.active) {
-                 mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-                 mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-                 raycaster.setFromCamera(mouse, camera);
-                 const intersections = raycaster.intersectObjects(tiles.map(t => t.base), false);
-                 if (intersections.length > 0) {
-                     if (!placementMode.ghost) {
-                         const g = new THREE.SphereGeometry(0.5);
-                         const m = new THREE.MeshBasicMaterial({color: 0x00ff00, transparent: true, opacity: 0.5});
-                         placementMode.ghost = new THREE.Mesh(g, m);
-                         scene.add(placementMode.ghost);
-                     }
-                     const pos = intersections[0].object.parent.position;
-                     placementMode.ghost.position.set(pos.x, 1, pos.z);
-                     placementMode.ghost.visible = true;
-                 } else if (placementMode.ghost) {
-                     placementMode.ghost.visible = false;
-                 }
-            }
-        });
-
-        window.addEventListener('mouseup', (e) => {
-            if (e.button === 2) {
-                isPanning = false;
-                document.body.style.cursor = 'default';
-            }
-        });
-    }
-
-    // --- Interaction Logic ---
+    // --- GAMEPLAY ACTIONS ---
 
     function openInventory() {
         if(!canUseTools || hasUsedTool) return;
@@ -1241,11 +1095,9 @@
         const list = document.getElementById('inventory-list');
         list.innerHTML = '';
         if (p.inventory.length === 0) { showFloatMsg(p, "Empty"); return; }
-        
         p.inventory.forEach((itemId, index) => {
             const item = Object.values(ITEMS).find(i => i.id === itemId);
-            const div = document.createElement('div');
-            div.className = 'inv-item';
+            const div = document.createElement('div'); div.className = 'inv-item';
             div.innerText = `${item.name}: ${item.desc}`;
             div.onclick = () => useItem(p, itemId, index);
             list.appendChild(div);
@@ -1255,233 +1107,120 @@
 
     function useItem(player, itemId, invIndex) {
         document.getElementById('game-modal').style.display = 'none';
-        
+        player.inventory.splice(invIndex, 1);
         if (itemId === 'custom_roll') {
-            player.inventory.splice(invIndex, 1);
-            const input = prompt("Dice 1-6:", "6");
-            const val = Math.min(6, Math.max(1, parseInt(input)||6));
-            rollDice(val);
-        } 
-        else if (itemId === 'roadblock' || itemId === 'bomb') {
-            // Enter Placement Mode
+            const input = prompt("Dice 1-6:", "6"); const val = Math.min(6, Math.max(1, parseInt(input)||6)); rollDice(val);
+        } else if (itemId === 'roadblock' || itemId === 'bomb') {
             placementMode = { active: true, item: itemId, invIndex: invIndex, ghost: null };
-            document.getElementById('instruction-overlay').style.display = 'block';
-            showFloatMsg(player, "Click a tile to place");
-        } 
-        else if (itemId === 'timer_bomb') {
-            player.inventory.splice(invIndex, 1);
+            document.getElementById('instruction-overlay').style.display = 'block'; showFloatMsg(player, "Click a tile to place");
+        } else if (itemId === 'timer_bomb') {
             const targets = players.filter(p => p !== player && !p.inJail);
             const target = targets.length > 0 ? targets[0] : player;
-            target.timerBomb = { active: true, steps: 10 };
-            target.bombVis.visible = true;
-            showSpeechBubble(target, "Tick Tock...");
-            hasUsedTool = true;
-            updateTurnIndicator();
+            target.timerBomb = { active: true, steps: 10 }; target.bombVis.visible = true;
+            showSpeechBubble(target, "Tick Tock..."); hasUsedTool = true; updateTurnIndicator();
         }
     }
 
     function rollDice(forceVal = null) {
         if (isRolling) return;
-        isRolling = true;
-        canUseTools = false; 
-        document.getElementById('items-btn').disabled = true;
-        document.getElementById('roll-btn').disabled = true;
-
+        isRolling = true; canUseTools = false; 
+        document.getElementById('items-btn').disabled = true; document.getElementById('roll-btn').disabled = true;
         const p = players[currentPlayer];
-        if (p.skipTurns > 0) {
-            cameraTarget.copy(p.mesh.position);
-            p.skipTurns--;
-            showSpeechBubble(p, "Sick...");
-            addLog(`${p.name} is sick. (Skips: ${p.skipTurns})`, '#7f8c8d');
-            setTimeout(() => nextTurn(), 1500);
-            return;
-        }
-        
-        if (p.inJail) {
-            showSpeechBubble(p, "Boring...");
-            p.inJail = false;
-            nextTurn();
-            return;
-        }
-
-        if (p.mesh.position.distanceTo(hospitalPos) < 5) {
-             const t = tiles[p.tileIndex];
-             p.mesh.position.set(t.x, 0.5, t.z);
-             cameraTarget.copy(p.mesh.position);
-        }
-
-        const randX = (Math.random() - 0.5) * 8;
-        const randZ = (Math.random() - 0.5) * 8;
-        diceMesh.position.set(randX, 15, randZ);
-        diceMesh.visible = true;
+        if (p.skipTurns > 0) { cameraTarget.copy(p.mesh.position); p.skipTurns--; showSpeechBubble(p, "Sick..."); addLog(`${p.name} is sick. (Skips: ${p.skipTurns})`, '#7f8c8d'); setTimeout(() => nextTurn(), 1500); return; }
+        if (p.inJail) { showSpeechBubble(p, "Boring..."); p.inJail = false; nextTurn(); return; }
+        if (p.mesh.position.distanceTo(hospitalPos) < 5) { const t = tiles[p.tileIndex]; p.mesh.position.set(t.x, 0.5, t.z); cameraTarget.copy(p.mesh.position); }
+        const randX = (Math.random() - 0.5) * 8; const randZ = (Math.random() - 0.5) * 8;
+        diceMesh.position.set(randX, 15, randZ); diceMesh.visible = true;
         const result = forceVal || (Math.floor(Math.random() * 6) + 1);
-        
         let targetRot = {x:0, y:0, z:0};
-        if(result===1) targetRot = {x:0, y:0, z:Math.PI/2}; 
-        if(result===2) targetRot = {x:0, y:0, z:-Math.PI/2}; 
-        if(result===3) targetRot = {x:0, y:0, z:0}; 
-        if(result===4) targetRot = {x:Math.PI, y:0, z:0}; 
-        if(result===5) targetRot = {x:-Math.PI/2, y:0, z:0}; 
-        if(result===6) targetRot = {x:Math.PI, y:0, z:0}; 
-
-        new TWEEN.Tween(diceMesh.position).to({y: 1}, 800).easing(TWEEN.Easing.Bounce.Out).onComplete(() => {
-            setTimeout(() => { diceMesh.visible = false; performMove(p, result); }, 500);
-        }).start();
+        if(result===1) targetRot = {x:0, y:0, z:Math.PI/2}; if(result===2) targetRot = {x:0, y:0, z:-Math.PI/2};
+        if(result===3) targetRot = {x:0, y:0, z:0}; if(result===4) targetRot = {x:Math.PI, y:0, z:0};
+        if(result===5) targetRot = {x:-Math.PI/2, y:0, z:0}; if(result===6) targetRot = {x:Math.PI, y:0, z:0};
+        new TWEEN.Tween(diceMesh.position).to({y: 1}, 800).easing(TWEEN.Easing.Bounce.Out).onComplete(() => { setTimeout(() => { diceMesh.visible = false; performMove(p, result); }, 500); }).start();
         new TWEEN.Tween(diceMesh.rotation).to({x: targetRot.x + Math.PI*4, y: targetRot.y + Math.PI*4, z: targetRot.z + Math.PI*4}, 800).easing(TWEEN.Easing.Quadratic.Out).start();
     }
 
-    function performMove(p, steps) {
-        SOUNDS.roll(); 
-        movePlayerSteps(p, steps);
-    }
+    function performMove(p, steps) { SOUNDS.roll(); movePlayerSteps(p, steps); }
 
     function movePlayerSteps(player, steps) {
         let stepsLeft = steps;
         function step() {
-            if (player.timerBomb.active) {
-                player.timerBomb.steps--;
-                if(player.timerBomb.steps<=0) { explodeBomb(player); return; }
-            }
+            if (player.timerBomb.active) { player.timerBomb.steps--; if(player.timerBomb.steps<=0) { explodeBomb(player); return; } }
             if (stepsLeft > 0) {
-                stepsLeft--;
-                let nextIdx = (player.tileIndex + 1) % tiles.length;
-                if (tiles[nextIdx].hasRoadblock) {
-                    tiles[nextIdx].clearItem();
-                    showSpeechBubble(player, "Blocked!");
-                    addLog("Roadblock hit!", "#e74c3c");
-                    player.hopTo(nextIdx, () => handleLand(player)); 
-                    return; 
-                }
-                if (tiles[nextIdx].hasBomb) {
-                    tiles[nextIdx].clearItem();
-                    SOUNDS.explode();
-                    showSpeechBubble(player, "BOOM!");
-                    tiles[nextIdx].destroyBuilding();
-                    player.hopTo(nextIdx, () => { changeMoney(player, -200); handleLand(player); });
-                    return;
-                }
-                if (nextIdx === 0) {
-                    changeMoney(player, 2000);
-                    animateMoneyTransfer('system', player);
-                    addLog(`${player.name} passed GO: +$2000`, getPlayerColor(player));
-                    showSpeechBubble(player, "Salary!");
-                    SOUNDS.buy();
-                }
+                stepsLeft--; let nextIdx = (player.tileIndex + 1) % tiles.length;
+                if (tiles[nextIdx].hasRoadblock) { tiles[nextIdx].clearItem(); showSpeechBubble(player, "Blocked!"); addLog("Roadblock hit!", "#e74c3c"); player.hopTo(nextIdx, () => handleLand(player)); return; }
+                if (tiles[nextIdx].hasBomb) { tiles[nextIdx].clearItem(); SOUNDS.explode(); showSpeechBubble(player, "BOOM!"); tiles[nextIdx].destroyBuilding(); player.hopTo(nextIdx, () => { changeMoney(player, -200); handleLand(player); }); return; }
+                if (nextIdx === 0) { changeMoney(player, 2000); animateMoneyTransfer('system', player); addLog(`${player.name} passed GO: +$2000`, getPlayerColor(player)); showSpeechBubble(player, "Salary!"); SOUNDS.buy(); }
                 player.hopTo(nextIdx, step);
-            } else {
-                handleLand(player);
-            }
+            } else { handleLand(player); }
         }
         step();
     }
 
     function explodeBomb(player) {
-        SOUNDS.explode();
-        showSpeechBubble(player, "KABOOM!");
-        player.timerBomb.active = false;
-        player.bombVis.visible = false;
-        tiles[player.tileIndex].destroyBuilding();
-        changeMoney(player, -500);
-        player.skipTurns = 3;
+        SOUNDS.explode(); showSpeechBubble(player, "KABOOM!"); player.timerBomb.active = false; player.bombVis.visible = false;
+        tiles[player.tileIndex].destroyBuilding(); changeMoney(player, -500); player.skipTurns = 3;
         addLog(`${player.name} exploded! To Hospital.`, "#e74c3c");
         new TWEEN.Tween(player.mesh.position).to({ x: hospitalPos.x, y: 0.5, z: hospitalPos.z }, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
-        cameraTarget.copy(hospitalPos);
-        setTimeout(nextTurn, 2000);
+        cameraTarget.copy(hospitalPos); setTimeout(nextTurn, 2000);
     }
 
     function moveThief() {
         if (!activeThief) return;
-        const steps = Math.floor(Math.random() * 4) + 3;
-        let stepsLeft = steps;
-        
+        const steps = Math.floor(Math.random() * 4) + 3; let stepsLeft = steps;
         function step() {
             if (stepsLeft > 0) {
-                stepsLeft--;
-                let nextIdx = (activeThief.tileIndex + 1) % tiles.length;
-                
-                // Lap Logic: if wrapping from 31 to 0
-                if (activeThief.tileIndex === tiles.length - 1 && nextIdx === 0) {
-                    activeThief.hasLapped = true;
-                }
-
+                stepsLeft--; let nextIdx = (activeThief.tileIndex + 1) % tiles.length;
+                if (activeThief.tileIndex === tiles.length - 1 && nextIdx === 0) { activeThief.hasLapped = true; }
                 players.forEach(p => {
                     if (p.id !== activeThief.ownerId && p.tileIndex === nextIdx && !p.inJail && p.skipTurns === 0) {
-                        changeMoney(p, -500);
-                        changeMoney(players[activeThief.ownerId], 500);
-                        animateMoneyTransfer(p, players[activeThief.ownerId]);
-                        const ownerName = players[activeThief.ownerId].name;
-                        addLog(`Thief stole $500 from ${p.name}`, getPlayerColor(players[activeThief.ownerId]));
-                        showSpeechBubble(p, "Hey!");
-                        SOUNDS.steal();
+                        changeMoney(p, -500); changeMoney(players[activeThief.ownerId], 500); animateMoneyTransfer(p, players[activeThief.ownerId]);
+                        const ownerName = players[activeThief.ownerId].name; addLog(`Thief stole $500 from ${p.name}`, getPlayerColor(players[activeThief.ownerId]));
+                        showSpeechBubble(p, "Hey!"); SOUNDS.steal();
                     }
                 });
-
                 activeThief.hopTo(nextIdx, step);
             } else {
-                // End of move check
                 if (activeThief.hasLapped && activeThief.tileIndex >= 16) {
-                    // Retire Thief
                     new TWEEN.Tween(activeThief.mesh.position).to({x: prisonPos.x, y: prisonPos.y, z: prisonPos.z}, 1000).start();
-                    addLog(`Thief retired to prison.`, "#95a5a6");
-                    activeThief = null;
-                    setTimeout(advancePlayer, 1500);
-                } else {
-                    setTimeout(advancePlayer, 1500);
-                }
+                    addLog(`Thief retired to prison.`, "#95a5a6"); activeThief = null; setTimeout(advancePlayer, 1500);
+                } else { setTimeout(advancePlayer, 1500); }
             }
         }
-        
-        if (activeThief.mesh.position.distanceTo(prisonPos) < 5) {
-             const t = tiles[16];
-             activeThief.mesh.position.set(t.x, 0.5, t.z);
-             activeThief.tileIndex = 16;
-        }
+        if (activeThief.mesh.position.distanceTo(prisonPos) < 5) { const t = tiles[16]; activeThief.mesh.position.set(t.x, 0.5, t.z); activeThief.tileIndex = 16; }
         step();
     }
 
     function handleLand(player) {
-        isRolling = false;
-        updatePlayerPositions();
+        isRolling = false; updatePlayerPositions();
         const tile = tiles[player.tileIndex];
+        
+        if (activePolice && activePolice.tileIndex === player.tileIndex) {
+            const tax = Math.floor(player.money * 0.1);
+            changeMoney(player, -tax); animateMoneyTransfer(player, 'system');
+            addLog(`${player.name} paid $${tax} police tax!`, getPlayerColor(player)); showSpeechBubble(player, "It's the cops!"); SOUNDS.pay();
+            scene.remove(activePolice.mesh); activePolice = null;
+        }
 
         if (tile.type === TILE_TYPES.SHOP) {
-            if (player.isAI) {
-                if (player.money > 1000) buyItem(player, ITEMS[Object.keys(ITEMS)[Math.floor(Math.random()*4)]]);
-                nextTurn();
-            } else {
-                const list = document.getElementById('inventory-list');
-                list.innerHTML = '';
+            if (player.isAI) { if (player.money > 1000) buyItem(player, ITEMS[Object.keys(ITEMS)[Math.floor(Math.random()*4)]]); nextTurn(); }
+            else {
+                const list = document.getElementById('inventory-list'); list.innerHTML = '';
                 Object.values(ITEMS).forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'inv-item';
-                    div.innerText = `${item.name} ($${item.price})`;
-                    div.onclick = () => {
-                        if(tiles[player.tileIndex].type === TILE_TYPES.SHOP) {
-                            buyItem(player, item);
-                            document.getElementById('game-modal').style.display = 'none';
-                            nextTurn(); // End turn after buy
-                        }
-                    };
+                    const div = document.createElement('div'); div.className = 'inv-item'; div.innerText = `${item.name} ($${item.price})`;
+                    div.onclick = () => { if(tiles[player.tileIndex].type === TILE_TYPES.SHOP) { buyItem(player, item); document.getElementById('game-modal').style.display = 'none'; nextTurn(); } };
                     list.appendChild(div);
                 });
                 showModal("Convenience Store", "Buy Tools?", ["LEAVE"], () => nextTurn());
             }
             return;
         }
-
         if (tile.type === TILE_TYPES.HOSPITAL) {
-            SOUNDS.event();
-            changeMoney(player, -500);
-            animateMoneyTransfer(player, 'system');
-            player.skipTurns = 3;
-            addLog(`${player.name} paid $500 Hospital fees`, getPlayerColor(player));
-            showSpeechBubble(player, "Ouch...");
+            SOUNDS.event(); changeMoney(player, -500); animateMoneyTransfer(player, 'system'); player.skipTurns = 3;
+            addLog(`${player.name} paid $500 Hospital fees`, getPlayerColor(player)); showSpeechBubble(player, "Ouch...");
             new TWEEN.Tween(player.mesh.position).to({ x: hospitalPos.x, y: 0.5, z: hospitalPos.z }, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
-            cameraTarget.copy(hospitalPos);
-            setTimeout(nextTurn, 2000);
-            return;
+            cameraTarget.copy(hospitalPos); setTimeout(nextTurn, 2000); return;
         }
-
         if (tile.type === TILE_TYPES.CHANCE) {
             SOUNDS.event();
             const events = [
@@ -1489,43 +1228,24 @@
                 { text: "Coffee Spill. -$200", effect: (p) => { changeMoney(p, -200); animateMoneyTransfer(p, 'system'); addLog(`${p.name} lost $200`, getPlayerColor(p)); showSpeechBubble(p, "Hot!"); } },
                 { text: "Bonus! +$1000", effect: (p) => { changeMoney(p, 1000); animateMoneyTransfer('system', p); addLog(`${p.name} won bonus`, getPlayerColor(p)); showSpeechBubble(p, "Yesss!"); } }
             ];
-            const evt = events[Math.floor(Math.random() * events.length)];
-            showModal("Fate Card", evt.text, ["OK"], () => { evt.effect(player); nextTurn(); });
-            return;
+            const evt = events[Math.floor(Math.random() * events.length)]; showModal("Fate Card", evt.text, ["OK"], () => { evt.effect(player); nextTurn(); }); return;
         }
-
         if (tile.type === TILE_TYPES.JAIL) {
-            SOUNDS.event();
-            addLog(`${player.name} is visiting Prison`, getPlayerColor(player));
-            if (!activeThief) {
-                showModal("Prison", "Hire Thief ($2000)?", ["HIRE", "PASS"], (choice) => {
-                    if (choice && player.money >= 2000) {
-                        changeMoney(player, -2000);
-                        animateMoneyTransfer(player, 'system');
-                        activeThief = new Thief(player.id, player.tileIndex);
-                        addLog(`${player.name} hired a Thief!`, getPlayerColor(player));
-                        showSpeechBubble(player, "Go!");
-                    } 
-                    nextTurn();
-                });
-            } else {
-                showSpeechBubble(player, "Visiting.");
-                setTimeout(nextTurn, 1000);
-            }
+            SOUNDS.event(); addLog(`${player.name} is visiting Prison`, getPlayerColor(player));
+            if (!activeThief) { showModal("Prison", "Hire Thief ($2000)?", ["HIRE", "PASS"], (choice) => {
+                if (choice && player.money >= 2000) { changeMoney(player, -2000); animateMoneyTransfer(player, 'system'); activeThief = new Thief(player.id, player.tileIndex); addLog(`${player.name} hired a Thief!`, getPlayerColor(player)); showSpeechBubble(player, "Go!"); } 
+                nextTurn(); });
+            } else { showSpeechBubble(player, "Visiting."); setTimeout(nextTurn, 1000); }
             return;
         }
-
-        if (tile.type === TILE_TYPES.START) {
-            nextTurn();
-            return;
-        }
-
+        if (tile.type === TILE_TYPES.START) { nextTurn(); return; }
+        if (tile.type === TILE_TYPES.POLICE_STATION) { showSpeechBubble(player, "Greetings Officer."); nextTurn(); return; }
         if (tile.type === TILE_TYPES.PROPERTY) {
             if (tile.owner === null) {
                 if (player.money >= tile.price) {
                     if (player.isAI) { if(player.money>1000) buyProperty(player, tile); nextTurn(); }
                     else showModal("For Sale", `Buy $${tile.price}?`, ["YES", "NO"], (c) => { if(c) buyProperty(player, tile); nextTurn(); });
-                } else { nextTurn(); }
+                } else { if (!player.isAI) showSpeechBubble(player, "Too expensive!"); nextTurn(); }
             } else if (tile.owner === player.id) {
                 const cost = tile.price * 0.5;
                 if (player.money >= cost && tile.level < 3) {
@@ -1533,20 +1253,10 @@
                     else showModal("Upgrade", `Build $${cost}?`, ["YES", "NO"], (c) => { if(c) upgradeProperty(player, tile); nextTurn(); });
                 } else { nextTurn(); }
             } else {
-                const rent = tile.rent;
-                const owner = players[tile.owner];
-                addLog(`${player.name} paid $${rent} rent`, getPlayerColor(player));
-                showSpeechBubble(player, "My wallet!");
-                SOUNDS.pay();
-                changeMoney(player, -rent);
-                changeMoney(players[tile.owner], rent);
-                animateMoneyTransfer(player, owner);
-                
-                if (player.money < 0) {
-                    showModal("GAME OVER", `${player.name} is bankrupt!`, ["RESTART"], () => location.reload());
-                } else {
-                    setTimeout(nextTurn, 1000);
-                }
+                const rent = tile.rent; const owner = players[tile.owner];
+                addLog(`${player.name} paid $${rent} rent`, getPlayerColor(player)); showSpeechBubble(player, "My wallet!"); SOUNDS.pay();
+                changeMoney(player, -rent); changeMoney(players[tile.owner], rent); animateMoneyTransfer(player, owner);
+                if (player.money < 0) { showModal("GAME OVER", `${player.name} is bankrupt!`, ["RESTART"], () => location.reload()); } else { setTimeout(nextTurn, 1000); }
             }
         }
     }
@@ -1587,7 +1297,9 @@
     }
 
     function advancePlayer() {
+        const prevPlayer = currentPlayer;
         currentPlayer = (currentPlayer + 1) % players.length;
+        if (currentPlayer === 0) { managePolice(); }
         manualPanOffset.set(0,0,0);
         players.forEach((p, i) => { 
             document.getElementById(`p${i+1}-card`).classList.toggle('active', currentPlayer === i); 
@@ -1606,69 +1318,120 @@
             setTimeout(rollDice, 1000);
         }
     }
-
-    function buyItem(player, item) {
-        if (player.money >= item.price) {
-            changeMoney(player, -item.price);
-            player.inventory.push(item.id);
-            addLog(`${player.name} bought ${item.name}`, getPlayerColor(player));
-            showFloatMsg(player, "+ " + item.name);
-        } else {
-            showFloatMsg(player, "No Funds");
-        }
-    }
-
-    function showModal(title, text, buttons, callback) {
-        const modal = document.getElementById('game-modal');
-        document.getElementById('m-title').innerText = title;
-        document.getElementById('m-text').innerText = text;
-        const btnContainer = document.getElementById('m-buttons');
-        btnContainer.innerHTML = '';
-        buttons.forEach(btnText => {
-            const btn = document.createElement('button');
-            btn.innerText = btnText;
-            btn.className = 'modal-btn';
-            if(btnText === 'YES' || btnText === 'OK' || btnText === 'HIRE') btn.classList.add('btn-yes');
-            if(btnText === 'NO' || btnText === 'PASS' || btnText === 'SKIP' || btnText === 'CANCEL' || btnText === 'LEAVE') btn.classList.add('btn-no');
-            btn.onclick = () => {
-                modal.style.display = 'none';
-                callback(btnText === 'YES' || btnText === 'OK' || btnText === 'HIRE' || btnText === 'RESTART');
-            };
-            btnContainer.appendChild(btn);
-        });
-        modal.style.display = 'block';
-    }
-
-    function createConfetti() {
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-    }
-
-    function checkOcclusion() {
-        if (!players.length) return;
-        buildings.forEach(b => b.material.opacity = 0.8);
-        const p = players[currentPlayer];
-        const pPos = p.mesh.position.clone();
-        pPos.y += 1; 
-        const dir = pPos.clone().sub(camera.position).normalize();
-        const dist = camera.position.distanceTo(pPos);
-        raycaster.set(camera.position, dir);
-        const intersects = raycaster.intersectObjects(buildings);
-        for(let i=0; i < intersects.length; i++) {
-            if (intersects[i].distance < dist - 2) { 
-                intersects[i].object.material.opacity = 0.3;
+    
+    function managePolice() {
+        if (activePolice) {
+            activePolice.life--;
+            if(activePolice.life <= 0) {
+                scene.remove(activePolice.mesh);
+                activePolice = null;
+                addLog("Police shift ended.", "#34495e");
             }
         }
+        if (!activePolice) {
+             const randTile = Math.floor(Math.random() * tiles.length);
+             if (tiles[randTile].type === TILE_TYPES.PROPERTY) {
+                 const t = tiles[randTile];
+                 const mesh = new THREE.Group();
+                 const b = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.2, 8), new THREE.MeshStandardMaterial({color: 0x2980b9}));
+                 b.position.y = 0.6; mesh.add(b);
+                 const h = new THREE.Mesh(new THREE.SphereGeometry(0.4), new THREE.MeshStandardMaterial({color: 0xffcd94}));
+                 h.position.y = 1.4; mesh.add(h);
+                 const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.2), new THREE.MeshStandardMaterial({color: 0x2c3e50}));
+                 hat.position.y = 1.7; mesh.add(hat);
+                 mesh.position.set(t.x, 0.5, t.z);
+                 scene.add(mesh);
+                 activePolice = { mesh: mesh, tileIndex: randTile, life: 4 }; 
+                 addLog("Police dispatched!", "#2980b9");
+             }
+        }
     }
 
-    function getPlayerColor(p) {
-        return '#' + new THREE.Color(p.color).getHexString();
+    function debugAddTool(itemId) {
+        const p = players[currentPlayer];
+        p.inventory.push(itemId);
+        const item = Object.values(ITEMS).find(i => i.id === itemId);
+        showFloatMsg(p, `+ ${item.name}`);
+    }
+
+    function startGame() {
+        const humans = parseInt(document.getElementById('num-humans').value) || 1;
+        const ai = parseInt(document.getElementById('num-ai').value) || 0;
+        const total = Math.min(Math.max(humans + ai, 1), 4);
+        if (total < 1) return alert("Need at least 1 player!");
+        document.getElementById('setup-screen').style.display = 'none';
+        document.getElementById('dice-panel').style.display = 'flex';
+        document.getElementById('turn-indicator').style.display = 'flex';
+        if(document.getElementById('debug-mode').checked) { document.getElementById('debug-panel').style.display = 'flex'; }
+        initThreeJS(); createBoard(); createDecoration(); createOffMapBuildings(); createDice(); 
+        for(let i=0; i<humans; i++) createPlayer(i, `Player ${i+1}`, false);
+        for(let i=0; i<ai; i++) createPlayer(humans+i, `AI ${i+1}`, true);
+        for(let i=0; i<4; i++) {
+            const card = document.getElementById(`p${i+1}-card`);
+            if (i < total) { card.style.display = 'block'; card.style.top = (i < 2) ? '20px' : 'auto'; card.style.bottom = (i >= 2) ? '20px' : 'auto'; card.style.left = (i % 2 === 0) ? '20px' : 'auto'; card.style.right = (i % 2 !== 0) ? '20px' : 'auto'; } else { card.style.display = 'none'; }
+        }
+        if (players.length > 0) { players[0].cursor.visible = true; updateTurnIndicator(); }
+        updateUI(); updatePlayerPositions(); animate();
+    }
+
+    function initThreeJS() {
+        const container = document.getElementById('game-container');
+        scene = new THREE.Scene(); scene.background = new THREE.Color(0xd0d8e0);
+        const aspect = window.innerWidth / window.innerHeight; const d = 40;
+        camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+        camera.position.set(20, 30, 20); camera.lookAt(scene.position); camera.zoom = 1; 
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+        const amb = new THREE.AmbientLight(0xffffff, 0.7); scene.add(amb);
+        const dir = new THREE.DirectionalLight(0xffffff, 0.6); dir.position.set(10, 20, 5); dir.castShadow = true;
+        dir.shadow.mapSize.width = 2048; dir.shadow.mapSize.height = 2048; scene.add(dir);
+        window.addEventListener('wheel', (e) => {
+            if(!camera) return; if(document.getElementById('setup-screen').style.display === 'none') { e.preventDefault(); }
+            const zoomSpeed = 0.001; camera.zoom -= e.deltaY * zoomSpeed; camera.zoom = Math.max(0.5, Math.min(camera.zoom, 3.0)); camera.updateProjectionMatrix();
+        }, { passive: false });
+        window.addEventListener('contextmenu', e => e.preventDefault()); 
+        window.addEventListener('mousedown', (e) => {
+            if (e.button === 2) { isPanning = true; document.body.style.cursor = 'grabbing'; }
+            if (placementMode.active && e.button === 0) {
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+                const intersections = raycaster.intersectObjects(tiles.map(t => t.base), false);
+                if (intersections.length > 0) {
+                    const hitObj = intersections[0].object; const tile = tiles.find(t => t.base === hitObj);
+                    if(tile) {
+                        const p = players[currentPlayer]; tile.setItem(placementMode.item); showFloatMsg(p, "Item Placed!");
+                        if(placementMode.ghost) { scene.remove(placementMode.ghost); placementMode.ghost = null; }
+                        placementMode.active = false; document.getElementById('instruction-overlay').style.display = 'none';
+                        p.inventory.splice(placementMode.invIndex, 1); hasUsedTool = true; updateTurnIndicator(); 
+                    }
+                }
+            }
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (isPanning) {
+                const panSpeed = 0.05 / camera.zoom;
+                manualPanOffset.x -= e.movementX * panSpeed; manualPanOffset.z += e.movementX * panSpeed;
+                manualPanOffset.x -= e.movementY * panSpeed; manualPanOffset.z -= e.movementY * panSpeed;
+            }
+            if (placementMode.active) {
+                 mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                 raycaster.setFromCamera(mouse, camera); const intersections = raycaster.intersectObjects(tiles.map(t => t.base), false);
+                 if (intersections.length > 0) {
+                     if (!placementMode.ghost) {
+                         const g = new THREE.SphereGeometry(0.5); const m = new THREE.MeshBasicMaterial({color: 0x00ff00, transparent: true, opacity: 0.5});
+                         placementMode.ghost = new THREE.Mesh(g, m); scene.add(placementMode.ghost);
+                     }
+                     const pos = intersections[0].object.parent.position; placementMode.ghost.position.set(pos.x, 1, pos.z); placementMode.ghost.visible = true;
+                 } else if (placementMode.ghost) { placementMode.ghost.visible = false; }
+            }
+        });
+        window.addEventListener('mouseup', (e) => { if (e.button === 2) { isPanning = false; document.body.style.cursor = 'default'; } });
     }
 
     function animate(time) {
-        requestAnimationFrame(animate);
-        TWEEN.update(time);
-        checkOcclusion(); 
-        
+        requestAnimationFrame(animate); TWEEN.update(time); checkOcclusion(); 
         if (players.length > 0) {
             const activeP = players[currentPlayer];
             if (activeP && activeP.cursor.visible) {
@@ -1676,36 +1439,32 @@
                 activeP.cursor.rotation.y += 0.05;
             }
         }
-
         activeBubbles.forEach(b => {
-            const pos = b.target.position.clone();
-            pos.y += b.offsetY;
-            pos.project(camera);
-            const x = (pos.x * .5 + .5) * window.innerWidth;
-            const y = (-(pos.y * .5) + .5) * window.innerHeight;
-            b.element.style.left = x + 'px';
-            b.element.style.top = y + 'px';
+            const pos = b.target.position.clone(); pos.y += b.offsetY; pos.project(camera);
+            const x = (pos.x * .5 + .5) * window.innerWidth; const y = (-(pos.y * .5) + .5) * window.innerHeight;
+            b.element.style.left = x + 'px'; b.element.style.top = y + 'px';
         });
-
         const targetPos = cameraTarget.clone().add(new THREE.Vector3(20, 20, 20)).add(manualPanOffset); 
         camera.position.lerp(targetPos, 0.1); 
         const lookPos = cameraTarget.clone().add(manualPanOffset);
         camera.lookAt(lookPos);
-
         renderer.render(scene, camera);
     }
-
+    
     window.addEventListener('resize', () => {
         if (!camera || !renderer) return; 
         const aspect = window.innerWidth / window.innerHeight;
         const d = 40;
-        camera.left = -d * aspect;
-        camera.right = d * aspect;
-        camera.top = d;
-        camera.bottom = -d;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.left = -d * aspect; camera.right = d * aspect; camera.top = d; camera.bottom = -d;
+        camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight);
     });
+
+    // Explicitly attach to window
+    window.startGame = startGame;
+    window.rollDice = rollDice;
+    window.openInventory = openInventory;
+    window.debugAddTool = debugAddTool;
+    window.toggleLog = toggleLog;
 
 </script>
 </body>
