@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Good Job! - Mini Office Edition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;700;900&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Rubik', sans-serif;
+            background-color: #f0f0f0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #game-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        /* UI Layer */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .hud-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+            transform: skew(-5deg);
+            border: 2px solid #333;
+            pointer-events: auto; /* Allow clicking HUD without panning */
+        }
+
+        .hud-title {
+            font-weight: 900;
+            font-size: 1.2rem;
+            color: #ff4757;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .hud-task {
+            font-weight: 700;
+            color: #2f3542;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #2f3542;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .checkbox.checked::after {
+            content: '✓';
+            font-weight: 900;
+            font-size: 1.2rem;
+            color: #2ed573;
+        }
+
+        /* Interaction Tip */
+        #interaction-tip {
+            position: absolute;
+            display: none; /* Hidden by default */
+            background: #2f3542;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 900;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            pointer-events: none;
+            transform: translate(-50%, -150%); /* Center above point */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+        
+        #interaction-tip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #2f3542 transparent transparent transparent;
+        }
+
+        .key-badge {
+            display: inline-block;
+            background: #fff;
+            color: #333;
+            border-radius: 4px;
+            padding: 0 5px;
+            margin-right: 5px;
+            box-shadow: 0 2px 0 #ccc;
+        }
+
+        /* Win Screen */
+        #win-screen {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(47, 53, 66, 0.85);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            pointer-events: auto;
+            backdrop-filter: blur(5px);
+        }
+
+        .big-rating {
+            font-size: 8rem;
+            font-weight: 900;
+            color: #2ed573;
+            text-shadow: 5px 5px 0 #000;
+            transform: rotate(-10deg);
+            animation: stamp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .good-job-text {
+            font-size: 4rem;
+            font-weight: 900;
+            color: white;
+            margin-top: -20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 3px 3px 0 #333;
+        }
+
+        .stats {
+            margin-top: 30px;
+            background: white;
+            padding: 20px 40px;
+            border-radius: 15px;
+            text-align: center;
+            transform: skew(-5deg);
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.2);
+        }
+
+        .btn-restart {
+            margin-top: 30px;
+            padding: 15px 40px;
+            background: #ff4757;
+            color: white;
+            font-family: 'Rubik', sans-serif;
+            font-weight: 900;
+            font-size: 1.5rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #b33939;
+            transition: transform 0.1s;
+        }
+
+        .btn-restart:active {
+            transform: translateY(5px);
+            box-shadow: 0 0 0 #b33939;
+        }
+
+        /* Controls Hint */
+        #controls-hint {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.9);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #333;
+            border: 2px solid #333;
+            text-align: right;
+            pointer-events: none;
+        }
+
+        /* Joystick for mobile */
+        #joystick-zone {
+            display: none;
+            position: absolute;
+            bottom: 50px;
+            left: 50px;
+            width: 120px;
+            height: 120px;
+            z-index: 20;
+            pointer-events: auto;
+        }
+
+        #grab-btn {
+            display: none;
+            position: absolute;
+            bottom: 60px;
+            right: 60px;
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            border: 4px solid #333;
+            color: #333;
+            font-weight: 900;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+            pointer-events: auto;
+            justify-content: center;
+            align-items: center;
+            z-index: 21;
+        }
+        #grab-btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+            background: #eee;
+        }
+
+        @keyframes stamp {
+            0% { transform: scale(3) rotate(20deg); opacity: 0; }
+            100% { transform: scale(1) rotate(-10deg); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            #joystick-zone { display: block; }
+            #grab-btn { display: flex; }
+            #controls-hint { display: none; }
+            .hud-panel { transform: scale(0.8); left: 10px; top: 10px; transform-origin: top left; }
+        }
+    </style>
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Simple Joystick Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.0/nipplejs.min.js"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+
+    <div id="game-container"></div>
+
+    <div id="ui-layer">
+        <div class="hud-panel" id="hud-panel">
+            <div class="hud-title">Current Objective</div>
+            <div class="hud-task">
+                <div class="checkbox" id="task-checkbox"></div>
+                <span id="task-text">Deliver the Projector</span>
+            </div>
+            <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">Property Damage: <span id="damage-cost" style="color:red; font-weight:bold;">$0</span></div>
+        </div>
+
+        <!-- The Tip Box -->
+        <div id="interaction-tip"><span class="key-badge">SPACE</span> PICK UP</div>
+
+        <div id="controls-hint">
+            WASD to Move • Click & Drag to Pan<br>Space to Grab/Throw<br>Scroll to Zoom
+        </div>
+
+        <div id="win-screen">
+            <div class="big-rating">S RANK</div>
+            <div class="good-job-text">GOOD JOB!</div>
+            <div class="stats">
+                <h3>PERFORMANCE REVIEW</h3>
+                <p>Time: <span id="final-time">00:00</span></p>
+                <p>Damages: <span id="final-damage">$0</span></p>
+            </div>
+            <button class="btn-restart" onclick="resetGame()">NEXT JOB</button>
+        </div>
+    </div>
+
+    <div id="joystick-zone"></div>
+    <div id="grab-btn">GRAB</div>
+
+<script>
+    // --- Configuration ---
+    const COLORS = {
+        bg: 0xd0d8e0, // Muted blue-grey office background
+        floor: 0xffffff,
+        wall: 0xeeeeee,
+        wallBorder: 0xcccccc,
+        playerSkin: 0xffcd94,
+        playerShirt: 0xff4757, // The "Red" employee
+        playerPants: 0x2f3542,
+        box: 0xdfb587, // Cardboard
+        target: 0x7bed9f,
+        glass: 0xa4b0be,
+        socket: 0x2ed573, // GREEN SOCKET
+        carPaint: 0xf39c12 // Orange company car
+    };
+
+    const SETTINGS = {
+        speed: 0.15,
+        pushStrength: 0.1,
+        friction: 0.9,
+        cameraZoom: 35,
+        pickupRange: 2.5, // Not too small, not too wide
+        throwForce: 0.4,
+        camDistance: 28, // Horizontal distance from player
+        camHeight: 20
+    };
+
+    const CAR_SPECS = {
+        maxSpeed: 0.8,
+        acceleration: 0.02,
+        reverseSpeed: 0.3,
+        friction: 0.95,
+        turnSpeed: 0.05,
+        mass: 50 // Very heavy
+    };
+
+    // --- Game State ---
+    let scene, camera, renderer;
+    let player, targetZone;
+    let movables = []; // Boxes, chairs, CARS
+    let colliders = []; // Walls
+    let breakables = []; // Glass, vases
+    let input = { x: 0, y: 0 };
+    let damageCost = 0;
+    let startTime = Date.now();
+    let isGameActive = true;
+    let joystickManager;
+    let closestItem = null;
+    let heldItem = null; // Object currently being carried
+    let camAngle = Math.PI / 4; // Start at 45 degrees
+    let socketIcon; // Icon above socket
+    let currentVehicle = null; // The car we are driving
+
+    // Camera Pan State
+    let cameraPanOffset = { x: 0, z: 0 };
+    let isPanning = false;
+    let startPanMouse = { x: 0, y: 0 };
+    let startPanOffset = { x: 0, z: 0 };
+
+    // TV System Variables
+    let tvScreenMat;
+    let plugObj;
+    let socketPos = new THREE.Vector3(0, 1.25, -9.9); // Center back wall
+    let wireLine;
+    let isTVOn = false;
+
+    // --- Three.js Init ---
+    function init() {
+        const container = document.getElementById('game-container');
+
+        // Scene
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(COLORS.bg);
+        
+        // Camera - ISOMETRIC / ORTHOGRAPHIC
+        const aspect = window.innerWidth / window.innerHeight;
+        const d = SETTINGS.cameraZoom;
+        camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+        
+        // Initial setup
+        camera.position.set(20, 20, 20); 
+        camera.lookAt(scene.position);
+
+        // Renderer
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+        dirLight.position.set(10, 20, 10);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.left = -30;
+        dirLight.shadow.camera.right = 30;
+        dirLight.shadow.camera.top = 30;
+        dirLight.shadow.camera.bottom = -30;
+        scene.add(dirLight);
+
+        // --- Level Building ---
+        createLevel();
+
+        // --- Inputs ---
+        setupInputs();
+
+        // --- Loop ---
+        animate();
+    }
+
+    // --- Object Creators ---
+
+    function createMaterial(color) {
+        return new THREE.MeshStandardMaterial({ 
+            color: color, 
+            roughness: 0.7,
+            flatShading: true // Low-poly / clean look
+        });
+    }
+
+    function createLevel() {
+        // Floor
+        const planeGeo = new THREE.PlaneGeometry(100, 100);
+        const planeMat = new THREE.MeshStandardMaterial({ color: COLORS.floor });
+        const floor = new THREE.Mesh(planeGeo, planeMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // Grid helper
+        const grid = new THREE.GridHelper(100, 50, 0xdddddd, 0xeeeeee);
+        grid.position.y = 0.01;
+        scene.add(grid);
+
+        // Walls
+        createWall(0, 2.5, -10, 40, 5, 1); // Back wall
+        createWall(-20, 2.5, 0, 1, 5, 20); // Left wall
+        createWall(20, 2.5, 0, 1, 5, 20); // Right wall
+        
+        // Internal Cubicles
+        createWall(-10, 1.5, 0, 1, 3, 10); 
+        createWall(5, 1.5, 5, 15, 3, 1);
+
+        // Target Zone
+        createTarget(15, 0.05, -5);
+
+        // Player
+        player = createPlayer(-15, 0, 8);
+        scene.add(player);
+
+        // 1. Meeting Area (Right side)
+        createMovableBox(10, 1.25, 0, 5, 0.2, 3, 0xffffff, 10.0); 
+        createMovableBox(10, 0.5, 0, 2, 1, 2, 0x555555, 5.0);   
+        createMovableBox(10, 0.5, 2.5, 0.8, 0.8, 0.8, 0x34495e, 1.0);
+        createMovableBox(10, 0.5, -2.5, 0.8, 0.8, 0.8, 0x34495e, 1.0);
+        createMovableBox(7, 0.5, 0, 0.8, 0.8, 0.8, 0x34495e, 1.0);
+        createMovableBox(13, 0.5, 0, 0.8, 0.8, 0.8, 0x34495e, 1.0);
+
+        // 2. Storage Area (Left side)
+        createMovableBox(-18, 2, -5, 1.5, 4, 1.5, 0x95a5a6, 8.0);
+        createMovableBox(-16, 2, -5, 1.5, 4, 1.5, 0x95a5a6, 8.0);
+
+        // 3. Scatter Boxes
+        createMovableBox(-8, 0.5, 8, 1.5, 1.5, 1.5, COLORS.box, 1.5);
+        createMovableBox(-8, 2.0, 8, 1.2, 1.2, 1.2, COLORS.box, 1.0);
+        createMovableBox(5, 0.5, 10, 1, 1, 1, COLORS.box, 0.5);
+        createMovableBox(6, 0.5, 9, 1, 1, 1, COLORS.box, 0.5);
+
+        // 4. Water Cooler
+        createMovableBox(18, 1, 8, 1, 2, 1, 0xecf0f1, 5.0);
+        createBreakable(18, 2.8, 8); 
+
+        // 5. THE CAR
+        createCar(-5, 0, 15);
+
+        // Main Goal Box
+        createMovableBox(0, 1.5, 5, 2.5, 2.5, 2.5, COLORS.box, 2.0); 
+        
+        // Deco
+        createMovableBox(-5, 1, 5, 1, 1, 1, 0x74b9ff, 0.5); 
+        createMovableBox(-5, 2, 5, 1, 1, 1, 0x74b9ff, 0.5); 
+        
+        // Breakables
+        createBreakable(-15, 1, -8);
+        createBreakable(15, 1, 6);
+
+        // TV System
+        createTVSystem();
+    }
+
+    function createCar(x, y, z) {
+        const group = new THREE.Group();
+        group.position.set(x, y, z);
+
+        // 1. Chassis
+        const chassisGeo = new THREE.BoxGeometry(2, 1.2, 3.5);
+        const chassisMat = createMaterial(COLORS.carPaint);
+        const chassis = new THREE.Mesh(chassisGeo, chassisMat);
+        chassis.position.y = 1.0;
+        chassis.castShadow = true;
+        chassis.receiveShadow = true;
+        group.add(chassis);
+
+        // Roof/Cabin
+        const cabinGeo = new THREE.BoxGeometry(1.6, 0.8, 2);
+        const cabinMat = createMaterial(0x333333); // Dark windows
+        const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+        cabin.position.y = 2.0;
+        cabin.position.z = -0.2;
+        cabin.castShadow = true;
+        group.add(cabin);
+
+        // 2. Wheels
+        const wheelGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.4, 12);
+        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        const wheels = [];
+        
+        const wheelPos = [
+            { x: -1.1, z: 1.0 }, // FL
+            { x: 1.1, z: 1.0 },  // FR
+            { x: -1.1, z: -1.0 },// RL
+            { x: 1.1, z: -1.0 }  // RR
+        ];
+
+        wheelPos.forEach(pos => {
+            const w = new THREE.Mesh(wheelGeo, wheelMat);
+            w.rotation.z = Math.PI / 2;
+            w.position.set(pos.x, 0.4, pos.z);
+            w.castShadow = true;
+            group.add(w);
+            wheels.push(w);
+        });
+
+        // 3. Headlights
+        const lightGeo = new THREE.BoxGeometry(0.4, 0.2, 0.1);
+        const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+        const l1 = new THREE.Mesh(lightGeo, lightMat);
+        l1.position.set(-0.6, 1.2, 1.76);
+        group.add(l1);
+        
+        const l2 = new THREE.Mesh(lightGeo, lightMat);
+        l2.position.set(0.6, 1.2, 1.76);
+        group.add(l2);
+
+        // Spotlights for night driving effect
+        const spotL = new THREE.SpotLight(0xffffaa, 1);
+        spotL.position.set(-0.6, 1.2, 1.8);
+        spotL.target.position.set(-0.6, 0, 10);
+        spotL.angle = Math.PI / 6;
+        spotL.penumbra = 0.5;
+        spotL.distance = 15;
+        group.add(spotL);
+        group.add(spotL.target);
+
+        const spotR = new THREE.SpotLight(0xffffaa, 1);
+        spotR.position.set(0.6, 1.2, 1.8);
+        spotR.target.position.set(0.6, 0, 10);
+        spotR.angle = Math.PI / 6;
+        spotR.penumbra = 0.5;
+        spotR.distance = 15;
+        group.add(spotR);
+        group.add(spotR.target);
+
+        scene.add(group);
+
+        const carObj = {
+            mesh: group,
+            wheels: wheels,
+            velocity: new THREE.Vector3(),
+            speed: 0,
+            angle: 0,
+            width: 2.2, // Slightly wider for collision
+            height: 2.5,
+            depth: 3.5,
+            mass: CAR_SPECS.mass,
+            isVehicle: true,
+            isCarried: false,
+            type: 'car'
+        };
+        
+        movables.push(carObj);
+        return carObj;
+    }
+
+    function createTVSystem() {
+        const socketGeo = new THREE.BoxGeometry(1.2, 1.2, 0.2); 
+        const socketMat = new THREE.MeshStandardMaterial({ 
+            color: COLORS.socket,
+            emissive: COLORS.socket,
+            emissiveIntensity: 0.5
+        });
+        const socket = new THREE.Mesh(socketGeo, socketMat);
+        socket.position.copy(socketPos);
+        scene.add(socket);
+
+        const socketLight = new THREE.PointLight(COLORS.socket, 1, 8);
+        socketLight.position.set(0, 0, 0.5);
+        socket.add(socketLight);
+
+        const iconGeo = new THREE.ConeGeometry(0.3, 0.8, 4);
+        const iconMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+        socketIcon = new THREE.Mesh(iconGeo, iconMat);
+        socketIcon.position.set(0, 1.5, 0.5);
+        socketIcon.rotation.z = Math.PI; 
+        socket.add(socketIcon);
+
+        const holeGeo = new THREE.BoxGeometry(0.2, 0.4, 0.2);
+        const holeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const hole1 = new THREE.Mesh(holeGeo, holeMat);
+        const hole2 = new THREE.Mesh(holeGeo, holeMat);
+        hole1.position.set(-0.3, 0, 0.15);
+        hole2.position.set(0.3, 0, 0.15);
+        socket.add(hole1);
+        socket.add(hole2);
+
+        createMovableBox(-4, 0.75, -8, 4, 1.5, 2, 0x95a5a6, 20); 
+
+        const tvGroup = new THREE.Group();
+        tvGroup.position.set(-4, 2.5, -8);
+        scene.add(tvGroup);
+
+        const caseGeo = new THREE.BoxGeometry(3.5, 2.2, 0.4);
+        const caseMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+        const tvCase = new THREE.Mesh(caseGeo, caseMat);
+        tvCase.castShadow = true;
+        tvGroup.add(tvCase);
+
+        const screenGeo = new THREE.PlaneGeometry(3.2, 1.9);
+        tvScreenMat = new THREE.MeshStandardMaterial({ 
+            color: 0x111111, 
+            emissive: 0x000000,
+            roughness: 0.2
+        });
+        const tvScreen = new THREE.Mesh(screenGeo, tvScreenMat);
+        tvScreen.position.z = 0.21;
+        tvGroup.add(tvScreen);
+
+        plugObj = createMovableBox(-2, 0.5, -6, 0.6, 0.4, 0.8, 0x333333, 0.5);
+        plugObj.isPlug = true;
+        plugObj.isPlugged = false;
+        
+        if (plugObj.mesh.children.length > 0) {
+            plugObj.mesh.remove(plugObj.mesh.children[0]);
+        }
+        
+        const prongGeo = new THREE.BoxGeometry(0.1, 0.1, 0.3);
+        const prongMat = new THREE.MeshStandardMaterial({ color: 0xdddddd });
+        const p1 = new THREE.Mesh(prongGeo, prongMat);
+        const p2 = new THREE.Mesh(prongGeo, prongMat);
+        p1.position.set(-0.15, 0, 0.5);
+        p2.position.set(0.15, 0, 0.5);
+        plugObj.mesh.add(p1);
+        plugObj.mesh.add(p2);
+
+        const wireGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+        const wireMat = new THREE.LineBasicMaterial({ color: 0x111111, linewidth: 2 });
+        wireLine = new THREE.Line(wireGeo, wireMat);
+        scene.add(wireLine);
+
+        plugObj.cableOrigin = new THREE.Vector3(-4, 2.2, -8.2); 
+    }
+
+    function createWall(x, y, z, w, h, d) {
+        const geo = new THREE.BoxGeometry(w, h, d);
+        const mat = createMaterial(COLORS.wall);
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(x, y, z);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+        
+        colliders.push({
+            mesh: mesh,
+            box: new THREE.Box3().setFromObject(mesh)
+        });
+
+        const trimGeo = new THREE.BoxGeometry(w + 0.1, 0.2, d + 0.1);
+        const trimMat = new THREE.MeshBasicMaterial({ color: COLORS.wallBorder });
+        const trim = new THREE.Mesh(trimGeo, trimMat);
+        trim.position.set(x, 0.1, z);
+        scene.add(trim);
+    }
+
+    function createTarget(x, y, z) {
+        const geo = new THREE.PlaneGeometry(6, 6);
+        const mat = new THREE.MeshBasicMaterial({ 
+            color: COLORS.target, 
+            transparent: true, 
+            opacity: 0.5,
+            side: THREE.DoubleSide
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.position.set(x, y, z);
+        scene.add(mesh);
+
+        const edges = new THREE.EdgesGeometry(geo);
+        const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x2ed573 }));
+        line.rotation.x = -Math.PI / 2;
+        line.position.set(x, y, z);
+        scene.add(line);
+
+        targetZone = {
+            mesh: mesh,
+            bounds: new THREE.Box3().setFromObject(mesh)
+        };
+    }
+
+    function createPlayer(x, y, z) {
+        const group = new THREE.Group();
+        group.position.set(x, y, z);
+
+        const bodyGeo = new THREE.CylinderGeometry(0.5, 0.6, 1.2, 8);
+        const bodyMat = createMaterial(COLORS.playerShirt);
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 1.6;
+        body.castShadow = true;
+        group.add(body);
+
+        const headGeo = new THREE.SphereGeometry(0.5, 16, 16);
+        const headMat = createMaterial(COLORS.playerSkin);
+        const head = new THREE.Mesh(headGeo, headMat);
+        head.position.y = 2.4;
+        head.castShadow = true;
+        group.add(head);
+
+        const eyeGeo = new THREE.SphereGeometry(0.12, 8, 8);
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+        const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+        eyeL.position.set(-0.2, 2.5, 0.4);
+        eyeR.position.set(0.2, 2.5, 0.4);
+        group.add(eyeL);
+        group.add(eyeR);
+
+        const legGeo = new THREE.CylinderGeometry(0.2, 0.2, 1, 8);
+        const legMat = createMaterial(COLORS.playerPants);
+        
+        const legL = new THREE.Mesh(legGeo, legMat);
+        legL.position.set(-0.25, 0.5, 0);
+        group.add(legL);
+        group.userData.legL = legL;
+
+        const legR = new THREE.Mesh(legGeo, legMat);
+        legR.position.set(0.25, 0.5, 0);
+        group.add(legR);
+        group.userData.legR = legR;
+
+        const shadowGeo = new THREE.CircleGeometry(0.6, 16);
+        const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0.3, transparent: true });
+        const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+        shadow.rotation.x = -Math.PI / 2;
+        shadow.position.y = 0.02;
+        group.add(shadow);
+
+        group.userData.velocity = new THREE.Vector3();
+        group.userData.radius = 0.6; 
+
+        return group;
+    }
+
+    function createMovableBox(x, y, z, w, h, d, color, mass) {
+        const geo = new THREE.BoxGeometry(w, h, d);
+        const mat = createMaterial(color);
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(x, y, z);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+
+        const tapeGeo = new THREE.BoxGeometry(w + 0.01, 0.2, d + 0.01);
+        const tapeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const tape = new THREE.Mesh(tapeGeo, tapeMat);
+        tape.position.y = 0; 
+        mesh.add(tape);
+
+        const obj = {
+            mesh: mesh,
+            velocity: new THREE.Vector3(),
+            width: w,
+            height: h,
+            depth: d,
+            mass: mass,
+            isTarget: mass > 1.0, 
+            isCarried: false,
+            type: 'box'
+        };
+        movables.push(obj);
+        return obj;
+    }
+
+    function createBreakable(x, y, z) {
+        const geo = new THREE.CylinderGeometry(0.4, 0.3, 1.5, 8);
+        const mat = new THREE.MeshStandardMaterial({ 
+            color: 0x3498db, 
+            transparent: true, 
+            opacity: 0.8,
+            roughness: 0.1 
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(x, y, z);
+        mesh.castShadow = true;
+        scene.add(mesh);
+
+        const obj = {
+            mesh: mesh,
+            velocity: new THREE.Vector3(),
+            width: 0.8,
+            height: 1.5,
+            depth: 0.8,
+            mass: 0.2,
+            isBreakable: true,
+            broken: false,
+            isCarried: false,
+            type: 'glass'
+        };
+        movables.push(obj);
+    }
+
+    // --- Interaction ---
+
+    function interact() {
+        if (!isGameActive) return;
+
+        // 1. Driving Exit?
+        if (currentVehicle) {
+            exitCar();
+            return;
+        }
+
+        // 2. Drop Item?
+        if (heldItem) {
+            dropItem();
+            return;
+        } 
+        
+        // 3. Enter Car?
+        if (closestItem && closestItem.isVehicle) {
+            enterCar(closestItem);
+            return;
+        }
+
+        // 4. Pickup Item?
+        if (closestItem && !closestItem.isVehicle) {
+            pickupItem(closestItem);
+            return;
+        }
+    }
+
+    function enterCar(car) {
+        currentVehicle = car;
+        player.visible = false; // Hide player
+        
+        // Disable player physics interactions by moving them away or just ignoring them in loop
+        // We will just keep player.position anchored to car in updatePhysics
+        
+        document.getElementById('grab-btn').innerText = "EXIT";
+        document.getElementById('interaction-tip').innerHTML = '<span class="key-badge">SPACE</span> EXIT';
+        
+        // Initial shake
+        shakeScreen();
+    }
+
+    function exitCar() {
+        if (!currentVehicle) return;
+        
+        // Place player next to car (Left side)
+        const car = currentVehicle;
+        const exitOffset = new THREE.Vector3(-2, 0, 0).applyAxisAngle(new THREE.Vector3(0,1,0), car.angle);
+        player.position.copy(car.mesh.position).add(exitOffset);
+        player.position.y = 0;
+        player.visible = true;
+        
+        // Reset state
+        currentVehicle = null;
+        
+        document.getElementById('grab-btn').innerText = "GRAB";
+        document.getElementById('interaction-tip').innerHTML = '<span class="key-badge">SPACE</span> PICK UP';
+    }
+
+    function pickupItem(item) {
+        heldItem = item;
+        item.isCarried = true;
+        
+        if (item.isPlug && item.isPlugged) {
+            item.isPlugged = false;
+            tvScreenMat.emissive.setHex(0x000000);
+            tvScreenMat.color.setHex(0x111111);
+        }
+        
+        scene.remove(item.mesh);
+        player.add(item.mesh);
+        
+        item.mesh.position.set(0, 2.8, 1.0); 
+        item.mesh.rotation.set(0, 0, 0);
+        item.velocity.set(0, 0, 0);
+
+        document.getElementById('interaction-tip').innerHTML = '<span class="key-badge">SPACE</span> THROW';
+    }
+
+    function dropItem() {
+        if (!heldItem) return;
+        const item = heldItem;
+
+        if (item.isPlug) {
+            const dist = player.position.distanceTo(socketPos); 
+            
+            if (dist < 3.0) { 
+                heldItem = null;
+                item.isCarried = false;
+                
+                player.remove(item.mesh);
+                scene.add(item.mesh);
+                
+                item.mesh.position.copy(socketPos);
+                item.mesh.position.z += 0.4; 
+                item.mesh.rotation.set(0, 0, 0);
+                item.velocity.set(0, 0, 0);
+                item.isPlugged = true;
+                
+                tvScreenMat.emissive.setHex(0xffffff); 
+                tvScreenMat.color.setHex(0x7bed9f); 
+                tvScreenMat.emissiveIntensity = 0.5;
+
+                document.getElementById('interaction-tip').innerHTML = '<span class="key-badge">SPACE</span> UNPLUG';
+                
+                shakeScreen();
+                return; 
+            }
+        }
+
+        heldItem = null;
+        item.isCarried = false;
+
+        player.remove(item.mesh);
+        scene.add(item.mesh);
+
+        const dropDist = 2.0; 
+        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(player.quaternion).normalize();
+        const targetPos = player.position.clone().add(forward.multiplyScalar(dropDist));
+
+        let targetY = (item.height || 1.0) / 2; 
+
+        if (targetPos.x > -6 && targetPos.x < -2 && targetPos.z > -9 && targetPos.z < -7) {
+            targetY = 1.5 + ((item.height || 1.0) / 2);
+        }
+
+        item.mesh.position.set(targetPos.x, targetY, targetPos.z);
+        item.mesh.rotation.set(0, 0, 0); 
+        item.velocity.set(0, 0, 0); 
+
+        document.getElementById('interaction-tip').innerHTML = '<span class="key-badge">SPACE</span> PICK UP';
+    }
+
+    // --- Inputs ---
+    function setupInputs() {
+        const keys = { w: false, a: false, s: false, d: false, ArrowLeft: false, ArrowRight: false };
+
+        window.addEventListener('keydown', (e) => {
+            if(keys.hasOwnProperty(e.key) || keys.hasOwnProperty(e.code)) keys[e.key] = true;
+            
+            if (e.code === 'Space') {
+                interact();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if(keys.hasOwnProperty(e.key) || keys.hasOwnProperty(e.code)) keys[e.key] = false;
+        });
+
+        window.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomSensitivity = 0.05;
+            SETTINGS.cameraZoom += Math.sign(e.deltaY) * 2; 
+
+            SETTINGS.cameraZoom = Math.max(15, Math.min(SETTINGS.cameraZoom, 60));
+
+            const aspect = window.innerWidth / window.innerHeight;
+            const d = SETTINGS.cameraZoom;
+            camera.left = -d * aspect;
+            camera.right = d * aspect;
+            camera.top = d;
+            camera.bottom = -d;
+            camera.updateProjectionMatrix();
+        }, { passive: false });
+
+        const btn = document.getElementById('grab-btn');
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            interact();
+        });
+        btn.addEventListener('mousedown', (e) => { 
+             e.preventDefault();
+             interact();
+        });
+
+        window.addEventListener('mousedown', (e) => {
+            if (e.target.closest('button') || e.target.closest('#grab-btn') || e.target.closest('#hud-panel')) return;
+            
+            isPanning = true;
+            startPanMouse.x = e.clientX;
+            startPanMouse.y = e.clientY;
+            startPanOffset.x = cameraPanOffset.x;
+            startPanOffset.z = cameraPanOffset.z;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            
+            const dx = e.clientX - startPanMouse.x;
+            const dy = e.clientY - startPanMouse.y;
+
+            const worldHeight = SETTINGS.cameraZoom * 2;
+            const pxToWorld = worldHeight / window.innerHeight;
+
+            const cos = Math.cos(camAngle);
+            const sin = Math.sin(camAngle);
+            
+            const dWx = -dx * pxToWorld; 
+            const dWy = dy * pxToWorld;  
+
+            const rightX = cos;
+            const rightZ = -sin;
+            const fwdX = -sin;
+            const fwdZ = -cos;
+
+            const panX = (dWx * rightX) + (dWy * -fwdX);
+            const panZ = (dWx * rightZ) + (dWy * -fwdZ);
+
+            cameraPanOffset.x = startPanOffset.x + panX;
+            cameraPanOffset.z = startPanOffset.z + panZ;
+        });
+
+        window.addEventListener('mouseup', () => {
+            isPanning = false;
+        });
+
+        joystickManager = nipplejs.create({
+            zone: document.getElementById('joystick-zone'),
+            mode: 'static',
+            position: { left: '50%', top: '50%' },
+            color: 'red'
+        });
+
+        joystickManager.on('move', (evt, data) => {
+            if (data.vector) {
+                input.x = data.vector.x;
+                input.y = -data.vector.y; 
+            }
+        });
+
+        joystickManager.on('end', () => {
+            input.x = 0;
+            input.y = 0;
+        });
+
+        setInterval(() => {
+            if (keys.ArrowLeft) camAngle -= 0.04;
+            if (keys.ArrowRight) camAngle += 0.04;
+
+            if (!joystickManager.ids.length) { 
+                let dx = 0;
+                let dy = 0;
+                if (keys.w) dy -= 1;
+                if (keys.s) dy += 1;
+                if (keys.a) dx -= 1;
+                if (keys.d) dx += 1;
+
+                if (dx !== 0 || dy !== 0) {
+                    const len = Math.sqrt(dx*dx + dy*dy);
+                    input.x = dx / len;
+                    input.y = dy / len;
+                } else {
+                    input.x = 0;
+                    input.y = 0;
+                }
+            }
+        }, 16);
+    }
+
+    // --- Physics & Logic ---
+    
+    function checkCollision(pos, radius, ignoreCar) {
+        for (let col of colliders) {
+            const min = col.box.min;
+            const max = col.box.max;
+            const x = Math.max(min.x, Math.min(pos.x, max.x));
+            const z = Math.max(min.z, Math.min(pos.z, max.z));
+            const distance = Math.sqrt((x - pos.x) ** 2 + (z - pos.z) ** 2);
+
+            if (distance < radius) {
+                return { hit: true, overlap: radius - distance, nx: (pos.x - x), nz: (pos.z - z) };
+            }
+        }
+        return { hit: false };
+    }
+
+    function checkMovableCollision(pPos, pRadius, mov) {
+        const mPos = mov.mesh.position;
+        const dx = Math.abs(pPos.x - mPos.x);
+        const dz = Math.abs(pPos.z - mPos.z);
+        
+        // Approximate box as circle for corner cases or box check
+        // Box AABB check + Radius buffer
+        const halfW = mov.width / 2 + pRadius;
+        const halfD = mov.depth / 2 + pRadius;
+
+        if (dx < halfW && dz < halfD) {
+            return true;
+        }
+        return false;
+    }
+
+    function breakObject(obj) {
+        if(obj.broken) return;
+        obj.broken = true;
+        
+        if (heldItem === obj) {
+            heldItem = null;
+            document.getElementById('interaction-tip').innerHTML = '<span class="key-badge">SPACE</span> PICK UP';
+        }
+
+        if (obj.mesh.parent) obj.mesh.parent.remove(obj.mesh);
+        else scene.remove(obj.mesh);
+        
+        const particleCount = 8;
+        const geo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+        const mat = new THREE.MeshBasicMaterial({ color: 0x3498db });
+        
+        for(let i=0; i<particleCount; i++) {
+            const p = new THREE.Mesh(geo, mat);
+            const worldPos = new THREE.Vector3();
+            obj.mesh.getWorldPosition(worldPos);
+            p.position.copy(worldPos);
+            
+            p.position.x += (Math.random() - 0.5);
+            p.position.y = 0.2;
+            p.position.z += (Math.random() - 0.5);
+            scene.add(p);
+        }
+
+        damageCost += 150;
+        updateUI();
+        shakeScreen();
+    }
+
+    function shakeScreen() {
+        const duration = 200;
+        const start = Date.now();
+        const originalPos = camera.position.clone();
+        
+        function shake() {
+            const now = Date.now();
+            if (now - start < duration) {
+                const noiseX = (Math.random() - 0.5);
+                const noiseZ = (Math.random() - 0.5);
+                camera.position.x += noiseX;
+                camera.position.z += noiseZ;
+                
+                requestAnimationFrame(() => {
+                });
+                
+                if (now - start < duration) {
+                    requestAnimationFrame(shake);
+                }
+            }
+        }
+        shake();
+    }
+
+    function toScreenPosition(obj, camera) {
+        const vector = new THREE.Vector3();
+
+        if (obj === player) {
+             vector.set(0, 3.5, 0); 
+             vector.applyMatrix4(obj.matrixWorld);
+        } else {
+             obj.mesh.updateWorldMatrix(true, false);
+             obj.mesh.getWorldPosition(vector);
+             vector.y += 1.0; 
+        }
+
+        vector.project(camera);
+
+        const x = (vector.x * .5 + .5) * window.innerWidth;
+        const y = (-(vector.y * .5) + .5) * window.innerHeight;
+
+        return { x: x, y: y };
+    }
+
+    function updatePhysics() {
+        if (!isGameActive) return;
+
+        if (socketIcon) {
+            socketIcon.rotation.y += 0.05;
+            socketIcon.position.y = 1.5 + Math.sin(Date.now() * 0.005) * 0.2;
+        }
+
+        if (wireLine && plugObj) {
+            const positions = wireLine.geometry.attributes.position.array;
+            positions[0] = plugObj.cableOrigin.x;
+            positions[1] = plugObj.cableOrigin.y;
+            positions[2] = plugObj.cableOrigin.z;
+            
+            const plugWorldPos = new THREE.Vector3();
+            plugObj.mesh.getWorldPosition(plugWorldPos);
+            
+            positions[3] = plugWorldPos.x;
+            positions[4] = plugWorldPos.y;
+            positions[5] = plugWorldPos.z;
+            
+            wireLine.geometry.attributes.position.needsUpdate = true;
+        }
+
+        // --- Controller Selection ---
+        let trackTarget = player.position;
+
+        if (currentVehicle) {
+            updateCarPhysics();
+            trackTarget = currentVehicle.mesh.position;
+            // Anchor player to car
+            player.position.copy(currentVehicle.mesh.position);
+        } else {
+            updatePlayerPhysics();
+        }
+
+        // --- Camera Follow Logic ---
+        const offX = Math.sin(camAngle) * SETTINGS.camDistance;
+        const offZ = Math.cos(camAngle) * SETTINGS.camDistance;
+
+        const targetCamX = trackTarget.x + offX + cameraPanOffset.x;
+        const targetCamZ = trackTarget.z + offZ + cameraPanOffset.z;
+        
+        camera.position.x += (targetCamX - camera.position.x) * 0.1;
+        camera.position.z += (targetCamZ - camera.position.z) * 0.1;
+        camera.position.y = SETTINGS.camHeight;
+        
+        const lookTarget = trackTarget.clone();
+        lookTarget.x += cameraPanOffset.x;
+        lookTarget.z += cameraPanOffset.z;
+        camera.lookAt(lookTarget);
+
+        // --- Shared Physics for Movables (Pushing by physics loop, not player) ---
+        // Basic physics update for non-driven movables
+        for (let mov of movables) {
+            if (mov.broken || mov.isCarried || mov.isPlugged || mov === currentVehicle) continue;
+
+            // Apply friction
+            mov.velocity.multiplyScalar(SETTINGS.friction);
+            
+            let boxIntendedPos = mov.mesh.position.clone().add(mov.velocity);
+
+            let boxWallCol = checkCollision(boxIntendedPos, mov.width / 2);
+            if (boxWallCol.hit) {
+                const len = Math.sqrt(boxWallCol.nx*boxWallCol.nx + boxWallCol.nz*boxWallCol.nz);
+                 if(len > 0) {
+                    boxIntendedPos.x += (boxWallCol.nx / len) * boxWallCol.overlap;
+                    boxIntendedPos.z += (boxWallCol.nz / len) * boxWallCol.overlap;
+                    
+                    if (mov.velocity.length() > 0.1) {
+                         damageCost += 10;
+                         updateUI();
+                    }
+                    mov.velocity.set(0,0,0); 
+                }
+            }
+
+            mov.mesh.position.copy(boxIntendedPos);
+
+            // Win Condition Check (Only driven car or pushing box can trigger?)
+            // We only check if mov is target
+            if (mov.isTarget) {
+                const bPos = mov.mesh.position;
+                const tBounds = targetZone.bounds;
+                if (bPos.x > tBounds.min.x && bPos.x < tBounds.max.x &&
+                    bPos.z > tBounds.min.z && bPos.z < tBounds.max.z) {
+                    triggerWin();
+                }
+            }
+        }
+    }
+
+    function updateCarPhysics() {
+        const car = currentVehicle;
+
+        // 1. Throttle / Brake
+        // input.y < 0 means 'Forward' (Up key)
+        if (input.y < -0.1) {
+            car.speed += CAR_SPECS.acceleration;
+        } else if (input.y > 0.1) {
+            car.speed -= CAR_SPECS.acceleration;
+        } else {
+            // Friction
+            car.speed *= CAR_SPECS.friction;
+        }
+
+        // Clamp Speed
+        if (car.speed > CAR_SPECS.maxSpeed) car.speed = CAR_SPECS.maxSpeed;
+        if (car.speed < -CAR_SPECS.reverseSpeed) car.speed = -CAR_SPECS.reverseSpeed;
+        if (Math.abs(car.speed) < 0.001) car.speed = 0;
+
+        // 2. Steering (Only turn if moving)
+        if (Math.abs(car.speed) > 0.01) {
+            // Reverse steering direction when reversing like real car
+            const dir = car.speed > 0 ? 1 : -1;
+            
+            // input.x > 0 (Right) -> Turn Right (Negative Rotation around Y)
+            // But usually Right Key = Turn Right. 
+            // In ThreeJS +Z is South, -Z is North.
+            // If facing +Z, Turn Right = -RotY.
+            
+            // Note: Camera angle affects input
+            // If we press 'D' (Right), we want car to turn Right relative to Camera.
+            // But realistic car controls usually mean 'D' = Steer Wheel Right relative to Car.
+            // Let's go with "Car-Relative" steering (Tank controls/Mario Kart style) for driving.
+            // It feels better for vehicles than absolute direction.
+            
+            if (input.x !== 0) {
+                 car.angle -= input.x * CAR_SPECS.turnSpeed * dir;
+            }
+        }
+
+        // 3. Update Velocity Vector
+        // Angle 0 = +Z direction? 
+        // We need velocity = (sin(angle), 0, cos(angle)) * speed
+        car.velocity.x = Math.sin(car.angle) * car.speed;
+        car.velocity.z = Math.cos(car.angle) * car.speed;
+
+        car.mesh.rotation.y = car.angle;
+
+        let intendedPos = car.mesh.position.clone().add(car.velocity);
+
+        // 4. Car vs Walls
+        let col = checkCollision(intendedPos, car.width / 2); // Use average radius
+        if (col.hit) {
+            const len = Math.sqrt(col.nx*col.nx + col.nz*col.nz);
+            if(len > 0) {
+                intendedPos.x += (col.nx / len) * col.overlap;
+                intendedPos.z += (col.nz / len) * col.overlap;
+                
+                // Crash effect
+                if (Math.abs(car.speed) > 0.1) {
+                    damageCost += 50;
+                    shakeScreen();
+                    car.speed *= -0.5; // Bounce back
+                    updateUI();
+                } else {
+                    car.speed = 0;
+                }
+            }
+        }
+
+        // 5. Car vs Movables (RAMMING)
+        for (let mov of movables) {
+            if (mov === car || mov.broken) continue;
+            
+            if (checkMovableCollision(intendedPos, car.width / 2, mov)) {
+                // Direction from Car center to Box center
+                const pushDir = new THREE.Vector3(mov.mesh.position.x - intendedPos.x, 0, mov.mesh.position.z - intendedPos.z).normalize();
+                
+                // FORCE = Car Mass * Car Speed
+                const force = pushDir.multiplyScalar(Math.abs(car.speed) * car.mass / mov.mass);
+                
+                mov.velocity.add(force);
+                
+                // Slow car down slightly
+                car.speed *= 0.8;
+                
+                if (mov.isBreakable && Math.abs(car.speed) > 0.2) {
+                    breakObject(mov);
+                }
+            }
+        }
+
+        car.mesh.position.copy(intendedPos);
+    }
+
+    function updatePlayerPhysics() {
+        const moveSpeed = SETTINGS.speed;
+        let vx = 0, vz = 0;
+
+        if (input.x !== 0 || input.y !== 0) {
+            const sin = Math.sin(camAngle);
+            const cos = Math.cos(camAngle);
+
+            const fwdX = -sin;
+            const fwdZ = -cos;
+            const rightX = cos; 
+            const rightZ = -sin;
+
+            vx = (input.y * -1) * fwdX * moveSpeed + (input.x) * rightX * moveSpeed;
+            vz = (input.y * -1) * fwdZ * moveSpeed + (input.x) * rightZ * moveSpeed;
+
+            player.userData.velocity.x = vx;
+            player.userData.velocity.z = vz;
+
+            const angle = Math.atan2(vx, vz);
+            player.rotation.y = angle;
+
+            const time = Date.now() * 0.015;
+            player.userData.legL.position.z = Math.sin(time) * 0.2;
+            player.userData.legR.position.z = Math.cos(time) * 0.2;
+
+        } else {
+            player.userData.velocity.set(0, 0, 0);
+            player.userData.legL.position.z = 0;
+            player.userData.legR.position.z = 0;
+        }
+
+        let intendedPos = player.position.clone().add(player.userData.velocity);
+
+        let col = checkCollision(intendedPos, player.userData.radius);
+        if (col.hit) {
+            const len = Math.sqrt(col.nx*col.nx + col.nz*col.nz);
+            if(len > 0) {
+                intendedPos.x += (col.nx / len) * col.overlap;
+                intendedPos.z += (col.nz / len) * col.overlap;
+            }
+        }
+
+        // Player Interaction Range Check
+        let minDist = SETTINGS.pickupRange;
+        closestItem = null;
+        
+        for (let mov of movables) {
+             if (mov.broken || mov.isCarried) continue;
+             
+             const movPos = new THREE.Vector3();
+             mov.mesh.getWorldPosition(movPos);
+             
+             const dist = player.position.distanceTo(movPos);
+             if (dist < minDist) {
+                 minDist = dist;
+                 closestItem = mov;
+             }
+        }
+
+        // UI Tip
+        const tip = document.getElementById('interaction-tip');
+        if (heldItem) {
+             tip.style.display = 'block';
+             const pos = toScreenPosition(player, camera);
+             tip.style.left = pos.x + 'px';
+             tip.style.top = pos.y + 'px';
+             tip.innerHTML = heldItem.isPlug ? 
+                '<span class="key-badge">SPACE</span> PLUG IN' : 
+                '<span class="key-badge">SPACE</span> THROW';
+        } else if (closestItem) {
+             tip.style.display = 'block';
+             const pos = toScreenPosition(closestItem, camera);
+             tip.style.left = pos.x + 'px';
+             tip.style.top = pos.y + 'px';
+             
+             if(closestItem.isVehicle) {
+                 tip.innerHTML = '<span class="key-badge">SPACE</span> DRIVE';
+             } else if(closestItem.isPlugged) {
+                 tip.innerHTML = '<span class="key-badge">SPACE</span> UNPLUG';
+             } else {
+                 tip.innerHTML = '<span class="key-badge">SPACE</span> PICK UP';
+             }
+        } else {
+             tip.style.display = 'none';
+        }
+
+        // Player Push
+        for (let mov of movables) {
+            if (mov.broken || mov.isCarried || mov.isPlugged || mov.isVehicle) continue;
+
+            if (checkMovableCollision(intendedPos, player.userData.radius * 0.8, mov)) {
+                const pushDir = new THREE.Vector3(intendedPos.x - mov.mesh.position.x, 0, intendedPos.z - mov.mesh.position.z).normalize().negate();
+                mov.velocity.add(pushDir.multiplyScalar(SETTINGS.pushStrength / mov.mass));
+
+                if (mov.isBreakable) {
+                    const speed = player.userData.velocity.length();
+                    if (speed > 0.1) breakObject(mov);
+                }
+            }
+        }
+
+        player.position.copy(intendedPos);
+    }
+
+    function updateUI() {
+        document.getElementById('damage-cost').innerText = '$' + damageCost;
+    }
+
+    function triggerWin() {
+        if (!isGameActive) return;
+        isGameActive = false;
+
+        document.getElementById('task-checkbox').classList.add('checked');
+        document.getElementById('task-text').style.textDecoration = "line-through";
+        document.getElementById('task-text').style.color = "#2ed573";
+        
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+        const secs = (elapsed % 60).toString().padStart(2, '0');
+
+        document.getElementById('final-time').innerText = `${mins}:${secs}`;
+        document.getElementById('final-damage').innerText = `$${damageCost}`;
+        document.getElementById('final-damage').style.color = damageCost > 0 ? 'red' : 'green';
+
+        confetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#ff4757', '#2ed573', '#3742fa', '#ffa502']
+        });
+
+        setTimeout(() => {
+            document.getElementById('win-screen').style.display = 'flex';
+        }, 800);
+    }
+
+    function resetGame() {
+        location.reload();
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        updatePhysics();
+        renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+        const aspect = window.innerWidth / window.innerHeight;
+        const d = SETTINGS.cameraZoom;
+        camera.left = -d * aspect;
+        camera.right = d * aspect;
+        camera.top = d;
+        camera.bottom = -d;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    init();
+
+</script>
+</body>
+</html>
