@@ -810,6 +810,8 @@
         }
     }
     
+    // --- 4. UTILITY & UI FUNCTIONS (MOVED UP) ---
+
     function showDiceSelector(callback) {
         document.getElementById('inventory-list').innerHTML = '';
         const modal = document.getElementById('game-modal');
@@ -853,7 +855,9 @@
     }
     function adjustZoom(delta) {
         if (!camera) return;
-        camera.zoom += delta; camera.zoom = Math.max(0.5, Math.min(camera.zoom, 3.0)); camera.updateProjectionMatrix();
+        camera.zoom += delta;
+        camera.zoom = Math.max(0.5, Math.min(camera.zoom, 3.0));
+        camera.updateProjectionMatrix();
     }
     
     function toggleDiceCount() {
@@ -1004,21 +1008,30 @@
             this.hasMotorbike = false; this.diceCount = 1;
 
             this.mesh = new THREE.Group();
-            const bodyGeo = new THREE.CylinderGeometry(0.5, 0.6, 1.2, 8); const bodyMat = new THREE.MeshStandardMaterial({ color: color });
-            const body = new THREE.Mesh(bodyGeo, bodyMat); body.position.y = 0.6; body.castShadow = true; this.mesh.add(body);
-            const headGeo = new THREE.SphereGeometry(0.5, 16, 16); const headMat = new THREE.MeshStandardMaterial({ color: 0xffcd94 });
-            const head = new THREE.Mesh(headGeo, headMat); head.position.y = 1.4; head.castShadow = true; this.mesh.add(head);
-            this.nameTag = createLabel(name); this.nameTag.position.y = 2.2; this.mesh.add(this.nameTag);
             
+            // Puppet Group (Body + Head + Name)
+            this.puppetGroup = new THREE.Group();
+            const bodyGeo = new THREE.CylinderGeometry(0.5, 0.6, 1.2, 8); const bodyMat = new THREE.MeshStandardMaterial({ color: color });
+            const body = new THREE.Mesh(bodyGeo, bodyMat); body.position.y = 0.6; body.castShadow = true; 
+            this.puppetGroup.add(body);
+            const headGeo = new THREE.SphereGeometry(0.5, 16, 16); const headMat = new THREE.MeshStandardMaterial({ color: 0xffcd94 });
+            const head = new THREE.Mesh(headGeo, headMat); head.position.y = 1.4; head.castShadow = true; 
+            this.puppetGroup.add(head);
+            this.nameTag = createLabel(name); this.nameTag.position.y = 2.2; 
+            this.puppetGroup.add(this.nameTag);
+            
+            this.mesh.add(this.puppetGroup);
+
             // Motorbike Mesh (hidden by default)
             this.motorbikeGroup = new THREE.Group();
             this.motorbikeGroup.visible = false;
-            const w1 = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.2, 16), new THREE.MeshStandardMaterial({color: 0x333333}));
-            w1.rotation.x = Math.PI/2; w1.position.set(0, 0.3, 0.5);
-            const w2 = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.2, 16), new THREE.MeshStandardMaterial({color: 0x333333}));
-            w2.rotation.x = Math.PI/2; w2.position.set(0, 0.3, -0.5);
-            const chassis = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 1.2), new THREE.MeshStandardMaterial({color: 0xff0000}));
-            chassis.position.y = 0.6;
+            // Scale up motorbike - BIGGER
+            const w1 = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.5, 16), new THREE.MeshStandardMaterial({color: 0x333333}));
+            w1.rotation.x = Math.PI/2; w1.position.set(0, 0.7, 1.0);
+            const w2 = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.5, 16), new THREE.MeshStandardMaterial({color: 0x333333}));
+            w2.rotation.x = Math.PI/2; w2.position.set(0, 0.7, -1.0);
+            const chassis = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.8, 2.5), new THREE.MeshStandardMaterial({color: color})); // Changed to player color
+            chassis.position.y = 1.2;
             this.motorbikeGroup.add(w1, w2, chassis);
             this.mesh.add(this.motorbikeGroup);
             
@@ -1028,13 +1041,48 @@
             this.cursor = new THREE.Mesh(cGeo, cMat); this.cursor.rotation.z = Math.PI; this.cursor.position.y = 3.2; this.cursor.visible = false; this.mesh.add(this.cursor);
             const startTile = tiles[0]; this.mesh.position.set(startTile.x, 0.5, startTile.z); scene.add(this.mesh);
         }
+        
+        setMotorbike(active) {
+            this.hasMotorbike = active;
+            this.motorbikeGroup.visible = active;
+            this.diceCount = active ? 2 : 1; 
+            
+            if (active) {
+                this.puppetGroup.position.y = 1.6; // Correct height to sit on bike
+                this.puppetGroup.position.z = -0.2; 
+            } else {
+                this.puppetGroup.position.y = 0;
+                this.puppetGroup.position.z = 0;
+            }
+        }
+
         hopTo(tileIndex, onComplete) {
-            const nextTile = tiles[tileIndex]; SOUNDS.jump();
-            const startPos = this.mesh.position.clone(); const endPos = new THREE.Vector3(nextTile.x, 0.5, nextTile.z);
-            new TWEEN.Tween(this.mesh.position).to({ x: midPos(startPos,endPos).x, y: midPos(startPos,endPos).y, z: midPos(startPos,endPos).z }, 150).easing(TWEEN.Easing.Quadratic.Out)
-                .onComplete(() => { new TWEEN.Tween(this.mesh.position).to({ x: endPos.x, y: endPos.y, z: endPos.z }, 150).easing(TWEEN.Easing.Quadratic.In)
-                .onComplete(() => { this.tileIndex = tileIndex; updatePlayerPositions(); if (onComplete) onComplete(); }).start(); }).start();
-            this.mesh.lookAt(endPos.x, 0.5, endPos.z);
+            const nextTile = tiles[tileIndex]; 
+            const startPos = this.mesh.position.clone(); 
+            const endPos = new THREE.Vector3(nextTile.x, 0.5, nextTile.z);
+            
+            if (this.hasMotorbike) {
+                // Drive: Slide on ground
+                this.mesh.lookAt(endPos.x, 0.5, endPos.z);
+                new TWEEN.Tween(this.mesh.position)
+                    .to({ x: endPos.x, y: endPos.y, z: endPos.z }, 200) 
+                    .easing(TWEEN.Easing.Linear.None)
+                    .onComplete(() => {
+                        this.tileIndex = tileIndex;
+                        updatePlayerPositions();
+                        if (onComplete) onComplete();
+                    })
+                    .start();
+            } else {
+                // Jump (Normal)
+                SOUNDS.jump();
+                this.mesh.lookAt(endPos.x, 0.5, endPos.z); 
+                new TWEEN.Tween(this.mesh.position).to({ x: midPos(startPos,endPos).x, y: midPos(startPos,endPos).y, z: midPos(startPos,endPos).z }, 150).easing(TWEEN.Easing.Quadratic.Out)
+                    .onComplete(() => { 
+                        new TWEEN.Tween(this.mesh.position).to({ x: endPos.x, y: endPos.y, z: endPos.z }, 150).easing(TWEEN.Easing.Quadratic.In)
+                        .onComplete(() => { this.tileIndex = tileIndex; updatePlayerPositions(); if (onComplete) onComplete(); }).start(); 
+                    }).start();
+            }
         }
     }
 
@@ -1264,14 +1312,6 @@
             player.inventory.push(item.id);
             addLog(`${player.name} bought ${item.name}`, getPlayerColor(player));
             showFloatMsg(player, "+ " + item.name);
-            
-            // Auto Equip Motorbike Logic
-            if(item.id === 'motorbike') {
-                 player.hasMotorbike = true;
-                 player.motorbikeGroup.visible = true;
-                 updateTurnIndicator();
-            }
-
         } else {
             showFloatMsg(player, "No Funds");
         }
@@ -1321,6 +1361,12 @@
             showSpeechBubble(target, "Tick Tock...");
             hasUsedTool = true;
             updateTurnIndicator();
+        }
+        else if (itemId === 'motorbike') {
+            player.inventory.splice(invIndex, 1);
+            player.setMotorbike(true); // Using method
+            showFloatMsg(player, "Equipped Motorbike!");
+            updateTurnIndicator(); 
         }
     }
 
@@ -1402,22 +1448,35 @@
              result = val1;
         }
 
-        // Animate Die 1
-        animateDie(diceMesh, val1, {x: randX, z: randZ});
+        // Dice Visual Rotation (Only shows 1-6, loops if > 6)
+        let visualResult = (val1 - 1) % 6 + 1; 
+        
+        let targetRot = {x:0, y:0, z:0};
+        if(visualResult===1) targetRot = {x:0, y:0, z:Math.PI/2}; 
+        if(visualResult===2) targetRot = {x:0, y:0, z:-Math.PI/2}; 
+        if(visualResult===3) targetRot = {x:0, y:0, z:0}; 
+        if(visualResult===4) targetRot = {x:Math.PI, y:0, z:0}; 
+        if(visualResult===5) targetRot = {x:-Math.PI/2, y:0, z:0}; 
+        if(visualResult===6) targetRot = {x:Math.PI/2, y:0, z:0}; 
+
+        new TWEEN.Tween(diceMesh.position).to({y: 1}, 800).easing(TWEEN.Easing.Bounce.Out).onComplete(() => {
+            setTimeout(() => { diceMesh.visible = false; performMove(p, result); }, 500);
+        }).start();
+        new TWEEN.Tween(diceMesh.rotation).to({x: targetRot.x + Math.PI*4, y: targetRot.y + Math.PI*4, z: targetRot.z + Math.PI*4}, 800).easing(TWEEN.Easing.Quadratic.Out).start();
 
         // Animate Die 2 if needed (and not custom rolled single value)
         if (p.hasMotorbike && p.diceCount === 2 && !forceVal) {
              diceMesh2.visible = true;
+             // Offset second die
              animateDie(diceMesh2, val2, {x: randX + 2.5, z: randZ + 1}); 
         } else {
              diceMesh2.visible = false;
         }
 
-        setTimeout(() => {
-             diceMesh.visible = false;
-             diceMesh2.visible = false;
-             performMove(p, result);
-        }, 1000);
+        // Ensure dice 2 hides after animation
+        if (p.hasMotorbike && p.diceCount === 2 && !forceVal) {
+             setTimeout(() => { diceMesh2.visible = false; }, 1300); // slightly longer than 1st die
+        }
     }
 
     function performMove(p, steps) {
@@ -1442,10 +1501,8 @@
                     
                     // Crash Logic
                     if(player.hasMotorbike) {
-                        player.hasMotorbike = false;
-                        player.motorbikeGroup.visible = false;
+                        player.setMotorbike(false);
                         showFloatMsg(player, "Bike Crashed!");
-                        player.diceCount = 1; // Reset dice count
                     }
                     
                     player.hopTo(nextIdx, () => handleLand(player)); 
@@ -1458,10 +1515,8 @@
                     
                     // Crash Logic
                     if(player.hasMotorbike) {
-                         player.hasMotorbike = false;
-                         player.motorbikeGroup.visible = false;
+                         player.setMotorbike(false);
                          showFloatMsg(player, "Bike Destroyed!");
-                         player.diceCount = 1;
                     }
 
                     tiles[nextIdx].destroyBuilding();
@@ -1774,8 +1829,7 @@
         
         // Auto Equip logic for debug
         if(itemId === 'motorbike') {
-             p.hasMotorbike = true;
-             p.motorbikeGroup.visible = true;
+             p.setMotorbike(true); // Use the method!
              updateTurnIndicator();
         }
     }
