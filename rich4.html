@@ -901,19 +901,20 @@
             this.mat = new THREE.MeshStandardMaterial({ color: color });
             this.base = new THREE.Mesh(roadGeo, this.mat); this.base.receiveShadow = true; this.mesh.add(this.base);
             
-            if(type === TILE_TYPES.HOSPITAL) {
-                 const crossV = new THREE.Mesh(new THREE.BoxGeometry(2, 0.05, 0.8), new THREE.MeshBasicMaterial({color: 0xff0000}));
-                 const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 2), new THREE.MeshBasicMaterial({color: 0xff0000}));
-                 crossV.position.y = 0.11; crossH.position.y = 0.11; this.mesh.add(crossV, crossH);
-            }
-            if (type !== TILE_TYPES.PROPERTY) this.addIcon(type);
+            // Move building group creation BEFORE addIcon
             let bx = 0, bz = 0; const offsetDist = CONFIG.tileSize; 
             if (side === 0) bz = offsetDist; if (side === 1) bx = offsetDist; if (side === 2) bz = -offsetDist; if (side === 3) bx = -offsetDist;
             this.buildingGroup = new THREE.Group(); this.buildingGroup.position.set(bx, 0, bz); this.mesh.add(this.buildingGroup);
+            
+            // Land plane
             const lotGeo = new THREE.PlaneGeometry(CONFIG.tileSize * 0.9, CONFIG.tileSize * 0.9);
-            const lotMat = new THREE.MeshStandardMaterial({ color: 0x95a5a6 });
+            const lotMat = new THREE.MeshStandardMaterial({ color: 0x95a5a6 }); // Reverted texture
             const lot = new THREE.Mesh(lotGeo, lotMat); lot.rotation.x = -Math.PI/2; lot.position.y = 0.05;
-            this.buildingGroup.add(lot); scene.add(this.mesh);
+            this.buildingGroup.add(lot); 
+
+            if(type !== TILE_TYPES.PROPERTY) this.addIcon(type);
+            
+            scene.add(this.mesh);
         }
         setItem(type) {
             if (this.itemMesh) { this.mesh.remove(this.itemMesh); this.itemMesh = null; }
@@ -928,40 +929,71 @@
         }
         clearItem() { this.hasRoadblock = false; this.hasBomb = false; if (this.itemMesh) { this.mesh.remove(this.itemMesh); this.itemMesh = null; } }
         addIcon(type) {
+            const iconGroup = new THREE.Group();
+            
             if (type === TILE_TYPES.HOSPITAL) {
-                const group = new THREE.Group(); const mat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-                const v = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.2, 0.4), mat); const h = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 0.4), mat);
-                v.position.y = 0.6; h.position.y = 0.6; group.add(v, h); this.mesh.add(group);
-                const base = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.2, 16), new THREE.MeshStandardMaterial({color: 0xffffff}));
-                base.position.y = 0.1; this.mesh.add(base); return;
+                const mat = new THREE.MeshStandardMaterial({ color: 0xff0000, transparent: true, opacity: 0.7 });
+                const v = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.2, 0.4), mat); 
+                const h = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 0.4), mat);
+                v.position.y = 0.6; h.position.y = 0.6; 
+                iconGroup.add(v, h);
+                
+                const base = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.2, 16), new THREE.MeshStandardMaterial({color: 0xffffff, transparent: true, opacity: 0.7}));
+                base.position.y = 0.1; 
+                iconGroup.add(base);
             }
-            if (type === TILE_TYPES.SHOP) {
-                const coinGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.2, 16); const coinMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.2 });
-                const coin = new THREE.Mesh(coinGeo, coinMat); coin.rotation.z = Math.PI / 2; coin.rotation.y = Math.PI / 4; coin.position.y = 1.0;
-                const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.0), new THREE.MeshStandardMaterial({color: 0x555555})); stand.position.y = 0.5;
-                this.mesh.add(stand, coin); return;
+            else if (type === TILE_TYPES.SHOP) {
+                const coinGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.2, 16); 
+                const coinMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.2, transparent: true, opacity: 0.7 });
+                const coin = new THREE.Mesh(coinGeo, coinMat); 
+                coin.rotation.z = Math.PI / 2; coin.rotation.y = Math.PI / 4; coin.position.y = 1.0;
+                
+                const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.0), new THREE.MeshStandardMaterial({color: 0x555555, transparent: true, opacity: 0.7})); 
+                stand.position.y = 0.5;
+                iconGroup.add(stand, coin);
             }
-            if (type === TILE_TYPES.POLICE_STATION) {
-                const bar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.2, 0.4), new THREE.MeshStandardMaterial({color: 0x333333})); bar.position.y = 1.0;
-                const red = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshStandardMaterial({color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.5})); red.position.set(-0.4, 1.2, 0);
-                const blue = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshStandardMaterial({color: 0x0000ff, emissive: 0x0000ff, emissiveIntensity: 0.5})); blue.position.set(0.4, 1.2, 0);
-                const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.0), new THREE.MeshStandardMaterial({color: 0x555555})); stand.position.y = 0.5;
-                this.mesh.add(stand, bar, red, blue); return;
+            else if (type === TILE_TYPES.POLICE_STATION) {
+                const bar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.2, 0.4), new THREE.MeshStandardMaterial({color: 0x333333, transparent: true, opacity: 0.7})); 
+                bar.position.y = 1.0;
+                const red = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshStandardMaterial({color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.5, transparent: true, opacity: 0.7})); 
+                red.position.set(-0.4, 1.2, 0);
+                const blue = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshStandardMaterial({color: 0x0000ff, emissive: 0x0000ff, emissiveIntensity: 0.5, transparent: true, opacity: 0.7})); 
+                blue.position.set(0.4, 1.2, 0);
+                const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.0), new THREE.MeshStandardMaterial({color: 0x555555, transparent: true, opacity: 0.7})); 
+                stand.position.y = 0.5;
+                iconGroup.add(stand, bar, red, blue);
             }
-            if (type === TILE_TYPES.JAIL) {
-                const cageGroup = new THREE.Group(); const barMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
-                [[-0.6,-0.6], [0.6,-0.6], [0.6,0.6], [-0.6,0.6]].forEach(p => { const post = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.5), barMat); post.position.set(p[0], 0.75, p[1]); cageGroup.add(post); });
-                const top = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.1, 1.4), barMat); top.position.y = 1.5; cageGroup.add(top);
-                this.mesh.add(cageGroup); return;
+            else if (type === TILE_TYPES.JAIL) {
+                const barMat = new THREE.MeshStandardMaterial({ color: 0x333333, transparent: true, opacity: 0.7 });
+                [[-0.6,-0.6], [0.6,-0.6], [0.6,0.6], [-0.6,0.6]].forEach(p => { 
+                    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.5), barMat); 
+                    post.position.set(p[0], 0.75, p[1]); 
+                    iconGroup.add(post); 
+                });
+                const top = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.1, 1.4), barMat); 
+                top.position.y = 1.5; 
+                iconGroup.add(top);
             }
-            if (type === TILE_TYPES.START) {
-                const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1, 4), new THREE.MeshStandardMaterial({color: 0x00ff00})); arrow.position.y = 1; arrow.rotation.z = Math.PI; this.mesh.add(arrow); return;
+            else if (type === TILE_TYPES.START) {
+                const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1, 4), new THREE.MeshStandardMaterial({color: 0x00ff00, transparent: true, opacity: 0.7})); 
+                arrow.position.y = 1; arrow.rotation.z = Math.PI; 
+                iconGroup.add(arrow);
             }
-            let color = 0xffffff; if(type===TILE_TYPES.CHANCE) color=0xffa502;
-            const geo = new THREE.BoxGeometry(0.6, 0.6, 0.6); const mat = new THREE.MeshStandardMaterial({ color: color });
-            const box = new THREE.Mesh(geo, mat); box.rotation.y = Math.PI/4; box.rotation.x = Math.PI/4; box.position.y = 0.8;
-            const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.8), new THREE.MeshStandardMaterial({color: 0xaaaaaa})); stand.position.y = 0.4;
-            this.mesh.add(stand, box);
+            else if (type === TILE_TYPES.CHANCE) {
+                let color = 0xffa502;
+                const geo = new THREE.BoxGeometry(0.6, 0.6, 0.6); 
+                const mat = new THREE.MeshStandardMaterial({ color: color, transparent: true, opacity: 0.7 });
+                const box = new THREE.Mesh(geo, mat); 
+                box.rotation.y = Math.PI/4; box.rotation.x = Math.PI/4; box.position.y = 0.8;
+                const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.8), new THREE.MeshStandardMaterial({color: 0xaaaaaa, transparent: true, opacity: 0.7})); 
+                stand.position.y = 0.4;
+                iconGroup.add(stand, box);
+            }
+
+            if (iconGroup.children.length > 0) {
+                iconGroup.scale.set(2, 2, 2); // Scale 2x (was 4x)
+                this.buildingGroup.add(iconGroup); // Add to BUILDING GROUP (beside road)
+            }
         }
         setOwner(playerId) { this.owner = playerId; this.upgrade(); }
         upgrade() { if (this.level < 3) { this.level++; this.rent = this.price * 0.8 * this.level; this.updateBuildingVisual(); return true; } return false; }
@@ -1001,11 +1033,13 @@
         }
     }
     class Player {
-        constructor(id, name, color, isAI) {
+        constructor(id, name, color, isAI, startTileIndex) {
             this.id = id; this.name = name; this.color = color; this.isAI = isAI;
-            this.money = 5000; this.displayedMoney = 5000; this.tileIndex = 0; this.properties = 0;
+            this.money = 5000; this.displayedMoney = 5000; this.tileIndex = startTileIndex; this.properties = 0;
             this.inJail = false; this.skipTurns = 0; this.inventory = []; this.timerBomb = { active: false, steps: 0 };
             this.hasMotorbike = false; this.diceCount = 1;
+            // Add Random Direction
+            this.direction = Math.random() < 0.5 ? 1 : -1;
 
             this.mesh = new THREE.Group();
             
@@ -1039,7 +1073,15 @@
             this.bombVis.position.set(0, 2.5, 0); this.bombVis.visible = false; this.mesh.add(this.bombVis);
             const cGeo = new THREE.ConeGeometry(0.3, 0.6, 4); const cMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
             this.cursor = new THREE.Mesh(cGeo, cMat); this.cursor.rotation.z = Math.PI; this.cursor.position.y = 3.2; this.cursor.visible = false; this.mesh.add(this.cursor);
-            const startTile = tiles[0]; this.mesh.position.set(startTile.x, 0.5, startTile.z); scene.add(this.mesh);
+            
+            // Random Start Drop
+            const t = tiles[startTileIndex];
+            this.mesh.position.set(t.x, 20, t.z); // High up
+            this.mesh.rotation.y = Math.random() * Math.PI * 2; // Random direction
+            
+            new TWEEN.Tween(this.mesh.position).to({ y: 0.5 }, 1000 + id * 300).easing(TWEEN.Easing.Bounce.Out).start();
+            
+            scene.add(this.mesh);
         }
         
         setMotorbike(active) {
@@ -1048,7 +1090,8 @@
             this.diceCount = active ? 2 : 1; 
             
             if (active) {
-                this.puppetGroup.position.y = 1.6; // Correct height to sit on bike
+                // Raise puppet up to sit ON TOP of the chassis (chassis top is approx 1.6)
+                this.puppetGroup.position.y = 1.6; 
                 this.puppetGroup.position.z = -0.2; 
             } else {
                 this.puppetGroup.position.y = 0;
@@ -1100,26 +1143,71 @@
         diceMesh2 = new THREE.Mesh(geo, mats);
         diceMesh2.position.set(0, -100, 0); diceMesh2.castShadow = true; diceMesh2.visible = false; scene.add(diceMesh2);
     }
-    function createPlayer(id, name, isAI) { players.push(new Player(id, name, CONFIG.colors[id % 4], isAI)); if (id === 0) cameraTarget.copy(players[0].mesh.position); }
+    function createPlayer(id, name, isAI) { 
+        const startIdx = Math.floor(Math.random() * tiles.length);
+        players.push(new Player(id, name, CONFIG.colors[id % 4], isAI, startIdx)); 
+        if (id === 0) cameraTarget.copy(players[0].mesh.position); 
+    }
     function addTile(index, x, z, side) { const tile = new Tile(index, x, z, TILE_TYPES.PROPERTY, side); tiles.push(tile); }
     function createBoard() {
+        // Clear existing tiles if any
+        tiles.forEach(t => scene.remove(t.mesh));
+        tiles = [];
+
         const w = CONFIG.boardWidth; const s = CONFIG.tileSize; const offset = (w * s) / 2 - (s/2); let count = 0;
+        
+        // Generate coordinates
         for(let i = -offset; i <= offset; i += s) addTile(count++, i, offset, 0);
         for(let i = offset - s; i >= -offset; i -= s) addTile(count++, offset, i, 1);
         for(let i = offset - s; i >= -offset; i -= s) addTile(count++, i, -offset, 2);
         for(let i = -offset + s; i < offset; i += s) addTile(count++, -offset, i, 3);
-        tiles[0].type = TILE_TYPES.START; tiles[0].mat.color.setHex(CONFIG.tileColors.start);
-        tiles[6].type = TILE_TYPES.HOSPITAL; tiles[6].mat.color.setHex(CONFIG.tileColors.hospital);
-        tiles[12].type = TILE_TYPES.SHOP; tiles[12].mat.color.setHex(CONFIG.tileColors.shop);
-        tiles[16].type = TILE_TYPES.JAIL; tiles[16].mat.color.setHex(CONFIG.tileColors.jail);
-        if(tiles[22]) { tiles[22].type = TILE_TYPES.SHOP; tiles[22].mat.color.setHex(CONFIG.tileColors.shop); }
-        if(tiles[24]) { tiles[24].type = TILE_TYPES.POLICE_STATION; tiles[24].mat.color.setHex(CONFIG.tileColors.police); }
-        if(tiles[20]) { tiles[20].type = TILE_TYPES.SHOP; tiles[20].mat.color.setHex(CONFIG.tileColors.shop); }
-        if(tiles[28]) { tiles[28].type = TILE_TYPES.SHOP; tiles[28].mat.color.setHex(CONFIG.tileColors.shop); }
-        if(tiles[4]) { tiles[4].type = TILE_TYPES.SHOP; tiles[4].mat.color.setHex(CONFIG.tileColors.shop); }
-        const q1 = Math.floor(tiles.length / 4); const q3 = Math.floor(tiles.length * 0.75);
-        if(tiles[q1].type === TILE_TYPES.PROPERTY) { tiles[q1].type = TILE_TYPES.CHANCE; tiles[q1].mat.color.setHex(CONFIG.tileColors.chance); }
-        if(tiles[q3].type === TILE_TYPES.PROPERTY) { tiles[q3].type = TILE_TYPES.CHANCE; tiles[q3].mat.color.setHex(CONFIG.tileColors.chance); }
+        
+        // Tile 0 is always START
+        const startTile = tiles[0];
+        startTile.type = TILE_TYPES.START;
+        startTile.mat.color.setHex(CONFIG.tileColors.start);
+        startTile.addIcon(TILE_TYPES.START);
+
+        // Randomize the rest (indices 1 to length-1)
+        let indices = [];
+        for(let i=1; i<tiles.length; i++) indices.push(i);
+        
+        // Fisher-Yates Shuffle
+        for (let i = indices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [indices[i], indices[j]] = [indices[j], indices[i]];
+        }
+
+        // List of special tiles to assign
+        const specialTypes = [
+            TILE_TYPES.HOSPITAL,
+            TILE_TYPES.JAIL,
+            TILE_TYPES.POLICE_STATION,
+            TILE_TYPES.SHOP, TILE_TYPES.SHOP, // Reduced to 2 shops
+            TILE_TYPES.CHANCE, TILE_TYPES.CHANCE, TILE_TYPES.CHANCE
+        ];
+
+        // Assign Special Types
+        specialTypes.forEach(type => {
+            if(indices.length > 0) {
+                const idx = indices.pop();
+                const t = tiles[idx];
+                t.type = type;
+                
+                // Set Color
+                let colorHex = 0xffffff;
+                if(type === TILE_TYPES.HOSPITAL) colorHex = CONFIG.tileColors.hospital;
+                else if(type === TILE_TYPES.JAIL) colorHex = CONFIG.tileColors.jail;
+                else if(type === TILE_TYPES.POLICE_STATION) colorHex = CONFIG.tileColors.police;
+                else if(type === TILE_TYPES.SHOP) colorHex = CONFIG.tileColors.shop;
+                else if(type === TILE_TYPES.CHANCE) colorHex = CONFIG.tileColors.chance;
+                
+                t.mat.color.setHex(colorHex);
+                t.addIcon(type);
+            }
+        });
+        
+        // Remaining indices stay as PROPERTY (default from addTile)
     }
     function createOffMapBuildings() {
         const hGroup = new THREE.Group(); hGroup.position.copy(hospitalPos);
@@ -1312,6 +1400,14 @@
             player.inventory.push(item.id);
             addLog(`${player.name} bought ${item.name}`, getPlayerColor(player));
             showFloatMsg(player, "+ " + item.name);
+            
+            // Auto Equip Motorbike Logic
+            if(item.id === 'motorbike') {
+                 // player.hasMotorbike = true; // Wait until use
+                 // player.motorbikeGroup.visible = true;
+                 // updateTurnIndicator();
+            }
+
         } else {
             showFloatMsg(player, "No Funds");
         }
@@ -1366,7 +1462,7 @@
             player.inventory.splice(invIndex, 1);
             player.setMotorbike(true); // Using method
             showFloatMsg(player, "Equipped Motorbike!");
-            updateTurnIndicator(); 
+            updateTurnIndicator(); // Refresh UI to show toggle button
         }
     }
 
@@ -1493,7 +1589,9 @@
             }
             if (stepsLeft > 0) {
                 stepsLeft--;
-                let nextIdx = (player.tileIndex + 1) % tiles.length;
+                // RANDOM DIRECTION LOGIC
+                let nextIdx = (player.tileIndex + player.direction + tiles.length) % tiles.length;
+                
                 if (tiles[nextIdx].hasRoadblock) {
                     tiles[nextIdx].clearItem();
                     showSpeechBubble(player, "Blocked!");
