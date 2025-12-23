@@ -618,6 +618,81 @@
     let placementMode = { active: false, item: null, invIndex: -1, ghost: null };
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+    // --- 4. UTILITY & UI FUNCTIONS (MOVED UP) ---
+    function showDiceSelector(callback) {
+        document.getElementById('inventory-list').innerHTML = '';
+        const modal = document.getElementById('game-modal');
+        document.getElementById('m-title').innerText = "Custom Roll";
+        document.getElementById('m-text').innerText = "Select result:";
+        const btnContainer = document.getElementById('m-buttons');
+        btnContainer.innerHTML = '';
+        
+        for (let i = 1; i <= 6; i++) {
+            const btn = document.createElement('button');
+            btn.innerText = i;
+            btn.className = 'modal-btn';
+            btn.style.width = '50px'; 
+            btn.onclick = () => {
+                modal.style.display = 'none';
+                callback(i);
+            };
+            btnContainer.appendChild(btn);
+        }
+        modal.style.display = 'block';
+    }
+
+    function showModal(title, text, buttons, callback) {
+        document.getElementById('inventory-list').innerHTML = ''; // Clear previous list
+        const modal = document.getElementById('game-modal');
+        document.getElementById('m-title').innerText = title; document.getElementById('m-text').innerText = text;
+        const btnContainer = document.getElementById('m-buttons'); btnContainer.innerHTML = '';
+        buttons.forEach(btnText => {
+            const btn = document.createElement('button'); btn.innerText = btnText; btn.className = 'modal-btn';
+            if(btnText === 'YES' || btnText === 'OK' || btnText === 'HIRE') btn.classList.add('btn-yes');
+            if(btnText === 'NO' || btnText === 'PASS' || btnText === 'SKIP' || btnText === 'CANCEL' || btnText === 'LEAVE') btn.classList.add('btn-no');
+            // Pass the btnText directly to callback
+            btn.onclick = () => { modal.style.display = 'none'; callback(btnText); };
+            btnContainer.appendChild(btn);
+        });
+        modal.style.display = 'block';
+    }
+    function toggleLog() {
+        const panel = document.getElementById('log-panel'); const btn = document.getElementById('log-toggle-btn');
+        panel.classList.toggle('collapsed');
+        btn.innerText = panel.classList.contains('collapsed') ? 'LOGS ▼' : 'LOGS ▲';
+    }
+    function adjustZoom(delta) {
+        if (!camera) return;
+        camera.zoom += delta;
+        camera.zoom = Math.max(0.5, Math.min(camera.zoom, 3.0));
+        camera.updateProjectionMatrix();
+    }
+    
+    function toggleDiceCount() {
+        const p = players[currentPlayer];
+        if (p.hasMotorbike) {
+            p.diceCount = (p.diceCount === 1) ? 2 : 1;
+            document.getElementById('dice-count-toggle').innerText = p.diceCount + (p.diceCount > 1 ? " Dice" : " Die");
+        }
+    }
+
+    function updateLabel(sprite, text, color="white") {
+        const canvas = sprite.material.map.image;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0,0, canvas.width, canvas.height);
+        ctx.font = "Bold 48px 'Rubik', sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.shadowColor = "black";
+        ctx.shadowBlur = 4;
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "black";
+        ctx.strokeText(text, 128, 32);
+        ctx.fillStyle = color;
+        ctx.fillText(text, 128, 32);
+        sprite.material.map.needsUpdate = true;
+    }
+
     // --- 3. HELPERS ---
     function playTone(freq, type, duration, vol=0.1) {
         if(audioCtx.state === 'suspended') audioCtx.resume();
@@ -639,12 +714,12 @@
     };
     function midPos(s, e) { return s.clone().lerp(e, 0.5).add(new THREE.Vector3(0, 2, 0)); }
     function getPlayerColor(p) { return '#' + new THREE.Color(p.color).getHexString(); }
-    function createLabel(text) {
+    function createLabel(text, color="white") {
         const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 64;
         const ctx = canvas.getContext('2d'); ctx.font = "Bold 32px 'Rubik', sans-serif";
         ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.shadowColor = "black";
         ctx.shadowBlur = 4; ctx.lineWidth = 4; ctx.strokeStyle = "black";
-        ctx.strokeText(text, 128, 32); ctx.fillStyle = "white"; ctx.fillText(text, 128, 32);
+        ctx.strokeText(text, 128, 32); ctx.fillStyle = color; ctx.fillText(text, 128, 32);
         const texture = new THREE.CanvasTexture(canvas);
         const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
         const sprite = new THREE.Sprite(mat); sprite.scale.set(4, 1, 1); return sprite;
@@ -810,64 +885,6 @@
         }
     }
     
-    // --- 4. UTILITY & UI FUNCTIONS (MOVED UP) ---
-
-    function showDiceSelector(callback) {
-        document.getElementById('inventory-list').innerHTML = '';
-        const modal = document.getElementById('game-modal');
-        document.getElementById('m-title').innerText = "Custom Roll";
-        document.getElementById('m-text').innerText = "Select result:";
-        const btnContainer = document.getElementById('m-buttons');
-        btnContainer.innerHTML = '';
-        
-        for (let i = 1; i <= 6; i++) {
-            const btn = document.createElement('button');
-            btn.innerText = i;
-            btn.className = 'modal-btn';
-            btn.style.width = '50px'; 
-            btn.onclick = () => {
-                modal.style.display = 'none';
-                callback(i);
-            };
-            btnContainer.appendChild(btn);
-        }
-        modal.style.display = 'block';
-    }
-
-    function showModal(title, text, buttons, callback) {
-        document.getElementById('inventory-list').innerHTML = ''; // Clear previous list
-        const modal = document.getElementById('game-modal');
-        document.getElementById('m-title').innerText = title; document.getElementById('m-text').innerText = text;
-        const btnContainer = document.getElementById('m-buttons'); btnContainer.innerHTML = '';
-        buttons.forEach(btnText => {
-            const btn = document.createElement('button'); btn.innerText = btnText; btn.className = 'modal-btn';
-            if(btnText === 'YES' || btnText === 'OK' || btnText === 'HIRE') btn.classList.add('btn-yes');
-            if(btnText === 'NO' || btnText === 'PASS' || btnText === 'SKIP' || btnText === 'CANCEL' || btnText === 'LEAVE') btn.classList.add('btn-no');
-            btn.onclick = () => { modal.style.display = 'none'; callback(btnText === 'YES' || btnText === 'OK' || btnText === 'HIRE' || btnText === 'RESTART'); };
-            btnContainer.appendChild(btn);
-        });
-        modal.style.display = 'block';
-    }
-    function toggleLog() {
-        const panel = document.getElementById('log-panel'); const btn = document.getElementById('log-toggle-btn');
-        panel.classList.toggle('collapsed');
-        btn.innerText = panel.classList.contains('collapsed') ? 'LOGS ▼' : 'LOGS ▲';
-    }
-    function adjustZoom(delta) {
-        if (!camera) return;
-        camera.zoom += delta;
-        camera.zoom = Math.max(0.5, Math.min(camera.zoom, 3.0));
-        camera.updateProjectionMatrix();
-    }
-    
-    function toggleDiceCount() {
-        const p = players[currentPlayer];
-        if (p.hasMotorbike) {
-            p.diceCount = (p.diceCount === 1) ? 2 : 1;
-            document.getElementById('dice-count-toggle').innerText = p.diceCount + (p.diceCount > 1 ? " Dice" : " Die");
-        }
-    }
-
     function animateDie(mesh, value, targetPos) {
         mesh.visible = true;
         mesh.position.set(targetPos.x, 15, targetPos.z);
@@ -901,20 +918,19 @@
             this.mat = new THREE.MeshStandardMaterial({ color: color });
             this.base = new THREE.Mesh(roadGeo, this.mat); this.base.receiveShadow = true; this.mesh.add(this.base);
             
-            // Move building group creation BEFORE addIcon
+            if(type === TILE_TYPES.HOSPITAL) {
+                 const crossV = new THREE.Mesh(new THREE.BoxGeometry(2, 0.05, 0.8), new THREE.MeshBasicMaterial({color: 0xff0000}));
+                 const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 2), new THREE.MeshBasicMaterial({color: 0xff0000}));
+                 crossV.position.y = 0.11; crossH.position.y = 0.11; this.mesh.add(crossV, crossH);
+            }
+            if (type !== TILE_TYPES.PROPERTY) this.addIcon(type);
             let bx = 0, bz = 0; const offsetDist = CONFIG.tileSize; 
             if (side === 0) bz = offsetDist; if (side === 1) bx = offsetDist; if (side === 2) bz = -offsetDist; if (side === 3) bx = -offsetDist;
             this.buildingGroup = new THREE.Group(); this.buildingGroup.position.set(bx, 0, bz); this.mesh.add(this.buildingGroup);
-            
-            // Land plane
             const lotGeo = new THREE.PlaneGeometry(CONFIG.tileSize * 0.9, CONFIG.tileSize * 0.9);
             const lotMat = new THREE.MeshStandardMaterial({ color: 0x95a5a6 }); // Reverted texture
             const lot = new THREE.Mesh(lotGeo, lotMat); lot.rotation.x = -Math.PI/2; lot.position.y = 0.05;
-            this.buildingGroup.add(lot); 
-
-            if(type !== TILE_TYPES.PROPERTY) this.addIcon(type);
-            
-            scene.add(this.mesh);
+            this.buildingGroup.add(lot); scene.add(this.mesh);
         }
         setItem(type) {
             if (this.itemMesh) { this.mesh.remove(this.itemMesh); this.itemMesh = null; }
@@ -1056,6 +1072,13 @@
             
             this.mesh.add(this.puppetGroup);
 
+            // Bomb Label - 4x BIGGER
+            this.bombLabel = createLabel("10", "red");
+            this.bombLabel.scale.set(16, 4, 1); // Scaled up 4x (default is 4,1,1)
+            this.bombLabel.position.y = 5.5; // Moved up to clear head
+            this.bombLabel.visible = false;
+            this.mesh.add(this.bombLabel);
+
             // Motorbike Mesh (hidden by default)
             this.motorbikeGroup = new THREE.Group();
             this.motorbikeGroup.visible = false;
@@ -1071,8 +1094,29 @@
             
             this.bombVis = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshBasicMaterial({color:0x000000}));
             this.bombVis.position.set(0, 2.5, 0); this.bombVis.visible = false; this.mesh.add(this.bombVis);
-            const cGeo = new THREE.ConeGeometry(0.3, 0.6, 4); const cMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-            this.cursor = new THREE.Mesh(cGeo, cMat); this.cursor.rotation.z = Math.PI; this.cursor.position.y = 3.2; this.cursor.visible = false; this.mesh.add(this.cursor);
+            
+            // Cursor (Indicator) - 1/2 Size (Scaled down from previous version)
+            const cGeo = new THREE.ConeGeometry(0.75, 1.5, 4); 
+            const cMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.8 }); 
+            this.cursor = new THREE.Mesh(cGeo, cMat); 
+            this.cursor.rotation.z = Math.PI; 
+            this.cursor.position.y = 4.0; // Lowered closer to head
+            this.cursor.visible = false; 
+            
+            // Border - Scaled down
+            const bGeo = new THREE.ConeGeometry(0.8, 1.55, 4); 
+            const bMat = new THREE.MeshBasicMaterial({ color: 0xff5500, wireframe: true, transparent: true, opacity: 0.8 });
+            this.cursorBorder = new THREE.Mesh(bGeo, bMat);
+            this.cursor.add(this.cursorBorder);
+            
+            this.mesh.add(this.cursor);
+
+            // Bomb Label - Positioned ABOVE the cursor
+            this.bombLabel = createLabel("10", "red");
+            this.bombLabel.scale.set(16, 4, 1); 
+            this.bombLabel.position.y = 5.5; // High enough to clear the cursor
+            this.bombLabel.visible = false;
+            this.mesh.add(this.bombLabel);
             
             // Random Start Drop
             const t = tiles[startTileIndex];
@@ -1449,20 +1493,34 @@
             showFloatMsg(player, "Click a tile to place");
         } 
         else if (itemId === 'timer_bomb') {
-            player.inventory.splice(invIndex, 1);
-            const targets = players.filter(p => p !== player && !p.inJail);
-            const target = targets.length > 0 ? targets[0] : player;
-            target.timerBomb = { active: true, steps: 10 };
-            target.bombVis.visible = true;
-            showSpeechBubble(target, "Tick Tock...");
-            hasUsedTool = true;
-            updateTurnIndicator();
+             // Show target selection modal
+             const validTargets = players; 
+             const buttons = validTargets.map(p => p.name);
+             buttons.push("CANCEL");
+             
+             showModal("Select Target", "Who gets the bomb?", buttons, (choice) => {
+                 if (choice === "CANCEL") return; 
+                 
+                 const target = players.find(p => p.name === choice);
+                 if (target) {
+                     // consume item
+                     player.inventory.splice(invIndex, 1);
+                     
+                     target.timerBomb = { active: true, steps: 5 }; 
+                     target.bombVis.visible = true;
+                     updateLabel(target.bombLabel, "5", "red"); // Initial update
+                     target.bombLabel.visible = true;
+                     showSpeechBubble(target, "Tick Tock...");
+                     hasUsedTool = true;
+                     updateTurnIndicator();
+                 }
+             });
         }
         else if (itemId === 'motorbike') {
             player.inventory.splice(invIndex, 1);
-            player.setMotorbike(true); // Using method
+            player.setMotorbike(true); 
             showFloatMsg(player, "Equipped Motorbike!");
-            updateTurnIndicator(); // Refresh UI to show toggle button
+            updateTurnIndicator(); 
         }
     }
 
@@ -1553,7 +1611,7 @@
         if(visualResult===3) targetRot = {x:0, y:0, z:0}; 
         if(visualResult===4) targetRot = {x:Math.PI, y:0, z:0}; 
         if(visualResult===5) targetRot = {x:-Math.PI/2, y:0, z:0}; 
-        if(visualResult===6) targetRot = {x:Math.PI/2, y:0, z:0}; 
+        if(visualResult===6) targetRot = {x:Math.PI, y:0, z:0}; 
 
         new TWEEN.Tween(diceMesh.position).to({y: 1}, 800).easing(TWEEN.Easing.Bounce.Out).onComplete(() => {
             setTimeout(() => { diceMesh.visible = false; performMove(p, result); }, 500);
@@ -1585,7 +1643,11 @@
         function step() {
             if (player.timerBomb.active) {
                 player.timerBomb.steps--;
-                if(player.timerBomb.steps<=0) { explodeBomb(player); return; }
+                updateLabel(player.bombLabel, player.timerBomb.steps.toString(), "red");
+                if(player.timerBomb.steps <= 0) {
+                    explodeBomb(player);
+                    return;
+                }
             }
             if (stepsLeft > 0) {
                 stepsLeft--;
@@ -1641,6 +1703,7 @@
         showSpeechBubble(player, "KABOOM!");
         player.timerBomb.active = false;
         player.bombVis.visible = false;
+        player.bombLabel.visible = false; // Hide label
         tiles[player.tileIndex].destroyBuilding();
         changeMoney(player, -500);
         player.skipTurns = 3;
@@ -1774,7 +1837,7 @@
             addLog(`${player.name} is visiting Prison`, getPlayerColor(player));
             if (!activeThief) {
                 showModal("Prison", "Hire Thief ($2000)?", ["HIRE", "PASS"], (choice) => {
-                    if (choice && player.money >= 2000) {
+                    if (choice === 'HIRE' && player.money >= 2000) {
                         changeMoney(player, -2000);
                         animateMoneyTransfer(player, 'system');
                         activeThief = new Thief(player.id, player.tileIndex);
@@ -1806,13 +1869,13 @@
             if (tile.owner === null) {
                 if (player.money >= tile.price) {
                     if (player.isAI) { if(player.money>1000) buyProperty(player, tile); nextTurn(); }
-                    else showModal("For Sale", `Buy $${tile.price}?`, ["YES", "NO"], (c) => { if(c) buyProperty(player, tile); nextTurn(); });
+                    else showModal("For Sale", `Buy $${tile.price}?`, ["YES", "NO"], (c) => { if(c === 'YES') buyProperty(player, tile); nextTurn(); });
                 } else { if (!player.isAI) showSpeechBubble(player, "Too expensive!"); nextTurn(); }
             } else if (tile.owner === player.id) {
                 const cost = tile.price * 0.5;
                 if (player.money >= cost && tile.level < 3) {
                     if (player.isAI) { if(player.money>2000) upgradeProperty(player, tile); nextTurn(); }
-                    else showModal("Upgrade", `Build $${cost}?`, ["YES", "NO"], (c) => { if(c) upgradeProperty(player, tile); nextTurn(); });
+                    else showModal("Upgrade", `Build $${cost}?`, ["YES", "NO"], (c) => { if(c === 'YES') upgradeProperty(player, tile); nextTurn(); });
                 } else { nextTurn(); }
             } else {
                 const rent = tile.rent;
@@ -1825,7 +1888,7 @@
                 animateMoneyTransfer(player, owner);
                 
                 if (player.money < 0) {
-                    showModal("GAME OVER", `${player.name} is bankrupt!`, ["RESTART"], () => location.reload());
+                    showModal("GAME OVER", `${player.name} is bankrupt!`, ["RESTART"], (btn) => { if(btn === 'RESTART') location.reload(); });
                 } else {
                     setTimeout(nextTurn, 1000);
                 }
@@ -1924,12 +1987,6 @@
         p.inventory.push(itemId);
         const item = Object.values(ITEMS).find(i => i.id === itemId);
         showFloatMsg(p, `+ ${item.name}`);
-        
-        // Auto Equip logic for debug
-        if(itemId === 'motorbike') {
-             p.setMotorbike(true); // Use the method!
-             updateTurnIndicator();
-        }
     }
     
     function toggleLog() {
@@ -1978,8 +2035,13 @@
         if (players.length > 0) {
             const activeP = players[currentPlayer];
             if (activeP && activeP.cursor.visible) {
-                activeP.cursor.position.y = 3.2 + Math.sin(time * 0.005) * 0.2;
+                // Adjusted animation height for smaller cursor
+                activeP.cursor.position.y = 4.0 + Math.sin(time * 0.005) * 0.25;
                 activeP.cursor.rotation.y += 0.05;
+                const scale = 1.0 + 0.1 * Math.abs(Math.sin(time * 0.005));
+                if(activeP.cursorBorder) {
+                    activeP.cursorBorder.scale.set(scale, scale, scale);
+                }
             }
         }
 
