@@ -495,6 +495,7 @@
         <!-- Debug Panel -->
         <div id="debug-panel">
             <div style="color:white; font-weight:bold; margin-bottom:5px; text-shadow:1px 1px 0 #000;">DEBUG TOOLS</div>
+            <button class="debug-btn" onclick="debugSetLowMoney()">$100 All</button> <!-- New Button -->
             <button class="debug-btn" onclick="debugAddTool('custom_roll')">+ Custom Roll</button>
             <button class="debug-btn" onclick="debugAddTool('roadblock')">+ Roadblock</button>
             <button class="debug-btn" onclick="debugAddTool('bomb')">+ Land Mine</button>
@@ -853,7 +854,15 @@
         });
     }
     function updatePlayerPositions() {
-        const groups = {}; players.forEach(p => { if(!groups[p.tileIndex]) groups[p.tileIndex] = []; groups[p.tileIndex].push(p); });
+        // Filter out bankrupt players to prevent them from snapping back to board
+        const activePlayers = players.filter(p => !p.isBankrupt);
+        
+        const groups = {}; 
+        activePlayers.forEach(p => { 
+            if(!groups[p.tileIndex]) groups[p.tileIndex] = []; 
+            groups[p.tileIndex].push(p); 
+        });
+        
         for (const [tIdx, group] of Object.entries(groups)) {
             if (tIdx < tiles.length) {
                 const t = tiles[tIdx]; const count = group.length;
@@ -870,7 +879,10 @@
     function checkOcclusion() {
         if (!players.length) return;
         buildings.forEach(b => b.material.opacity = 0.8);
-        const p = players[currentPlayer]; const pPos = p.mesh.position.clone(); pPos.y += 1; 
+        const p = players[currentPlayer]; 
+        if (!p || p.isBankrupt) return;
+        
+        const pPos = p.mesh.position.clone(); pPos.y += 1; 
         
         // Fix: Calculate distance
         const dist = camera.position.distanceTo(pPos);
@@ -1056,6 +1068,7 @@
             this.hasMotorbike = false; this.diceCount = 1;
             // Add Random Direction
             this.direction = Math.random() < 0.5 ? 1 : -1;
+            this.isBankrupt = false;
 
             this.mesh = new THREE.Group();
             
@@ -1110,13 +1123,6 @@
             this.cursor.add(this.cursorBorder);
             
             this.mesh.add(this.cursor);
-
-            // Bomb Label - Positioned ABOVE the cursor
-            this.bombLabel = createLabel("10", "red");
-            this.bombLabel.scale.set(16, 4, 1); 
-            this.bombLabel.position.y = 5.5; // High enough to clear the cursor
-            this.bombLabel.visible = false;
-            this.mesh.add(this.bombLabel);
             
             // Random Start Drop
             const t = tiles[startTileIndex];
@@ -1494,7 +1500,7 @@
         } 
         else if (itemId === 'timer_bomb') {
              // Show target selection modal
-             const validTargets = players; 
+             const validTargets = players.filter(p => !p.isBankrupt); 
              const buttons = validTargets.map(p => p.name);
              buttons.push("CANCEL");
              
@@ -1763,6 +1769,43 @@
         step();
     }
 
+    // --- Bankruptcy Handling ---
+    function handleBankruptcy(player) {
+        addLog(`${player.name} went bankrupt!`, '#e74c3c');
+        player.isBankrupt = true;
+        
+        // Hide player and move far away
+        player.mesh.visible = false; 
+        player.mesh.position.y = -500;
+
+        // Cleanup Thief if owned
+        if (activeThief && activeThief.ownerId === player.id) {
+             scene.remove(activeThief.mesh);
+             activeThief = null;
+        }
+
+        // Release properties (become white/neutral)
+        tiles.forEach(t => {
+            if (t.owner === player.id) {
+                t.owner = null;
+                // keep level, just remove owner
+                t.updateBuildingVisual();
+            }
+        });
+
+        // Check for winner
+        const activePlayers = players.filter(p => !p.isBankrupt);
+        if (activePlayers.length === 1) {
+            showModal("WINNER!", `${activePlayers[0].name} wins!`, ["RESTART"], (choice) => {
+                 if(choice === 'RESTART') location.reload();
+            });
+        } else {
+            showModal("BANKRUPTCY", `${player.name} is out!`, ["CONTINUE"], (choice) => {
+                 nextTurn();
+            });
+        }
+    }
+
     function handleLand(player) {
         isRolling = false;
         updatePlayerPositions();
@@ -1828,7 +1871,13 @@
                 { text: "Bonus! +$1000", effect: (p) => { changeMoney(p, 1000); animateMoneyTransfer('system', p); addLog(`${p.name} won bonus`, getPlayerColor(p)); showSpeechBubble(p, "Yesss!"); } }
             ];
             const evt = events[Math.floor(Math.random() * events.length)];
-            showModal("Fate Card", evt.text, ["OK"], () => { evt.effect(player); nextTurn(); });
+            
+            if (player.isAI) {
+                 evt.effect(player);
+                 setTimeout(nextTurn, 1500);
+            } else {
+                 showModal("Fate Card", evt.text, ["OK"], () => { evt.effect(player); nextTurn(); });
+            }
             return;
         }
 
@@ -1836,16 +1885,26 @@
             SOUNDS.event();
             addLog(`${player.name} is visiting Prison`, getPlayerColor(player));
             if (!activeThief) {
-                showModal("Prison", "Hire Thief ($2000)?", ["HIRE", "PASS"], (choice) => {
-                    if (choice === 'HIRE' && player.money >= 2000) {
-                        changeMoney(player, -2000);
-                        animateMoneyTransfer(player, 'system');
-                        activeThief = new Thief(player.id, player.tileIndex);
-                        addLog(`${player.name} hired a Thief!`, getPlayerColor(player));
-                        showSpeechBubble(player, "Go!");
-                    } 
-                    nextTurn();
-                });
+                if (player.isAI) {
+                     // AI Logic for Jail
+                     if (player.money >= 2000 && Math.random() > 0.5) {
+                          changeMoney(player, -2000);
+                          activeThief = new Thief(player.id, player.tileIndex);
+                          addLog(`${player.name} hired a Thief!`, getPlayerColor(player));
+                     }
+                     nextTurn();
+                } else {
+                    showModal("Prison", "Hire Thief ($2000)?", ["HIRE", "PASS"], (choice) => {
+                        if (choice === 'HIRE' && player.money >= 2000) {
+                            changeMoney(player, -2000);
+                            animateMoneyTransfer(player, 'system');
+                            activeThief = new Thief(player.id, player.tileIndex);
+                            addLog(`${player.name} hired a Thief!`, getPlayerColor(player));
+                            showSpeechBubble(player, "Go!");
+                        } 
+                        nextTurn();
+                    });
+                }
             } else {
                 showSpeechBubble(player, "Visiting.");
                 setTimeout(nextTurn, 1000);
@@ -1867,6 +1926,7 @@
 
         if (tile.type === TILE_TYPES.PROPERTY) {
             if (tile.owner === null) {
+                // Allow buying if unowned (even if it was a bankrupt player's old property)
                 if (player.money >= tile.price) {
                     if (player.isAI) { if(player.money>1000) buyProperty(player, tile); nextTurn(); }
                     else showModal("For Sale", `Buy $${tile.price}?`, ["YES", "NO"], (c) => { if(c === 'YES') buyProperty(player, tile); nextTurn(); });
@@ -1887,8 +1947,9 @@
                 changeMoney(players[tile.owner], rent);
                 animateMoneyTransfer(player, owner);
                 
+                // Check Bankruptcy AFTER paying rent
                 if (player.money < 0) {
-                    showModal("GAME OVER", `${player.name} is bankrupt!`, ["RESTART"], (btn) => { if(btn === 'RESTART') location.reload(); });
+                    handleBankruptcy(player);
                 } else {
                     setTimeout(nextTurn, 1000);
                 }
@@ -1932,13 +1993,38 @@
     }
 
     function advancePlayer() {
-        const prevPlayer = currentPlayer;
-        currentPlayer = (currentPlayer + 1) % players.length;
-        if (currentPlayer === 0) { managePolice(); }
+        // Find next non-bankrupt player
+        let attempts = 0;
+        let prevPlayer = currentPlayer;
+        
+        do {
+            currentPlayer = (currentPlayer + 1) % players.length;
+            attempts++;
+            if (currentPlayer === 0) { managePolice(); } 
+        } while (players[currentPlayer].isBankrupt && attempts < players.length * 2);
+
+        if (players[currentPlayer].isBankrupt) {
+            // Everyone else is bankrupt?
+            return; 
+        }
+
         manualPanOffset.set(0,0,0);
         players.forEach((p, i) => { 
-            document.getElementById(`p${i+1}-card`).classList.toggle('active', currentPlayer === i); 
-            p.cursor.visible = (i === currentPlayer);
+            // Update Card Activity. Skip bankrupt players? They should be hidden but logic still holds.
+            const card = document.getElementById(`p${i+1}-card`);
+            if (p.isBankrupt) {
+                 card.style.opacity = '0.5'; // Dim bankrupt cards
+                 card.classList.remove('active');
+                 p.cursor.visible = false;
+            } else {
+                 if(i === currentPlayer) {
+                     card.classList.add('active');
+                     p.cursor.visible = true;
+                 } else {
+                     card.classList.remove('active');
+                     p.cursor.visible = false;
+                 }
+            }
         });
         updateTurnIndicator();
         cameraTarget = players[currentPlayer].mesh.position;
@@ -1987,6 +2073,21 @@
         p.inventory.push(itemId);
         const item = Object.values(ITEMS).find(i => i.id === itemId);
         showFloatMsg(p, `+ ${item.name}`);
+        
+        // Auto Equip logic for debug
+        if(itemId === 'motorbike') {
+             p.setMotorbike(true); // Use the method!
+             updateTurnIndicator();
+        }
+    }
+
+    function debugSetLowMoney() {
+        players.forEach(p => {
+            p.money = 100;
+            p.displayedMoney = 100;
+            showFloatMsg(p, "Poverty Mode!");
+        });
+        updateUI();
     }
     
     function toggleLog() {
@@ -2034,7 +2135,7 @@
         
         if (players.length > 0) {
             const activeP = players[currentPlayer];
-            if (activeP && activeP.cursor.visible) {
+            if (activeP && !activeP.isBankrupt && activeP.cursor.visible) {
                 // Adjusted animation height for smaller cursor
                 activeP.cursor.position.y = 4.0 + Math.sin(time * 0.005) * 0.25;
                 activeP.cursor.rotation.y += 0.05;
@@ -2080,6 +2181,7 @@
     window.rollDice = rollDice;
     window.openInventory = openInventory;
     window.debugAddTool = debugAddTool;
+    window.debugSetLowMoney = debugSetLowMoney; // Export new function
     window.toggleLog = toggleLog;
     window.adjustZoom = adjustZoom;
     window.toggleDiceCount = toggleDiceCount;
