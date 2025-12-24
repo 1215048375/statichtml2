@@ -1450,14 +1450,6 @@
             player.inventory.push(item.id);
             addLog(`${player.name} bought ${item.name}`, getPlayerColor(player));
             showFloatMsg(player, "+ " + item.name);
-            
-            // Auto Equip Motorbike Logic
-            if(item.id === 'motorbike') {
-                 // player.hasMotorbike = true; // Wait until use
-                 // player.motorbikeGroup.visible = true;
-                 // updateTurnIndicator();
-            }
-
         } else {
             showFloatMsg(player, "No Funds");
         }
@@ -1592,15 +1584,20 @@
         let result = 0;
         let val1 = 0;
         let val2 = 0;
+        let isTwoDice = false;
         
         if(p.hasMotorbike && p.diceCount === 2) {
              if(forceVal) {
+                 // Custom roll with bike: treat as single die result for simplicity, or double?
+                 // Let's treat as total result.
                  result = forceVal;
-                 val1 = forceVal;
+                 val1 = forceVal > 6 ? 6 : forceVal; // Visual clamp if needed, though custom roll is 1-6
+                 val2 = 0; 
              } else {
                  val1 = Math.floor(Math.random() * 6) + 1;
                  val2 = Math.floor(Math.random() * 6) + 1;
                  result = val1 + val2;
+                 isTwoDice = true;
              }
         } else {
              // 1 Die logic
@@ -1608,35 +1605,35 @@
              result = val1;
         }
 
-        // Dice Visual Rotation (Only shows 1-6, loops if > 6)
-        let visualResult = (val1 - 1) % 6 + 1; 
-        
-        let targetRot = {x:0, y:0, z:0};
-        if(visualResult===1) targetRot = {x:0, y:0, z:Math.PI/2}; 
-        if(visualResult===2) targetRot = {x:0, y:0, z:-Math.PI/2}; 
-        if(visualResult===3) targetRot = {x:0, y:0, z:0}; 
-        if(visualResult===4) targetRot = {x:Math.PI, y:0, z:0}; 
-        if(visualResult===5) targetRot = {x:-Math.PI/2, y:0, z:0}; 
-        if(visualResult===6) targetRot = {x:Math.PI, y:0, z:0}; 
+        // Reset rotation to ensure clean animation start
+        diceMesh.rotation.set(0,0,0);
+        diceMesh2.rotation.set(0,0,0);
 
-        new TWEEN.Tween(diceMesh.position).to({y: 1}, 800).easing(TWEEN.Easing.Bounce.Out).onComplete(() => {
-            setTimeout(() => { diceMesh.visible = false; performMove(p, result); }, 500);
-        }).start();
-        new TWEEN.Tween(diceMesh.rotation).to({x: targetRot.x + Math.PI*4, y: targetRot.y + Math.PI*4, z: targetRot.z + Math.PI*4}, 800).easing(TWEEN.Easing.Quadratic.Out).start();
+        // Animate Die 1
+        animateDie(diceMesh, val1, {x: randX, z: randZ});
 
-        // Animate Die 2 if needed (and not custom rolled single value)
-        if (p.hasMotorbike && p.diceCount === 2 && !forceVal) {
+        // Animate Die 2 if needed
+        if (isTwoDice) {
              diceMesh2.visible = true;
-             // Offset second die
-             animateDie(diceMesh2, val2, {x: randX + 2.5, z: randZ + 1}); 
+             // Place second die significantly apart
+             animateDie(diceMesh2, val2, {x: randX + 4, z: randZ}); 
+             
+             // Show explicit math to avoid confusion
+             setTimeout(() => {
+                 showFloatMsg(p, `Rolled: ${val1} + ${val2} = ${result}!`, "#ffff00");
+             }, 800);
         } else {
              diceMesh2.visible = false;
+             setTimeout(() => {
+                 showFloatMsg(p, `Rolled: ${result}!`, "#ffff00");
+             }, 800);
         }
 
-        // Ensure dice 2 hides after animation
-        if (p.hasMotorbike && p.diceCount === 2 && !forceVal) {
-             setTimeout(() => { diceMesh2.visible = false; }, 1300); // slightly longer than 1st die
-        }
+        setTimeout(() => {
+             diceMesh.visible = false;
+             diceMesh2.visible = false;
+             performMove(p, result);
+        }, 1500); // Slightly longer wait to read the number
     }
 
     function performMove(p, steps) {
