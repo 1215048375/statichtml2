@@ -1779,16 +1779,8 @@
             dir.shadow.mapSize.height = 2048;
             scene.add(dir);
 
-            window.addEventListener('wheel', (e) => {
-                if (!camera) return;
-                if (document.getElementById('setup-screen').style.display === 'none') {
-                    e.preventDefault();
-                }
-                const zoomSpeed = 0.001;
-                camera.zoom -= e.deltaY * zoomSpeed;
-                camera.zoom = Math.max(0.5, Math.min(camera.zoom, 3.0));
-                camera.updateProjectionMatrix();
-            }, { passive: false });
+            // Mouse wheel zoom removed - use +/- buttons instead
+            // Normal page scrolling is now enabled
 
             window.addEventListener('contextmenu', e => e.preventDefault());
 
