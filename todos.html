@@ -70,7 +70,7 @@
       background-color: #e5e7eb;
       font-family: system-ui, -apple-system, sans-serif;
       transition: background-color 0.3s;
-      margin: 0; /* 确保无边距 */
+      margin: 0; 
     }
     body.dark-mode-global {
       background-color: #111827;
@@ -106,6 +106,32 @@
     }
     .dark input[type=range]::-webkit-slider-runnable-track {
       background: #475569;
+    }
+
+    /* 倒计时完成时的轮流颜色交替动画 */
+    @keyframes border-cycle {
+      0% {
+        box-shadow: 0 0 0 6px #ef4444, 0 0 20px #ef4444; /* Red */
+        border-color: #ef4444;
+      }
+      33% {
+        box-shadow: 0 0 0 6px #eab308, 0 0 20px #eab308; /* Yellow */
+        border-color: #eab308;
+      }
+      66% {
+        box-shadow: 0 0 0 6px #3b82f6, 0 0 20px #3b82f6; /* Blue */
+        border-color: #3b82f6;
+      }
+      100% {
+        box-shadow: 0 0 0 6px #ef4444, 0 0 20px #ef4444; /* Red */
+        border-color: #ef4444;
+      }
+    }
+
+    .alarm-mode {
+      animation: border-cycle 1.5s linear infinite;
+      /* 确保动画优先级 */
+      z-index: 50; 
     }
   </style>
 </head>
@@ -305,6 +331,7 @@
       toggleTask, updateTaskText, addTask, deleteTask, startTimer, cancelTimer
     }) => {
       const [newTaskText, setNewTaskText] = useState('');
+      const [step, setStep] = useState(1); // 默认步进为 1
       const completedCount = tasks.filter(t => {
         const dates = t.doneDates || (t.lastDone ? [t.lastDone] : []);
         return dates.includes(todayStr);
@@ -400,12 +427,35 @@
 
           <div className="absolute bottom-0 w-full bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 transition-colors duration-300 z-20 flex flex-col">
             <div className="px-6 pt-4 pb-2">
-              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-                <span className="flex items-center gap-1"><Hourglass size={10}/> 下次专注时长</span>
-                <span className={`font-bold ${currentTheme.text}`}>{timerDuration} 分钟</span>
+              <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
+                <span className="flex items-center gap-1"><Hourglass size={12}/> 下次专注时长</span>
+                <div className="flex items-center gap-3">
+                   {/* 步进切换按钮 */}
+                   <button 
+                     type="button"
+                     onClick={() => setStep(s => s === 1 ? 5 : 1)}
+                     className="text-[10px] px-2 py-0.5 rounded bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
+                     title="点击切换步进"
+                   >
+                     步进: {step}m
+                   </button>
+                   <span className={`font-bold text-sm ${currentTheme.text}`}>{timerDuration} 分钟</span>
+                </div>
               </div>
-              <input type="range" min="5" max="120" step="5" value={timerDuration} onChange={(e) => updateTimerDuration(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700" />
-              <div className="flex justify-between text-[10px] text-gray-400 mt-1"><span>5m</span><span>60m</span><span>120m</span></div>
+              <input 
+                type="range" 
+                min={step} 
+                max="120" 
+                step={step} 
+                value={timerDuration} 
+                onChange={(e) => updateTimerDuration(Number(e.target.value))} 
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700" 
+              />
+              <div className="flex justify-between text-[10px] text-gray-400 mt-1">
+                <span>{step}m</span>
+                <span>60m</span>
+                <span>120m</span>
+              </div>
             </div>
             <form onSubmit={(e) => { e.preventDefault(); addTask(newTaskText); setNewTaskText(''); }} className="p-4 pt-2">
               <div className="flex gap-2">
@@ -506,6 +556,8 @@
       const [store, setStore] = useState(() => { try { const saved = localStorage.getItem(STORAGE_KEY); return saved ? JSON.parse(saved) : INITIAL_DATA; } catch (e) { return INITIAL_DATA; } });
       const [isDarkMode, setIsDarkMode] = useState(() => { try { const saved = localStorage.getItem(THEME_MODE_KEY); return saved ? JSON.parse(saved) : false; } catch (e) { return false; } });
       const [now, setNow] = useState(Date.now());
+      const [isAlarmActive, setIsAlarmActive] = useState(false); 
+
       useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
       const [view, setView] = useState('todo'); 
       const [calendarDate, setCalendarDate] = useState(new Date());
@@ -516,7 +568,6 @@
       useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); }, [store]);
       useEffect(() => { localStorage.setItem(THEME_MODE_KEY, JSON.stringify(isDarkMode)); if (isDarkMode) { document.body.classList.add('dark-mode-global'); } else { document.body.classList.remove('dark-mode-global'); } }, [isDarkMode]);
       
-      // 全局定时器检查
       useEffect(() => {
          setStore(prevStore => {
             let hasUpdates = false;
@@ -538,6 +589,7 @@
             });
 
             if (hasUpdates) {
+               setTimeout(() => setIsAlarmActive(true), 0);
                return { ...prevStore, userData: newUserData };
             }
             return prevStore;
@@ -578,9 +630,11 @@
       const exportData = () => { const dataStr = JSON.stringify(store, null, 2); const blob = new Blob([dataStr], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `daily_loop_backup_${getTodayString()}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); };
       const importData = (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (event) => { try { const importedData = JSON.parse(event.target.result); if (importedData.users && importedData.userData) { if (window.confirm("这将覆盖当前所有数据，确定要导入吗？")) { setStore(importedData); alert("导入成功！"); setView('todo'); } } else { alert("文件格式不正确"); } } catch (err) { alert("文件解析失败"); } }; reader.readAsText(file); e.target.value = ''; };
 
+      const stopAlarm = () => { if (isAlarmActive) setIsAlarmActive(false); };
+
       return (
-        <div className={`flex justify-center items-center min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark' : ''} sm:p-4`}>
-          <div className="relative bg-white dark:bg-slate-800 shadow-2xl overflow-hidden flex flex-col transition-colors duration-300 w-full h-screen sm:w-[320px] sm:h-[85vh] sm:max-h-[1000px] sm:rounded-[20px]">
+        <div onClick={stopAlarm} className={`flex justify-center items-center min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark' : ''} sm:p-4`}>
+          <div className={`relative bg-white dark:bg-slate-800 shadow-2xl overflow-hidden flex flex-col transition-colors duration-300 w-full h-screen sm:w-[320px] sm:h-[85vh] sm:max-h-[1000px] sm:rounded-[20px] ${isAlarmActive ? 'alarm-mode' : ''}`}>
             {view !== 'users' && <Header currentUser={store.currentUser} users={store.users} view={view} setView={setView} isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} setEditingUser={setEditingUser} renameUser={renameUser} quickSwitchUser={quickSwitchUser} currentTheme={currentTheme} editingUser={editingUser} />}
             <div className="flex-1 relative overflow-hidden">
               {view === 'todo' && <TodoView tasks={currentUserData.tasks} todayStr={todayStr} currentTheme={currentTheme} activeTimer={currentUserData.activeTimer} now={now} timerDuration={currentUserData.timerDuration || 25} updateTimerDuration={updateTimerDuration} editingTaskId={editingTaskId} setEditingTaskId={setEditingTaskId} toggleTask={toggleTask} updateTaskText={updateTaskText} addTask={addTask} deleteTask={deleteTask} startTimer={startTimer} cancelTimer={cancelTimer} />}
