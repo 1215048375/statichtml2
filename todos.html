@@ -70,6 +70,7 @@
       background-color: #e5e7eb;
       font-family: system-ui, -apple-system, sans-serif;
       transition: background-color 0.3s;
+      margin: 0; /* 确保无边距 */
     }
     body.dark-mode-global {
       background-color: #111827;
@@ -515,7 +516,7 @@
       useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); }, [store]);
       useEffect(() => { localStorage.setItem(THEME_MODE_KEY, JSON.stringify(isDarkMode)); if (isDarkMode) { document.body.classList.add('dark-mode-global'); } else { document.body.classList.remove('dark-mode-global'); } }, [isDarkMode]);
       
-      // 全局定时器检查：每秒检查所有用户的倒计时，确保后台倒计时也能正常结束
+      // 全局定时器检查
       useEffect(() => {
          setStore(prevStore => {
             let hasUpdates = false;
@@ -548,7 +549,6 @@
       const currentTheme = getTheme(currentUserData.theme);
       const todayStr = getTodayString();
 
-      // 同步倒计时配置到 store
       const updateTimerDuration = (val) => {
          setStore(prev => ({
             ...prev,
@@ -579,8 +579,8 @@
       const importData = (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (event) => { try { const importedData = JSON.parse(event.target.result); if (importedData.users && importedData.userData) { if (window.confirm("这将覆盖当前所有数据，确定要导入吗？")) { setStore(importedData); alert("导入成功！"); setView('todo'); } } else { alert("文件格式不正确"); } } catch (err) { alert("文件解析失败"); } }; reader.readAsText(file); e.target.value = ''; };
 
       return (
-        <div className={`flex justify-center items-center min-h-screen p-4 transition-colors duration-300 ${isDarkMode ? 'dark' : ''}`}>
-          <div className="relative bg-white dark:bg-slate-800 shadow-2xl overflow-hidden flex flex-col transition-colors duration-300" style={{ width: '320px', height: '80vh', maxHeight: '1000px', borderRadius: '20px' }}>
+        <div className={`flex justify-center items-center min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark' : ''} sm:p-4`}>
+          <div className="relative bg-white dark:bg-slate-800 shadow-2xl overflow-hidden flex flex-col transition-colors duration-300 w-full h-screen sm:w-[320px] sm:h-[85vh] sm:max-h-[1000px] sm:rounded-[20px]">
             {view !== 'users' && <Header currentUser={store.currentUser} users={store.users} view={view} setView={setView} isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} setEditingUser={setEditingUser} renameUser={renameUser} quickSwitchUser={quickSwitchUser} currentTheme={currentTheme} editingUser={editingUser} />}
             <div className="flex-1 relative overflow-hidden">
               {view === 'todo' && <TodoView tasks={currentUserData.tasks} todayStr={todayStr} currentTheme={currentTheme} activeTimer={currentUserData.activeTimer} now={now} timerDuration={currentUserData.timerDuration || 25} updateTimerDuration={updateTimerDuration} editingTaskId={editingTaskId} setEditingTaskId={setEditingTaskId} toggleTask={toggleTask} updateTaskText={updateTaskText} addTask={addTask} deleteTask={deleteTask} startTimer={startTimer} cancelTimer={cancelTimer} />}
