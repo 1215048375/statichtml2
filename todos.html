@@ -7,8 +7,43 @@
   
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 
-  <!-- 引入 Tailwind CSS -->
+  <!-- 引入 Tailwind CSS 并配置 -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              750: '#2d3748',
+              850: '#1a202c',
+            }
+          },
+          animation: {
+            'gradient-x': 'gradient-x 3s ease infinite',
+            'shimmer': 'shimmer 2s linear infinite',
+          },
+          keyframes: {
+            'gradient-x': {
+              '0%, 100%': {
+                'background-size': '200% 200%',
+                'background-position': 'left center'
+              },
+              '50%': {
+                'background-size': '200% 200%',
+                'background-position': 'right center'
+              },
+            },
+            'shimmer': {
+              '0%': { backgroundPosition: '-1000px 0' },
+              '100%': { backgroundPosition: '1000px 0' }
+            }
+          }
+        }
+      }
+    }
+  </script>
 
   <!-- 引入 React 和 ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
@@ -16,8 +51,6 @@
   
   <!-- 引入 Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!-- 已移除外部 Lucide 脚本依赖，改为内置 SVG 组件，彻底解决加载错误 -->
 
   <style>
     ::-webkit-scrollbar {
@@ -30,9 +63,48 @@
       background-color: #cbd5e1;
       border-radius: 20px;
     }
+    .dark ::-webkit-scrollbar-thumb {
+      background-color: #475569;
+    }
     body {
       background-color: #e5e7eb;
       font-family: system-ui, -apple-system, sans-serif;
+      transition: background-color 0.3s;
+    }
+    body.dark-mode-global {
+      background-color: #111827;
+    }
+    /* 自定义滑块 */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: transparent;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 16px;
+      width: 16px;
+      border-radius: 50%;
+      background: #6366f1; /* Indigo-500 */
+      cursor: pointer;
+      margin-top: -6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      transition: transform 0.1s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.1);
+    }
+    .dark input[type=range]::-webkit-slider-thumb {
+      background: #818cf8;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 4px;
+      cursor: pointer;
+      background: #cbd5e1;
+      border-radius: 2px;
+    }
+    .dark input[type=range]::-webkit-slider-runnable-track {
+      background: #475569;
     }
   </style>
 </head>
@@ -42,24 +114,10 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
     
-    // --- 内置 SVG 图标组件 (彻底解决依赖报错) ---
+    // --- 图标组件 ---
     const Icon = ({ children, size = 24, className = "" }) => (
-      <svg 
-        xmlns="http://www.w3.org/2000/svg" 
-        width={size} 
-        height={size} 
-        viewBox="0 0 24 24" 
-        fill="none" 
-        stroke="currentColor" 
-        strokeWidth="2" 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-        className={className}
-      >
-        {children}
-      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
     );
-
     const Check = (props) => <Icon {...props}><polyline points="20 6 9 17 4 12" /></Icon>;
     const Plus = (props) => <Icon {...props}><path d="M5 12h14" /><path d="M12 5v14" /></Icon>;
     const Trash2 = (props) => <Icon {...props}><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></Icon>;
@@ -74,50 +132,25 @@
     const RefreshCw = (props) => <Icon {...props}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></Icon>;
     const XCircle = (props) => <Icon {...props}><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></Icon>;
     const CheckCircle2 = (props) => <Icon {...props}><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></Icon>;
+    const Moon = (props) => <Icon {...props}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></Icon>;
+    const Sun = (props) => <Icon {...props}><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></Icon>;
+    const Play = (props) => <Icon {...props}><polygon points="5 3 19 12 5 21 5 3" /></Icon>;
+    const Square = (props) => <Icon {...props}><rect width="18" height="18" x="3" y="3" rx="2" /></Icon>;
+    const Clock = (props) => <Icon {...props}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></Icon>;
+    const Hourglass = (props) => <Icon {...props}><path d="M5 22h14" /><path d="M5 2h14" /><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" /><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" /></Icon>;
+    const TimerIcon = (props) => <Icon {...props}><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></Icon>;
 
-
-    // --- 配置与工具 ---
-
+    // --- 主题配置 ---
     const THEME_CONFIG = {
-      indigo: {
-        base: 'bg-indigo-600', hover: 'hover:bg-indigo-700', light: 'bg-indigo-50', 
-        text: 'text-indigo-600', textDark: 'text-indigo-900', border: 'border-indigo-200',
-        ring: 'ring-indigo-500', bar: 'bg-indigo-500', icon: 'text-indigo-500',
-        softBg: 'bg-indigo-100', activeBorder: 'border-indigo-500'
-      },
-      rose: {
-        base: 'bg-rose-600', hover: 'hover:bg-rose-700', light: 'bg-rose-50', 
-        text: 'text-rose-600', textDark: 'text-rose-900', border: 'border-rose-200',
-        ring: 'ring-rose-500', bar: 'bg-rose-500', icon: 'text-rose-500',
-        softBg: 'bg-rose-100', activeBorder: 'border-rose-500'
-      },
-      emerald: {
-        base: 'bg-emerald-600', hover: 'hover:bg-emerald-700', light: 'bg-emerald-50', 
-        text: 'text-emerald-600', textDark: 'text-emerald-900', border: 'border-emerald-200',
-        ring: 'ring-emerald-500', bar: 'bg-emerald-500', icon: 'text-emerald-500',
-        softBg: 'bg-emerald-100', activeBorder: 'border-emerald-500'
-      },
-      amber: {
-        base: 'bg-amber-600', hover: 'hover:bg-amber-700', light: 'bg-amber-50', 
-        text: 'text-amber-600', textDark: 'text-amber-900', border: 'border-amber-200',
-        ring: 'ring-amber-500', bar: 'bg-amber-500', icon: 'text-amber-500',
-        softBg: 'bg-amber-100', activeBorder: 'border-amber-500'
-      },
-      violet: {
-        base: 'bg-violet-600', hover: 'hover:bg-violet-700', light: 'bg-violet-50', 
-        text: 'text-violet-600', textDark: 'text-violet-900', border: 'border-violet-200',
-        ring: 'ring-violet-500', bar: 'bg-violet-500', icon: 'text-violet-500',
-        softBg: 'bg-violet-100', activeBorder: 'border-violet-500'
-      },
-      cyan: {
-        base: 'bg-cyan-600', hover: 'hover:bg-cyan-700', light: 'bg-cyan-50', 
-        text: 'text-cyan-600', textDark: 'text-cyan-900', border: 'border-cyan-200',
-        ring: 'ring-cyan-500', bar: 'bg-cyan-500', icon: 'text-cyan-500',
-        softBg: 'bg-cyan-100', activeBorder: 'border-cyan-500'
-      }
+      indigo: { base: 'bg-indigo-600 dark:bg-indigo-600', hover: 'hover:bg-indigo-700 dark:hover:bg-indigo-500', light: 'bg-indigo-50 dark:bg-indigo-900/30', text: 'text-indigo-600 dark:text-indigo-400', textDark: 'text-indigo-900 dark:text-indigo-200', border: 'border-indigo-200 dark:border-indigo-800', ring: 'ring-indigo-500', bar: 'bg-indigo-500', activeBorder: 'border-indigo-500 dark:border-indigo-400' },
+      rose: { base: 'bg-rose-600 dark:bg-rose-600', hover: 'hover:bg-rose-700 dark:hover:bg-rose-500', light: 'bg-rose-50 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400', textDark: 'text-rose-900 dark:text-rose-200', border: 'border-rose-200 dark:border-rose-800', ring: 'ring-rose-500', bar: 'bg-rose-500', activeBorder: 'border-rose-500 dark:border-rose-400' },
+      emerald: { base: 'bg-emerald-600 dark:bg-emerald-600', hover: 'hover:bg-emerald-700 dark:hover:bg-emerald-500', light: 'bg-emerald-50 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400', textDark: 'text-emerald-900 dark:text-emerald-200', border: 'border-emerald-200 dark:border-emerald-800', ring: 'ring-emerald-500', bar: 'bg-emerald-500', activeBorder: 'border-emerald-500 dark:border-emerald-400' },
+      amber: { base: 'bg-amber-600 dark:bg-amber-600', hover: 'hover:bg-amber-700 dark:hover:bg-amber-500', light: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400', textDark: 'text-amber-900 dark:text-amber-200', border: 'border-amber-200 dark:border-amber-800', ring: 'ring-amber-500', bar: 'bg-amber-500', activeBorder: 'border-amber-500 dark:border-amber-400' },
+      violet: { base: 'bg-violet-600 dark:bg-violet-600', hover: 'hover:bg-violet-700 dark:hover:bg-violet-500', light: 'bg-violet-50 dark:bg-violet-900/30', text: 'text-violet-600 dark:text-violet-400', textDark: 'text-violet-900 dark:text-violet-200', border: 'border-violet-200 dark:border-violet-800', ring: 'ring-violet-500', bar: 'bg-violet-500', activeBorder: 'border-violet-500 dark:border-violet-400' },
+      cyan: { base: 'bg-cyan-600 dark:bg-cyan-600', hover: 'hover:bg-cyan-700 dark:hover:bg-cyan-500', light: 'bg-cyan-50 dark:bg-cyan-900/30', text: 'text-cyan-600 dark:text-cyan-400', textDark: 'text-cyan-900 dark:text-cyan-200', border: 'border-cyan-200 dark:border-cyan-800', ring: 'ring-cyan-500', bar: 'bg-cyan-500', activeBorder: 'border-cyan-500 dark:border-cyan-400' }
     };
-
     const THEME_KEYS = Object.keys(THEME_CONFIG);
+    const getTheme = (key) => THEME_CONFIG[key] || THEME_CONFIG['indigo'];
 
     const getTodayString = () => {
       const date = new Date();
@@ -130,11 +163,16 @@
     const getDaysInMonth = (year, month) => {
       const date = new Date(year, month, 1);
       const days = [];
-      while (date.getMonth() === month) {
-        days.push(new Date(date));
-        date.setDate(date.getDate() + 1);
-      }
+      while (date.getMonth() === month) { days.push(new Date(date)); date.setDate(date.getDate() + 1); }
       return days;
+    };
+
+    const formatDuration = (minutes) => {
+      if (!minutes) return '';
+      const h = Math.floor(minutes / 60);
+      const m = minutes % 60;
+      if (h > 0) return `${h}h ${m}m`;
+      return `${m}m`;
     };
 
     const INITIAL_DATA = {
@@ -143,726 +181,411 @@
       userData: {
         '默认用户': {
           theme: 'indigo',
+          timerDuration: 25,
+          activeTimer: null, 
           tasks: [
-            { id: 1, text: '早起喝一杯水', doneDates: [] },
-            { id: 2, text: '阅读 30 分钟', doneDates: [] },
-            { id: 3, text: '运动锻炼', doneDates: [] }
+            { id: 1, text: '早起喝一杯水', doneDates: [], totalTime: 0 },
+            { id: 2, text: '阅读 30 分钟', doneDates: [], totalTime: 0 },
+            { id: 3, text: '运动锻炼', doneDates: [], totalTime: 0 }
           ],
           history: {} 
         }
       }
     };
 
-    const STORAGE_KEY = 'daily_loop_todo_standalone_v1';
+    const STORAGE_KEY = 'daily_loop_todo_standalone_v8';
+    const THEME_MODE_KEY = 'daily_loop_theme_mode';
 
-    function App() {
-      const [store, setStore] = useState(() => {
-        try {
-          const saved = localStorage.getItem(STORAGE_KEY);
-          return saved ? JSON.parse(saved) : INITIAL_DATA;
-        } catch (e) {
-          return INITIAL_DATA;
-        }
-      });
+    // --- 组件 ---
 
-      const [view, setView] = useState('todo'); 
-      const [newTaskText, setNewTaskText] = useState('');
-      const [calendarDate, setCalendarDate] = useState(new Date());
-      const [editingTaskId, setEditingTaskId] = useState(null); 
-      const [editingUser, setEditingUser] = useState(null);
-      const [selectedDate, setSelectedDate] = useState(null); 
-      
-      const fileInputRef = useRef(null);
+    const EditableText = ({ text, onSave, className, active }) => {
+      const [value, setValue] = useState(text);
+      const inputRef = useRef(null);
+      useEffect(() => { if (active && inputRef.current) { inputRef.current.focus(); inputRef.current.select(); } }, [active]);
+      const handleKeyDown = (e) => { if (e.key === 'Enter') { e.preventDefault(); onSave(value); } else if (e.key === 'Escape') { onSave(text); } };
+      if (active) {
+        return <input ref={inputRef} value={value} onChange={(e) => setValue(e.target.value)} onBlur={() => onSave(value)} onKeyDown={handleKeyDown} onClick={(e) => e.stopPropagation()} className={`bg-transparent outline-none border-b-2 border-white/50 w-full ${className}`} />;
+      }
+      return <span className={`truncate ${className}`}>{text}</span>;
+    };
 
-      useEffect(() => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-      }, [store]);
-
-      const currentUserData = store.userData[store.currentUser] || { tasks: [], history: {}, theme: 'indigo' };
-      const currentTheme = THEME_CONFIG[currentUserData.theme] || THEME_CONFIG['indigo'];
-      const todayStr = getTodayString();
-
-      useEffect(() => {
-        if (!store.currentUser) return;
-
-        const tasks = currentUserData.tasks || [];
-        if (tasks.length === 0) return;
-
-        const completedCount = tasks.filter(t => {
-          const dates = t.doneDates || (t.lastDone ? [t.lastDone] : []);
-          return dates.includes(todayStr);
-        }).length;
-
-        const ratio = completedCount / tasks.length;
-
-        if (currentUserData.history?.[todayStr] !== ratio) {
-          setStore(prev => ({
-            ...prev,
-            userData: {
-              ...prev.userData,
-              [prev.currentUser]: {
-                ...prev.userData[prev.currentUser],
-                history: {
-                  ...(prev.userData[prev.currentUser].history || {}),
-                  [todayStr]: ratio
-                }
-              }
-            }
-          }));
-        }
-      }, [currentUserData.tasks, store.currentUser, todayStr]);
-
-      const toggleTask = (taskId) => {
-        setStore(prev => {
-          const userTasks = prev.userData[prev.currentUser].tasks;
-          const updatedTasks = userTasks.map(t => {
-            if (t.id === taskId) {
-              const currentDoneDates = t.doneDates || (t.lastDone ? [t.lastDone] : []);
-              const isDoneToday = currentDoneDates.includes(todayStr);
-              
-              let newDoneDates;
-              if (isDoneToday) {
-                newDoneDates = currentDoneDates.filter(d => d !== todayStr);
-              } else {
-                newDoneDates = [...currentDoneDates, todayStr];
-              }
-
-              return { 
-                ...t, 
-                doneDates: newDoneDates,
-                lastDone: isDoneToday ? '' : todayStr
-              };
-            }
-            return t;
-          });
-
-          return {
-            ...prev,
-            userData: {
-              ...prev.userData,
-              [prev.currentUser]: {
-                ...prev.userData[prev.currentUser],
-                tasks: updatedTasks
-              }
-            }
-          };
-        });
-      };
-
-      const updateTaskText = (taskId, newText) => {
-        if (!newText.trim()) return;
-        setStore(prev => {
-          const userTasks = prev.userData[prev.currentUser].tasks;
-          const updatedTasks = userTasks.map(t => 
-            t.id === taskId ? { ...t, text: newText } : t
-          );
-          return {
-            ...prev,
-            userData: {
-              ...prev.userData,
-              [prev.currentUser]: {
-                ...prev.userData[prev.currentUser],
-                tasks: updatedTasks
-              }
-            }
-          };
-        });
-        setEditingTaskId(null);
-      };
-
-      const addTask = (e) => {
-        e.preventDefault();
-        if (!newTaskText.trim()) return;
-
-        setStore(prev => {
-          const newTask = {
-            id: Date.now(),
-            text: newTaskText,
-            doneDates: [],
-            lastDone: ''
-          };
-          const currentTasks = prev.userData[prev.currentUser].tasks || [];
-          return {
-            ...prev,
-            userData: {
-              ...prev.userData,
-              [prev.currentUser]: {
-                ...prev.userData[prev.currentUser],
-                tasks: [...currentTasks, newTask]
-              }
-            }
-          };
-        });
-        setNewTaskText('');
-      };
-
-      const deleteTask = (taskId) => {
-        setStore(prev => {
-          const updatedTasks = prev.userData[prev.currentUser].tasks.filter(t => t.id !== taskId);
-          return {
-            ...prev,
-            userData: {
-              ...prev.userData,
-              [prev.currentUser]: {
-                ...prev.userData[prev.currentUser],
-                tasks: updatedTasks
-              }
-            }
-          };
-        });
-      };
-
-      const renameUser = (oldName, newName) => {
-        if (!newName.trim() || newName === oldName) {
-          setEditingUser(null);
-          return;
-        }
-        if (store.users.includes(newName)) {
-          alert("该用户名已存在");
-          return;
-        }
-
-        setStore(prev => {
-          const newUsers = prev.users.map(u => u === oldName ? newName : u);
-          const newUserData = { ...prev.userData };
-          newUserData[newName] = newUserData[oldName];
-          delete newUserData[oldName];
-          
-          return {
-            ...prev,
-            users: newUsers,
-            currentUser: prev.currentUser === oldName ? newName : prev.currentUser,
-            userData: newUserData
-          };
-        });
-        setEditingUser(null);
-      };
-
-      const addUser = (name) => {
-        if (!name || store.users.includes(name)) return;
-        
-        const nextThemeIndex = store.users.length % THEME_KEYS.length;
-        const newTheme = THEME_KEYS[nextThemeIndex];
-
-        setStore(prev => ({
-          ...prev,
-          users: [...prev.users, name],
-          currentUser: name,
-          userData: {
-            ...prev.userData,
-            [name]: { tasks: [], history: {}, theme: newTheme }
-          }
-        }));
-        setView('todo');
-      };
-
-      const switchUser = (name) => {
-        setStore(prev => ({ ...prev, currentUser: name }));
-        setView('todo');
-      };
-
-      const quickSwitchUser = (e) => {
-        e.stopPropagation();
-        const currentIndex = store.users.indexOf(store.currentUser);
-        const nextIndex = (currentIndex + 1) % store.users.length;
-        const nextUser = store.users[nextIndex];
-        setStore(prev => ({ ...prev, currentUser: nextUser }));
-        setView('todo');
-      };
-
-      const deleteUser = (name) => {
-        if (store.users.length <= 1) {
-          alert("至少保留一个账户");
-          return;
-        }
-        const confirm = window.confirm(`确定要删除账户 "${name}" 吗？`);
-        if (!confirm) return;
-
-        setStore(prev => {
-          const newUsers = prev.users.filter(u => u !== name);
-          const newUserData = { ...prev.userData };
-          delete newUserData[name];
-          return {
-            ...prev,
-            users: newUsers,
-            currentUser: newUsers[0],
-            userData: newUserData
-          };
-        });
-      };
-
-      const exportData = () => {
-        const dataStr = JSON.stringify(store, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `daily_loop_backup_${getTodayString()}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      };
-
-      const importData = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          try {
-            const importedData = JSON.parse(event.target.result);
-            if (importedData.users && importedData.userData) {
-              if (window.confirm("这将覆盖当前所有数据，确定要导入吗？")) {
-                setStore(importedData);
-                alert("导入成功！");
-                setView('todo');
-              }
-            } else {
-              alert("文件格式不正确");
-            }
-          } catch (err) {
-            alert("文件解析失败");
-          }
-        };
-        reader.readAsText(file);
-        e.target.value = '';
-      };
-
-      // --- Components ---
-
-      const EditableText = ({ text, onSave, className, active }) => {
-        const [value, setValue] = useState(text);
-        const inputRef = useRef(null);
-
-        useEffect(() => {
-          if (active && inputRef.current) {
-            inputRef.current.focus();
-            inputRef.current.select();
-          }
-        }, [active]);
-
-        const handleKeyDown = (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            onSave(value);
-          } else if (e.key === 'Escape') {
-            onSave(text);
-          }
-        };
-
-        if (active) {
-          return (
-            <input
-              ref={inputRef}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              onBlur={() => onSave(value)}
-              onKeyDown={handleKeyDown}
-              onClick={(e) => e.stopPropagation()}
-              className={`bg-transparent outline-none border-b-2 border-white/50 w-full ${className}`}
-            />
-          );
-        }
-        return <span className={`truncate ${className}`}>{text}</span>;
-      };
-
-      const Header = () => (
-        <div className={`flex items-center justify-between p-4 ${currentTheme.base} text-white shadow-md transition-colors duration-300`}>
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div 
-              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-white/20 backdrop-blur-sm cursor-pointer hover:bg-white/30 transition-colors"
-              onClick={() => setView('users')}
-              title="管理用户"
-            >
-              <User size={16} />
-            </div>
-            
-            <div 
-              className="font-bold flex-1 min-w-0 cursor-text select-none"
-              onDoubleClick={() => setEditingUser(store.currentUser)}
-              title="双击修改用户名"
-            >
-              <EditableText 
-                active={editingUser === store.currentUser}
-                text={store.currentUser}
-                onSave={(newName) => renameUser(store.currentUser, newName)}
-                className="block"
-              />
-            </div>
-            
-            {store.users.length > 1 && (
-              <button 
-                onClick={quickSwitchUser}
-                className="flex-shrink-0 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-                title="切换到下一个用户"
-              >
-                <RefreshCw size={14} />
-              </button>
-            )}
+    const Header = ({ currentUser, users, view, setView, isDarkMode, toggleDarkMode, setEditingUser, renameUser, quickSwitchUser, currentTheme, editingUser }) => (
+      <div className={`flex items-center justify-between p-4 ${currentTheme.base} text-white shadow-md transition-colors duration-300 z-30 relative`}>
+        {/* 左侧：用户信息 - 自动伸缩 */}
+        <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0 mr-2">
+          <div 
+            className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-white/20 backdrop-blur-sm cursor-pointer hover:bg-white/30 transition-colors"
+            onClick={() => setView('users')}
+            title="管理用户"
+          >
+            <User size={16} />
           </div>
-
-          <div className="flex gap-2 flex-shrink-0 ml-2">
-            {view === 'calendar' ? (
-               <button onClick={() => setView('todo')} className="p-1.5 hover:bg-white/20 rounded transition-colors">
-                 <ArrowLeft size={20} />
-               </button>
-            ) : (
-              <button onClick={() => setView('calendar')} className="p-1.5 hover:bg-white/20 rounded transition-colors">
-                <Calendar size={20} />
-              </button>
-            )}
+          
+          <div 
+            className="font-bold truncate cursor-text select-none"
+            onDoubleClick={() => setEditingUser(currentUser)}
+            title="双击修改用户名"
+          >
+            <EditableText 
+              active={editingUser === currentUser}
+              text={currentUser}
+              onSave={(newName) => renameUser(currentUser, newName)}
+              className="block"
+            />
           </div>
         </div>
+
+        {/* 右侧：功能按钮组 - 固定位置 */}
+        <div className="flex gap-2 flex-shrink-0 items-center">
+          <button 
+            onClick={toggleDarkMode}
+            className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            title={isDarkMode ? "切换到日间模式" : "切换到暗夜模式"}
+          >
+            {isDarkMode ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
+
+          {users.length > 1 && (
+            <button 
+              onClick={quickSwitchUser}
+              className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              title="切换到下一个用户"
+            >
+              <RefreshCw size={14} />
+            </button>
+          )}
+
+          {view === 'calendar' ? (
+             <button onClick={() => setView('todo')} className="p-1.5 hover:bg-white/20 rounded transition-colors">
+               <ArrowLeft size={20} />
+             </button>
+          ) : (
+            <button onClick={() => setView('calendar')} className="p-1.5 hover:bg-white/20 rounded transition-colors">
+              <Calendar size={20} />
+            </button>
+          )}
+        </div>
+      </div>
+    );
+
+    const TimerStatus = ({ activeTimer, tasks, now, currentTheme }) => {
+      if (!activeTimer) return null;
+      
+      const activeTask = tasks.find(t => t.id === activeTimer.taskId);
+      if (!activeTask) return null;
+
+      const total = activeTimer.duration;
+      const remaining = Math.max(0, activeTimer.endTime - now);
+      const remainingSecs = Math.ceil(remaining / 1000);
+      const m = Math.floor(remainingSecs / 60);
+      const s = remainingSecs % 60;
+      const timeStr = `${m}:${s.toString().padStart(2, '0')}`;
+
+      return (
+        <div className="sticky top-0 z-20 mx-4 mt-2 mb-1 px-4 py-2.5 rounded-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-md shadow-lg border border-indigo-100 dark:border-slate-700 flex items-center justify-between animate-[pulse_3s_ease-in-out_infinite] ring-1 ring-indigo-500/20">
+           <div className="flex items-center gap-2 overflow-hidden">
+             <div className="relative flex items-center justify-center w-6 h-6">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-25 animate-ping"></span>
+                <TimerIcon size={16} className={`relative z-10 ${currentTheme.text}`} />
+             </div>
+             <span className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">{activeTask.text}</span>
+           </div>
+           <span className={`font-mono text-lg font-bold ${currentTheme.text} tabular-nums`}>
+             {timeStr}
+           </span>
+        </div>
       );
+    };
 
-      const TodoView = () => {
-        const tasks = currentUserData.tasks || [];
-        const completedCount = tasks.filter(t => {
-          const dates = t.doneDates || (t.lastDone ? [t.lastDone] : []);
-          return dates.includes(todayStr);
-        }).length;
-        const progress = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
+    const TodoView = ({
+      tasks, todayStr, currentTheme, activeTimer, now, 
+      timerDuration, updateTimerDuration, 
+      editingTaskId, setEditingTaskId, 
+      toggleTask, updateTaskText, addTask, deleteTask, startTimer, cancelTimer
+    }) => {
+      const [newTaskText, setNewTaskText] = useState('');
+      const completedCount = tasks.filter(t => {
+        const dates = t.doneDates || (t.lastDone ? [t.lastDone] : []);
+        return dates.includes(todayStr);
+      }).length;
+      const progress = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
 
-        return (
-          <div className="flex flex-col h-full bg-slate-50">
-            <div className="p-6 bg-white shadow-sm mb-2">
-              <div className="flex justify-between items-end mb-2">
-                <span className="text-gray-500 text-sm">{todayStr}</span>
-                <span className={`text-2xl font-bold ${currentTheme.text}`}>{progress}%</span>
-              </div>
-              <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full transition-all duration-500 ease-out ${currentTheme.bar}`}
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <p className="text-xs text-center text-gray-400 mt-2">双击任务文字可修改，双击顶部用户名可重命名</p>
+      return (
+        <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
+          <div className="p-6 bg-white dark:bg-slate-800 shadow-sm mb-1 transition-colors duration-300 z-10">
+            <div className="flex justify-between items-end mb-2">
+              <span className="text-gray-500 dark:text-gray-400 text-sm">{todayStr}</span>
+              <span className={`text-2xl font-bold ${currentTheme.text}`}>{progress}%</span>
             </div>
+            <div className="w-full h-3 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div className={`h-full transition-all duration-500 ease-out ${currentTheme.bar}`} style={{ width: `${progress}%` }} />
+            </div>
+            <p className="text-xs text-center text-gray-400 dark:text-gray-500 mt-2">双击任务文字可修改，双击顶部用户名可重命名</p>
+          </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3 pb-24">
-              {tasks.length === 0 && (
-                <div className="text-center text-gray-400 mt-10">
-                  还没有每日任务，<br/>在下方添加一个吧！
-                </div>
-              )}
+          <TimerStatus activeTimer={activeTimer} tasks={tasks} now={now} currentTheme={currentTheme} />
+
+          <div className="flex-1 overflow-y-auto pb-48 pt-1">
+            {tasks.length === 0 && <div className="text-center text-gray-400 mt-10">还没有每日任务，<br/>在下方添加一个吧！</div>}
+            
+            {tasks.map((task, index) => {
+              const dates = task.doneDates || (task.lastDone ? [task.lastDone] : []);
+              const isDone = dates.includes(todayStr);
+              const isEditing = editingTaskId === task.id;
               
-              {tasks.map(task => {
-                const dates = task.doneDates || (task.lastDone ? [task.lastDone] : []);
-                const isDone = dates.includes(todayStr);
-                const isEditing = editingTaskId === task.id;
+              const isTimerActive = activeTimer && activeTimer.taskId === task.id;
+              let remainingPercent = 0;
+              
+              if (isTimerActive) {
+                const total = activeTimer.duration;
+                const remaining = Math.max(0, activeTimer.endTime - now);
+                remainingPercent = (remaining / total) * 100; 
+              }
 
-                return (
-                  <div 
-                    key={task.id} 
-                    className={`group flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border transition-all duration-200 ${isDone ? 'bg-gray-50 border-gray-100' : `hover:shadow-md border-gray-100`}`}
-                  >
-                    <div className="flex items-center gap-3 flex-1 overflow-hidden">
-                      <div 
-                        className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer ${isDone ? `${currentTheme.base} ${currentTheme.activeBorder}` : 'border-gray-300 hover:border-gray-400'}`}
-                        onClick={() => toggleTask(task.id)}
-                      >
-                        {isDone && <Check size={14} className="text-white" />}
-                      </div>
+              const baseBgClass = index % 2 !== 0 ? 'bg-gray-50 dark:bg-slate-850' : 'bg-white dark:bg-slate-800';
 
-                      <div 
-                        className="flex-1 min-w-0"
-                        onDoubleClick={() => setEditingTaskId(task.id)}
-                      >
-                        {isEditing ? (
-                          <input 
-                            autoFocus
-                            defaultValue={task.text}
-                            onBlur={(e) => updateTaskText(task.id, e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') updateTaskText(task.id, e.currentTarget.value);
-                              if (e.key === 'Escape') setEditingTaskId(null);
-                            }}
-                            className={`w-full bg-gray-100 px-2 py-1 rounded outline-none border-b-2 ${currentTheme.activeBorder}`}
-                          />
-                        ) : (
-                          <span 
-                            className={`block truncate select-none cursor-text ${isDone ? 'line-through text-gray-400' : 'text-gray-800'}`}
-                            title="双击修改"
-                          >
+              return (
+                <div 
+                  key={task.id} 
+                  className={`relative group flex items-center justify-between p-4 border-b border-gray-100 dark:border-slate-700 last:border-0 transition-colors duration-200 overflow-hidden ${baseBgClass}`}
+                >
+                  {isTimerActive && (
+                    <div 
+                      className={`absolute inset-y-0 left-0 z-0 transition-all duration-1000 ease-linear animate-gradient-x bg-gradient-to-r from-blue-400/20 via-indigo-400/20 to-purple-400/20 dark:from-blue-900/40 dark:via-indigo-900/40 dark:to-purple-900/40 border-r-2 border-indigo-400/50 dark:border-indigo-400/30 shadow-[4px_0_15px_-3px_rgba(99,102,241,0.3)]`}
+                      style={{ width: `${remainingPercent}%` }}
+                    ></div>
+                  )}
+
+                  <div className="flex items-center gap-3 flex-1 overflow-hidden z-10">
+                    <div 
+                      className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer ${isDone ? `${currentTheme.base} ${currentTheme.activeBorder}` : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'}`}
+                      onClick={() => toggleTask(task.id)}
+                    >
+                      {isDone && <Check size={14} className="text-white" />}
+                    </div>
+
+                    <div className="flex-1 min-w-0 flex flex-col justify-center" onDoubleClick={() => setEditingTaskId(task.id)}>
+                      {isEditing ? (
+                        <input autoFocus defaultValue={task.text} onBlur={(e) => updateTaskText(task.id, e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') updateTaskText(task.id, e.currentTarget.value); if (e.key === 'Escape') setEditingTaskId(null); }} className={`w-full bg-gray-100 dark:bg-slate-600 dark:text-white px-2 py-1 rounded outline-none border-b-2 ${currentTheme.activeBorder}`} />
+                      ) : (
+                        <>
+                          <span className={`block truncate select-none cursor-text ${isDone ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200'} ${isTimerActive ? 'font-medium text-indigo-700 dark:text-indigo-300' : ''}`} title="双击修改">
                             {task.text}
                           </span>
-                        )}
-                      </div>
+                          <div className="flex gap-2 text-[10px] items-center mt-0.5">
+                              {(task.totalTime > 0) && (
+                                <span className="text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                                  <Clock size={10} /> 累计: {formatDuration(task.totalTime)}
+                                </span>
+                              )}
+                          </div>
+                        </>
+                      )}
                     </div>
-                    
-                    {!isEditing && (
-                       <button 
-                        onClick={() => deleteTask(task.id)}
-                        className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-opacity p-2 ml-2"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
                   </div>
-                );
-              })}
-            </div>
+                  
+                  {!isEditing && (
+                     <div className="flex items-center gap-2 z-10">
+                       <button onClick={(e) => { e.stopPropagation(); isTimerActive ? cancelTimer() : startTimer(task.id, timerDuration * 60 * 1000); }} className={`p-2 rounded-full transition-colors ${isTimerActive ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20' : 'text-gray-300 dark:text-gray-600 hover:text-green-500 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20'}`} title={isTimerActive ? "停止倒计时" : `开始${timerDuration}分钟专注`}>
+                         {isTimerActive ? <Square size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
+                       </button>
+                       <button onClick={(e) => { e.stopPropagation(); deleteTask(task.id); }} className="text-gray-300 dark:text-gray-600 hover:text-red-400 dark:hover:text-red-400 transition-colors p-2" title="删除任务"><Trash2 size={16} /></button>
+                     </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
-            <form onSubmit={addTask} className="absolute bottom-0 w-full p-4 bg-white border-t border-gray-100">
+          <div className="absolute bottom-0 w-full bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 transition-colors duration-300 z-20 flex flex-col">
+            <div className="px-6 pt-4 pb-2">
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <span className="flex items-center gap-1"><Hourglass size={10}/> 下次专注时长</span>
+                <span className={`font-bold ${currentTheme.text}`}>{timerDuration} 分钟</span>
+              </div>
+              <input type="range" min="5" max="120" step="5" value={timerDuration} onChange={(e) => updateTimerDuration(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700" />
+              <div className="flex justify-between text-[10px] text-gray-400 mt-1"><span>5m</span><span>60m</span><span>120m</span></div>
+            </div>
+            <form onSubmit={(e) => { e.preventDefault(); addTask(newTaskText); setNewTaskText(''); }} className="p-4 pt-2">
               <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newTaskText}
-                  onChange={(e) => setNewTaskText(e.target.value)}
-                  placeholder="添加每日循环任务..."
-                  className={`flex-1 px-4 py-3 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 text-sm transition-shadow ${currentTheme.ring.replace('ring-', 'focus:ring-')}`}
-                />
-                <button 
-                  type="submit" 
-                  className={`w-12 h-12 ${currentTheme.base} text-white rounded-lg flex items-center justify-center ${currentTheme.hover} active:scale-95 transition-all`}
-                >
-                  <Plus size={24} />
-                </button>
+                <input type="text" value={newTaskText} onChange={(e) => setNewTaskText(e.target.value)} placeholder="添加每日循环任务..." className={`flex-1 px-4 py-3 bg-gray-100 dark:bg-slate-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 text-sm transition-shadow ${currentTheme.ring.replace('ring-', 'focus:ring-')}`} />
+                <button type="submit" className={`w-12 h-12 ${currentTheme.base} text-white rounded-lg flex items-center justify-center ${currentTheme.hover} active:scale-95 transition-all`}><Plus size={24} /></button>
               </div>
             </form>
           </div>
-        );
+        </div>
+      );
+    };
+
+    const CalendarView = ({ calendarDate, setCalendarDate, history, todayStr, currentTheme, setSelectedDate, selectedDate, tasks }) => {
+      const year = calendarDate.getFullYear();
+      const month = calendarDate.getMonth();
+      const days = getDaysInMonth(year, month);
+      const changeMonth = (delta) => setCalendarDate(new Date(year, month + delta, 1));
+      const getColor = (dateStr) => {
+        const ratio = history[dateStr];
+        if (ratio === undefined) return 'bg-gray-100 text-gray-300 dark:bg-slate-700 dark:text-slate-500';
+        if (ratio === 0) return 'bg-red-50 text-red-300 dark:bg-red-900/20 dark:text-red-400';
+        if (ratio < 0.5) return 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'; 
+        if (ratio < 1.0) return `${currentTheme.light} ${currentTheme.text} opacity-70`; 
+        return `${currentTheme.base} text-white font-bold`; 
       };
 
-      const CalendarView = () => {
-        const year = calendarDate.getFullYear();
-        const month = calendarDate.getMonth();
-        const days = getDaysInMonth(year, month);
-        const history = currentUserData.history || {};
-
-        const changeMonth = (delta) => {
-          setCalendarDate(new Date(year, month + delta, 1));
-        };
-
-        const getColor = (dateStr) => {
-          const ratio = history[dateStr];
-          if (ratio === undefined) return 'bg-gray-100 text-gray-300';
-          if (ratio === 0) return 'bg-red-50 text-red-300';
-          if (ratio < 0.5) return 'bg-orange-100 text-orange-600'; 
-          if (ratio < 1.0) return `${currentTheme.light} ${currentTheme.text} opacity-70`; 
-          return `${currentTheme.base} text-white font-bold`; 
-        };
-
-        return (
-          <div className="h-full bg-white flex flex-col relative">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full">
-                <ChevronLeft size={20} className="text-gray-600" />
-              </button>
-              <h2 className="text-lg font-bold text-gray-800">
-                {year}年 {month + 1}月
-              </h2>
-              <button onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full">
-                <ChevronRight size={20} className="text-gray-600" />
-              </button>
-            </div>
-
-            <div className="flex-1 p-4">
-              <div className="grid grid-cols-7 gap-2 mb-2">
-                {['日','一','二','三','四','五','六'].map(d => (
-                  <div key={d} className="text-center text-xs text-gray-400 py-2">{d}</div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-2">
-                {Array(days[0].getDay()).fill(null).map((_, i) => (
-                  <div key={`empty-${i}`} />
-                ))}
-                
-                {days.map(date => {
-                  const dStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-                  const isToday = dStr === todayStr;
-                  return (
-                    <button 
-                      key={dStr} 
-                      onClick={() => setSelectedDate(dStr)}
-                      className={`aspect-square rounded-lg flex items-center justify-center text-sm relative transition-transform active:scale-95 ${getColor(dStr)} ${isToday ? `ring-2 ${currentTheme.ring} ring-offset-2` : ''}`}
-                    >
-                      {date.getDate()}
-                    </button>
-                  );
-                })}
-              </div>
-              
-              <div className="mt-8 px-4 py-4 bg-gray-50 rounded-xl text-xs text-gray-500 space-y-2">
-                 <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 rounded bg-gray-100"></div> <span>无记录</span>
-                 </div>
-                 <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 rounded bg-orange-100"></div> <span>进行中</span>
-                 </div>
-                 <div className="flex items-center gap-2">
-                   <div className={`w-3 h-3 rounded ${currentTheme.base}`}></div> <span>全部完成</span>
-                 </div>
-              </div>
-            </div>
-
-            {selectedDate && (
-              <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] z-50 flex items-center justify-center p-6 animate-in fade-in duration-200" onClick={() => setSelectedDate(null)}>
-                <div className="bg-white w-full max-h-[70%] rounded-2xl shadow-xl flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                  <div className={`p-4 ${currentTheme.base} text-white flex justify-between items-center`}>
-                    <span className="font-bold text-lg">{selectedDate}</span>
-                    <button onClick={() => setSelectedDate(null)} className="p-1 hover:bg-white/20 rounded-full">
-                      <X size={20} />
-                    </button>
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                    {currentUserData.tasks.length === 0 ? (
-                      <div className="text-center text-gray-400 py-4">无任务数据</div>
-                    ) : (
-                      currentUserData.tasks.map(task => {
-                        const dates = task.doneDates || (task.lastDone ? [task.lastDone] : []);
-                        const doneOnDate = dates.includes(selectedDate);
-                        return (
-                          <div key={task.id} className="flex items-center gap-3 p-2 border-b border-gray-50 last:border-0">
-                            {doneOnDate ? (
-                              <CheckCircle2 className={`${currentTheme.text} flex-shrink-0`} size={20} />
-                            ) : (
-                              <XCircle className="text-gray-300 flex-shrink-0" size={20} />
-                            )}
-                            <span className={`text-sm ${doneOnDate ? 'text-gray-800 font-medium' : 'text-gray-400'}`}>
-                              {task.text}
-                            </span>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                  <div className="p-3 bg-gray-50 text-center text-xs text-gray-400">
-                    显示的是当前任务列表在该日期的完成状态
-                  </div>
-                </div>
-              </div>
-            )}
+      return (
+        <div className="h-full bg-white dark:bg-slate-800 flex flex-col relative transition-colors duration-300">
+          <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+            <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full"><ChevronLeft size={20} className="text-gray-600 dark:text-gray-300" /></button>
+            <h2 className="text-lg font-bold text-gray-800 dark:text-white">{year}年 {month + 1}月</h2>
+            <button onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full"><ChevronRight size={20} className="text-gray-600 dark:text-gray-300" /></button>
           </div>
-        );
-      };
-
-      const UsersView = () => {
-        const [nameInput, setNameInput] = useState('');
-
-        return (
-          <div className="h-full bg-slate-50 flex flex-col">
-            <div className="p-4 bg-white border-b border-gray-100 flex items-center gap-2">
-              <button onClick={() => setView('todo')} className="p-2 -ml-2 text-gray-600">
-                 <X size={20} />
-              </button>
-              <h2 className="font-bold text-lg">账户管理</h2>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {store.users.map(user => {
-                const uThemeKey = store.userData[user]?.theme || 'indigo';
-                const uTheme = THEME_CONFIG[uThemeKey];
-                const isEditing = editingUser === user;
-                
-                return (
-                  <div 
-                    key={user}
-                    onClick={() => switchUser(user)}
-                    className={`p-4 rounded-xl flex items-center justify-between cursor-pointer border transition-colors ${user === store.currentUser ? `${uTheme.light} ${uTheme.border}` : 'bg-white border-gray-100 hover:border-gray-300'}`}
-                  >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white ${uTheme.base}`}>
-                        {user.charAt(0).toUpperCase()}
-                      </div>
-                      <div 
-                         className="flex-1 min-w-0"
-                         onDoubleClick={(e) => {
-                           e.stopPropagation();
-                           setEditingUser(user);
-                         }}
-                         title="双击修改"
-                      >
-                        {isEditing ? (
-                          <input 
-                            autoFocus
-                            defaultValue={user}
-                            onBlur={(e) => renameUser(user, e.target.value)}
-                            onKeyDown={(e) => {
-                              if(e.key==='Enter') renameUser(user, e.currentTarget.value);
-                              if(e.key==='Escape') setEditingUser(null);
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm outline-none"
-                          />
-                        ) : (
-                          <>
-                            <div className={`font-medium truncate ${user === store.currentUser ? uTheme.textDark : 'text-gray-700'}`}>{user}</div>
-                            {user === store.currentUser && <div className={`text-xs ${uTheme.text}`}>当前账户</div>}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    {store.users.length > 1 && !isEditing && (
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); deleteUser(user); }}
-                        className="p-2 text-gray-300 hover:text-red-500"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-                );
+          <div className="flex-1 p-4">
+            <div className="grid grid-cols-7 gap-2 mb-2">{['日','一','二','三','四','五','六'].map(d => <div key={d} className="text-center text-xs text-gray-400 dark:text-gray-500 py-2">{d}</div>)}</div>
+            <div className="grid grid-cols-7 gap-2">
+              {Array(days[0].getDay()).fill(null).map((_, i) => <div key={`empty-${i}`} />)}
+              {days.map(date => {
+                const dStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+                return <button key={dStr} onClick={() => setSelectedDate(dStr)} className={`aspect-square rounded-lg flex items-center justify-center text-sm relative transition-transform active:scale-95 ${getColor(dStr)} ${dStr === todayStr ? `ring-2 ${currentTheme.ring} ring-offset-2 dark:ring-offset-slate-800` : ''}`}>{date.getDate()}</button>;
               })}
             </div>
-
-            <div className="px-4 py-2">
-               <div className="grid grid-cols-2 gap-3 mb-4">
-                 <button 
-                    onClick={exportData}
-                    className="flex items-center justify-center gap-2 p-3 bg-white border border-gray-200 rounded-lg text-gray-600 text-sm hover:bg-gray-50 active:scale-95 transition-transform"
-                 >
-                    <Download size={16} /> 备份数据
-                 </button>
-                 <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center justify-center gap-2 p-3 bg-white border border-gray-200 rounded-lg text-gray-600 text-sm hover:bg-gray-50 active:scale-95 transition-transform"
-                 >
-                    <Upload size={16} /> 恢复备份
-                 </button>
-                 <input 
-                   type="file" 
-                   ref={fileInputRef} 
-                   onChange={importData} 
-                   className="hidden" 
-                   accept=".json"
-                 />
-               </div>
-            </div>
-
-            <div className="p-4 bg-white border-t border-gray-100">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  placeholder="新账户名称..."
-                  className={`flex-1 px-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 text-sm ${currentTheme.ring.replace('ring-', 'focus:ring-')}`}
-                />
-                <button 
-                  onClick={() => { addUser(nameInput); setNameInput(''); }}
-                  disabled={!nameInput.trim()}
-                  className={`px-4 ${currentTheme.base} text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm hover:opacity-90 active:scale-95 transition-all`}
-                >
-                  新建
-                </button>
-              </div>
+            <div className="mt-8 px-4 py-4 bg-gray-50 dark:bg-slate-700/50 rounded-xl text-xs text-gray-500 dark:text-gray-400 space-y-2">
+               <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-gray-100 dark:bg-slate-700"></div> <span>无记录</span></div>
+               <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-orange-100 dark:bg-orange-900/30"></div> <span>进行中</span></div>
+               <div className="flex items-center gap-2"><div className={`w-3 h-3 rounded ${currentTheme.base}`}></div> <span>全部完成</span></div>
             </div>
           </div>
-        );
+          {selectedDate && (
+            <div className="absolute inset-0 bg-black/20 dark:bg-black/50 backdrop-blur-[2px] z-50 flex items-center justify-center p-6 animate-in fade-in duration-200" onClick={() => setSelectedDate(null)}>
+              <div className="bg-white dark:bg-slate-800 w-full max-h-[70%] rounded-2xl shadow-xl flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className={`p-4 ${currentTheme.base} text-white flex justify-between items-center`}><span className="font-bold text-lg">{selectedDate}</span><button onClick={() => setSelectedDate(null)} className="p-1 hover:bg-white/20 rounded-full"><X size={20} /></button></div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {tasks.length === 0 ? <div className="text-center text-gray-400 py-4">无任务数据</div> : tasks.map(task => {
+                    const dates = task.doneDates || (task.lastDone ? [task.lastDone] : []);
+                    const doneOnDate = dates.includes(selectedDate);
+                    return <div key={task.id} className="flex items-center gap-3 p-2 border-b border-gray-50 dark:border-slate-700 last:border-0">{doneOnDate ? <CheckCircle2 className={`${currentTheme.text} flex-shrink-0`} size={20} /> : <XCircle className="text-gray-300 dark:text-gray-600 flex-shrink-0" size={20} />}<span className={`text-sm ${doneOnDate ? 'text-gray-800 dark:text-gray-200 font-medium' : 'text-gray-400 dark:text-gray-500'}`}>{task.text}</span></div>;
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const UsersView = ({ users, currentUser, storeUserData, switchUser, renameUser, addUser, deleteUser, setView, editingUser, setEditingUser, exportData, importData }) => {
+      const [nameInput, setNameInput] = useState('');
+      const fileInputRef = useRef(null);
+      return (
+        <div className="h-full bg-slate-50 dark:bg-slate-900 flex flex-col transition-colors duration-300">
+          <div className="p-4 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700 flex items-center gap-2"><button onClick={() => setView('todo')} className="p-2 -ml-2 text-gray-600 dark:text-gray-300"><X size={20} /></button><h2 className="font-bold text-lg dark:text-white">账户管理</h2></div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {users.map(user => {
+              const uTheme = getTheme(storeUserData[user]?.theme || 'indigo');
+              return (
+                <div key={user} onClick={() => switchUser(user)} className={`p-4 rounded-xl flex items-center justify-between cursor-pointer border transition-colors ${user === currentUser ? `${uTheme.light} ${uTheme.border}` : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600'}`}>
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white ${uTheme.base}`}>{user.charAt(0).toUpperCase()}</div>
+                    <div className="flex-1 min-w-0" onDoubleClick={(e) => { e.stopPropagation(); setEditingUser(user); }} title="双击修改">
+                      {editingUser === user ? <input autoFocus defaultValue={user} onBlur={(e) => renameUser(user, e.target.value)} onKeyDown={(e) => { if(e.key==='Enter') renameUser(user, e.currentTarget.value); if(e.key==='Escape') setEditingUser(null); }} onClick={(e) => e.stopPropagation()} className="w-full bg-white dark:bg-slate-600 dark:text-white border border-gray-300 rounded px-2 py-1 text-sm outline-none" /> : <><div className={`font-medium truncate ${user === currentUser ? uTheme.textDark : 'text-gray-700 dark:text-gray-300'}`}>{user}</div>{user === currentUser && <div className={`text-xs ${uTheme.text}`}>当前账户</div>}</>}
+                    </div>
+                  </div>
+                  {users.length > 1 && editingUser !== user && <button onClick={(e) => { e.stopPropagation(); deleteUser(user); }} className="p-2 text-gray-300 hover:text-red-500"><Trash2 size={16} /></button>}
+                </div>
+              );
+            })}
+          </div>
+          <div className="px-4 py-2"><div className="grid grid-cols-2 gap-3 mb-4"><button onClick={exportData} className="flex items-center justify-center gap-2 p-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-transform"><Download size={16} /> 备份数据</button><button onClick={() => fileInputRef.current?.click()} className="flex items-center justify-center gap-2 p-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-transform"><Upload size={16} /> 恢复备份</button><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></div></div>
+          <div className="p-4 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 transition-colors duration-300">
+            <div className="flex gap-2"><input type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder="新账户名称..." className={`flex-1 px-4 py-2 bg-gray-100 dark:bg-slate-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 text-sm ${getTheme('indigo').ring.replace('ring-', 'focus:ring-')}`} /><button onClick={() => { addUser(nameInput); setNameInput(''); }} disabled={!nameInput.trim()} className={`px-4 ${getTheme('indigo').base} text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm hover:opacity-90 active:scale-95 transition-all`}>新建</button></div>
+          </div>
+        </div>
+      );
+    };
+
+    function App() {
+      const [store, setStore] = useState(() => { try { const saved = localStorage.getItem(STORAGE_KEY); return saved ? JSON.parse(saved) : INITIAL_DATA; } catch (e) { return INITIAL_DATA; } });
+      const [isDarkMode, setIsDarkMode] = useState(() => { try { const saved = localStorage.getItem(THEME_MODE_KEY); return saved ? JSON.parse(saved) : false; } catch (e) { return false; } });
+      const [now, setNow] = useState(Date.now());
+      useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
+      const [view, setView] = useState('todo'); 
+      const [calendarDate, setCalendarDate] = useState(new Date());
+      const [editingTaskId, setEditingTaskId] = useState(null); 
+      const [editingUser, setEditingUser] = useState(null);
+      const [selectedDate, setSelectedDate] = useState(null);
+      
+      useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); }, [store]);
+      useEffect(() => { localStorage.setItem(THEME_MODE_KEY, JSON.stringify(isDarkMode)); if (isDarkMode) { document.body.classList.add('dark-mode-global'); } else { document.body.classList.remove('dark-mode-global'); } }, [isDarkMode]);
+      
+      // 全局定时器检查：每秒检查所有用户的倒计时，确保后台倒计时也能正常结束
+      useEffect(() => {
+         setStore(prevStore => {
+            let hasUpdates = false;
+            const newUserData = { ...prevStore.userData };
+
+            Object.keys(newUserData).forEach(username => {
+               const user = newUserData[username];
+               if (user.activeTimer && now >= user.activeTimer.endTime) {
+                  hasUpdates = true;
+                  const addedMinutes = Math.round(user.activeTimer.duration / 60000);
+                  const newTasks = user.tasks.map(t => {
+                     if (t.id === user.activeTimer.taskId) {
+                        return { ...t, totalTime: (t.totalTime || 0) + addedMinutes };
+                     }
+                     return t;
+                  });
+                  newUserData[username] = { ...user, tasks: newTasks, activeTimer: null };
+               }
+            });
+
+            if (hasUpdates) {
+               return { ...prevStore, userData: newUserData };
+            }
+            return prevStore;
+         });
+      }, [now]); 
+
+      const toggleDarkMode = () => setIsDarkMode(prev => !prev);
+      const currentUserData = store.userData[store.currentUser] || { tasks: [], history: {}, theme: 'indigo', timerDuration: 25 };
+      const currentTheme = getTheme(currentUserData.theme);
+      const todayStr = getTodayString();
+
+      // 同步倒计时配置到 store
+      const updateTimerDuration = (val) => {
+         setStore(prev => ({
+            ...prev,
+            userData: {
+               ...prev.userData,
+               [prev.currentUser]: {
+                  ...prev.userData[prev.currentUser],
+                  timerDuration: val
+               }
+            }
+         }));
       };
 
-      // 为了在桌面浏览器全屏居中显示，我们包装一个容器
+      useEffect(() => { if (!store.currentUser) return; const tasks = currentUserData.tasks || []; if (tasks.length === 0) return; const completedCount = tasks.filter(t => { const dates = t.doneDates || (t.lastDone ? [t.lastDone] : []); return dates.includes(todayStr); }).length; const ratio = completedCount / tasks.length; if (currentUserData.history?.[todayStr] !== ratio) { setStore(prev => ({ ...prev, userData: { ...prev.userData, [prev.currentUser]: { ...prev.userData[prev.currentUser], history: { ...(prev.userData[prev.currentUser].history || {}), [todayStr]: ratio } } } })); } }, [currentUserData.tasks, store.currentUser, todayStr]);
+
+      const toggleTask = (taskId) => { setStore(prev => { const userTasks = prev.userData[prev.currentUser].tasks; const updatedTasks = userTasks.map(t => { if (t.id === taskId) { const currentDoneDates = t.doneDates || (t.lastDone ? [t.lastDone] : []); const isDoneToday = currentDoneDates.includes(todayStr); let newDoneDates; if (isDoneToday) { newDoneDates = currentDoneDates.filter(d => d !== todayStr); } else { newDoneDates = [...currentDoneDates, todayStr]; } return { ...t, doneDates: newDoneDates, lastDone: isDoneToday ? '' : todayStr }; } return t; }); return { ...prev, userData: { ...prev.userData, [prev.currentUser]: { ...prev.userData[prev.currentUser], tasks: updatedTasks } } }; }); };
+      const startTimer = (taskId, durationMs) => { setStore(prev => { const userData = { ...prev.userData[prev.currentUser] }; userData.activeTimer = { taskId, endTime: Date.now() + durationMs, duration: durationMs }; return { ...prev, userData: { ...prev.userData, [prev.currentUser]: userData } }; }); };
+      const cancelTimer = () => { setStore(prev => { const userData = { ...prev.userData[prev.currentUser] }; userData.activeTimer = null; return { ...prev, userData: { ...prev.userData, [prev.currentUser]: userData } }; }); };
+      const updateTaskText = (taskId, newText) => { if (!newText.trim()) return; setStore(prev => { const userTasks = prev.userData[prev.currentUser].tasks; const updatedTasks = userTasks.map(t => t.id === taskId ? { ...t, text: newText } : t); return { ...prev, userData: { ...prev.userData, [prev.currentUser]: { ...prev.userData[prev.currentUser], tasks: updatedTasks } } }; }); setEditingTaskId(null); };
+      const addTask = (text) => { if (!text.trim()) return; setStore(prev => { const newTask = { id: Date.now(), text: text, doneDates: [], lastDone: '', totalTime: 0 }; const currentTasks = prev.userData[prev.currentUser].tasks || []; return { ...prev, userData: { ...prev.userData, [prev.currentUser]: { ...prev.userData[prev.currentUser], tasks: [...currentTasks, newTask] } } }; }); };
+      const deleteTask = (taskId) => { if (!window.confirm("确定要删除这个任务吗？历史记录将不再显示该任务。")) return; setStore(prev => { const updatedTasks = prev.userData[prev.currentUser].tasks.filter(t => t.id !== taskId); let activeTimer = prev.userData[prev.currentUser].activeTimer; if (activeTimer && activeTimer.taskId === taskId) { activeTimer = null; } return { ...prev, userData: { ...prev.userData, [prev.currentUser]: { ...prev.userData[prev.currentUser], tasks: updatedTasks, activeTimer } } }; }); };
+      const renameUser = (oldName, newName) => { if (!newName.trim() || newName === oldName) { setEditingUser(null); return; } if (store.users.includes(newName)) { alert("该用户名已存在"); return; } setStore(prev => { const newUsers = prev.users.map(u => u === oldName ? newName : u); const newUserData = { ...prev.userData }; newUserData[newName] = newUserData[oldName]; delete newUserData[oldName]; return { ...prev, users: newUsers, currentUser: prev.currentUser === oldName ? newName : prev.currentUser, userData: newUserData }; }); setEditingUser(null); };
+      const addUser = (name) => { if (!name || store.users.includes(name)) return; const nextThemeIndex = store.users.length % THEME_KEYS.length; const newTheme = THEME_KEYS[nextThemeIndex]; setStore(prev => ({ ...prev, users: [...prev.users, name], currentUser: name, userData: { ...prev.userData, [name]: { tasks: [], history: {}, theme: newTheme, timerDuration: 25 } } })); setView('todo'); };
+      const switchUser = (name) => { setStore(prev => ({ ...prev, currentUser: name })); setView('todo'); };
+      const quickSwitchUser = (e) => { e.stopPropagation(); const currentIndex = store.users.indexOf(store.currentUser); const nextIndex = (currentIndex + 1) % store.users.length; const nextUser = store.users[nextIndex]; setStore(prev => ({ ...prev, currentUser: nextUser })); setView('todo'); };
+      const deleteUser = (name) => { if (store.users.length <= 1) { alert("至少保留一个账户"); return; } if (!window.confirm(`确定要删除账户 "${name}" 吗？`)) return; setStore(prev => { const newUsers = prev.users.filter(u => u !== name); const newUserData = { ...prev.userData }; delete newUserData[name]; return { ...prev, users: newUsers, currentUser: newUsers[0], userData: newUserData }; }); };
+      const exportData = () => { const dataStr = JSON.stringify(store, null, 2); const blob = new Blob([dataStr], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `daily_loop_backup_${getTodayString()}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); };
+      const importData = (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (event) => { try { const importedData = JSON.parse(event.target.result); if (importedData.users && importedData.userData) { if (window.confirm("这将覆盖当前所有数据，确定要导入吗？")) { setStore(importedData); alert("导入成功！"); setView('todo'); } } else { alert("文件格式不正确"); } } catch (err) { alert("文件解析失败"); } }; reader.readAsText(file); e.target.value = ''; };
+
       return (
-        <div className="flex justify-center items-center min-h-screen bg-gray-200 p-4">
-          <div className="relative bg-white shadow-2xl overflow-hidden flex flex-col"
-               style={{ width: '320px', height: '80vh', maxHeight: '1000px', borderRadius: '20px' }}>
-            {view !== 'users' && <Header />}
+        <div className={`flex justify-center items-center min-h-screen p-4 transition-colors duration-300 ${isDarkMode ? 'dark' : ''}`}>
+          <div className="relative bg-white dark:bg-slate-800 shadow-2xl overflow-hidden flex flex-col transition-colors duration-300" style={{ width: '320px', height: '80vh', maxHeight: '1000px', borderRadius: '20px' }}>
+            {view !== 'users' && <Header currentUser={store.currentUser} users={store.users} view={view} setView={setView} isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} setEditingUser={setEditingUser} renameUser={renameUser} quickSwitchUser={quickSwitchUser} currentTheme={currentTheme} editingUser={editingUser} />}
             <div className="flex-1 relative overflow-hidden">
-              {view === 'todo' && <TodoView />}
-              {view === 'calendar' && <CalendarView />}
-              {view === 'users' && <UsersView />}
+              {view === 'todo' && <TodoView tasks={currentUserData.tasks} todayStr={todayStr} currentTheme={currentTheme} activeTimer={currentUserData.activeTimer} now={now} timerDuration={currentUserData.timerDuration || 25} updateTimerDuration={updateTimerDuration} editingTaskId={editingTaskId} setEditingTaskId={setEditingTaskId} toggleTask={toggleTask} updateTaskText={updateTaskText} addTask={addTask} deleteTask={deleteTask} startTimer={startTimer} cancelTimer={cancelTimer} />}
+              {view === 'calendar' && <CalendarView calendarDate={calendarDate} setCalendarDate={setCalendarDate} history={currentUserData.history} todayStr={todayStr} currentTheme={currentTheme} setSelectedDate={setSelectedDate} selectedDate={selectedDate} tasks={currentUserData.tasks} />}
+              {view === 'users' && <UsersView users={store.users} currentUser={store.currentUser} storeUserData={store.userData} switchUser={switchUser} renameUser={renameUser} addUser={addUser} deleteUser={deleteUser} setView={setView} editingUser={editingUser} setEditingUser={setEditingUser} exportData={exportData} importData={importData} />}
             </div>
           </div>
         </div>
