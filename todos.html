@@ -1,828 +1,876 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Check, 
-  Plus, 
-  Trash2, 
-  User, 
-  Calendar, 
-  ChevronLeft, 
-  ChevronRight, 
-  X,
-  ArrowLeft,
-  Download,
-  Upload,
-  RefreshCw,
-  XCircle,
-  CheckCircle2
-} from 'lucide-react';
-
-// --- 配置与工具 ---
-
-// 主题色配置表
-const THEME_CONFIG = {
-  indigo: {
-    base: 'bg-indigo-600', hover: 'hover:bg-indigo-700', light: 'bg-indigo-50', 
-    text: 'text-indigo-600', textDark: 'text-indigo-900', border: 'border-indigo-200',
-    ring: 'ring-indigo-500', bar: 'bg-indigo-500', icon: 'text-indigo-500',
-    softBg: 'bg-indigo-100', activeBorder: 'border-indigo-500'
-  },
-  rose: {
-    base: 'bg-rose-600', hover: 'hover:bg-rose-700', light: 'bg-rose-50', 
-    text: 'text-rose-600', textDark: 'text-rose-900', border: 'border-rose-200',
-    ring: 'ring-rose-500', bar: 'bg-rose-500', icon: 'text-rose-500',
-    softBg: 'bg-rose-100', activeBorder: 'border-rose-500'
-  },
-  emerald: {
-    base: 'bg-emerald-600', hover: 'hover:bg-emerald-700', light: 'bg-emerald-50', 
-    text: 'text-emerald-600', textDark: 'text-emerald-900', border: 'border-emerald-200',
-    ring: 'ring-emerald-500', bar: 'bg-emerald-500', icon: 'text-emerald-500',
-    softBg: 'bg-emerald-100', activeBorder: 'border-emerald-500'
-  },
-  amber: {
-    base: 'bg-amber-600', hover: 'hover:bg-amber-700', light: 'bg-amber-50', 
-    text: 'text-amber-600', textDark: 'text-amber-900', border: 'border-amber-200',
-    ring: 'ring-amber-500', bar: 'bg-amber-500', icon: 'text-amber-500',
-    softBg: 'bg-amber-100', activeBorder: 'border-amber-500'
-  },
-  violet: {
-    base: 'bg-violet-600', hover: 'hover:bg-violet-700', light: 'bg-violet-50', 
-    text: 'text-violet-600', textDark: 'text-violet-900', border: 'border-violet-200',
-    ring: 'ring-violet-500', bar: 'bg-violet-500', icon: 'text-violet-500',
-    softBg: 'bg-violet-100', activeBorder: 'border-violet-500'
-  },
-  cyan: {
-    base: 'bg-cyan-600', hover: 'hover:bg-cyan-700', light: 'bg-cyan-50', 
-    text: 'text-cyan-600', textDark: 'text-cyan-900', border: 'border-cyan-200',
-    ring: 'ring-cyan-500', bar: 'bg-cyan-500', icon: 'text-cyan-500',
-    softBg: 'bg-cyan-100', activeBorder: 'border-cyan-500'
-  }
-};
-
-const THEME_KEYS = Object.keys(THEME_CONFIG);
-
-// 获取今日日期字符串 YYYY-MM-DD
-const getTodayString = () => {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
-// 获取某个月份的所有日期
-const getDaysInMonth = (year, month) => {
-  const date = new Date(year, month, 1);
-  const days = [];
-  while (date.getMonth() === month) {
-    days.push(new Date(date));
-    date.setDate(date.getDate() + 1);
-  }
-  return days;
-};
-
-// 初始数据结构
-const INITIAL_DATA = {
-  users: ['默认用户'],
-  currentUser: '默认用户',
-  userData: {
-    '默认用户': {
-      theme: 'indigo',
-      tasks: [
-        { id: 1, text: '早起喝一杯水', doneDates: [] },
-        { id: 2, text: '阅读 30 分钟', doneDates: [] },
-        { id: 3, text: '运动锻炼', doneDates: [] }
-      ],
-      history: {} 
-    }
-  }
-};
-
-const STORAGE_KEY = 'daily_loop_todo_v3';
-
-export default function App() {
-  // --- State ---
-  const [store, setStore] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : INITIAL_DATA;
-    } catch (e) {
-      return INITIAL_DATA;
-    }
-  });
-
-  const [view, setView] = useState('todo'); // 'todo', 'calendar', 'users'
-  const [newTaskText, setNewTaskText] = useState('');
-  const [calendarDate, setCalendarDate] = useState(new Date());
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>每日循环任务 - Daily Loop</title>
   
-  // 编辑状态
-  const [editingTaskId, setEditingTaskId] = useState(null); 
-  const [editingUser, setEditingUser] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(null); // 'YYYY-MM-DD' for modal
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+  <!-- 引入 Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- 引入 React 和 ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
   
-  const fileInputRef = useRef(null);
+  <!-- 引入 Babel -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  // --- Effects ---
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-  }, [store]);
+  <!-- 已移除外部 Lucide 脚本依赖，改为内置 SVG 组件，彻底解决加载错误 -->
 
-  // --- Computed ---
-  const currentUserData = store.userData[store.currentUser] || { tasks: [], history: {}, theme: 'indigo' };
-  const currentTheme = THEME_CONFIG[currentUserData.theme] || THEME_CONFIG['indigo'];
-  const todayStr = getTodayString();
-
-  // 计算今日进度并自动更新历史
-  useEffect(() => {
-    if (!store.currentUser) return;
-
-    const tasks = currentUserData.tasks || [];
-    if (tasks.length === 0) return;
-
-    // 兼容旧数据：如果没有 doneDates，尝试使用 lastDone
-    const completedCount = tasks.filter(t => {
-      const dates = t.doneDates || (t.lastDone ? [t.lastDone] : []);
-      return dates.includes(todayStr);
-    }).length;
-
-    const ratio = completedCount / tasks.length;
-
-    if (currentUserData.history?.[todayStr] !== ratio) {
-      setStore(prev => ({
-        ...prev,
-        userData: {
-          ...prev.userData,
-          [prev.currentUser]: {
-            ...prev.userData[prev.currentUser],
-            history: {
-              ...(prev.userData[prev.currentUser].history || {}),
-              [todayStr]: ratio
-            }
-          }
-        }
-      }));
+  <style>
+    ::-webkit-scrollbar {
+      width: 6px;
     }
-  }, [currentUserData.tasks, store.currentUser, todayStr]);
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 20px;
+    }
+    body {
+      background-color: #e5e7eb;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
 
-  // --- Handlers ---
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    
+    // --- 内置 SVG 图标组件 (彻底解决依赖报错) ---
+    const Icon = ({ children, size = 24, className = "" }) => (
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        width={size} 
+        height={size} 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        className={className}
+      >
+        {children}
+      </svg>
+    );
 
-  const toggleTask = (taskId) => {
-    setStore(prev => {
-      const userTasks = prev.userData[prev.currentUser].tasks;
-      const updatedTasks = userTasks.map(t => {
-        if (t.id === taskId) {
-          // 兼容性处理：初始化 doneDates
-          const currentDoneDates = t.doneDates || (t.lastDone ? [t.lastDone] : []);
-          const isDoneToday = currentDoneDates.includes(todayStr);
-          
-          let newDoneDates;
-          if (isDoneToday) {
-            newDoneDates = currentDoneDates.filter(d => d !== todayStr);
-          } else {
-            newDoneDates = [...currentDoneDates, todayStr];
-          }
+    const Check = (props) => <Icon {...props}><polyline points="20 6 9 17 4 12" /></Icon>;
+    const Plus = (props) => <Icon {...props}><path d="M5 12h14" /><path d="M12 5v14" /></Icon>;
+    const Trash2 = (props) => <Icon {...props}><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></Icon>;
+    const User = (props) => <Icon {...props}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></Icon>;
+    const Calendar = (props) => <Icon {...props}><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></Icon>;
+    const ChevronLeft = (props) => <Icon {...props}><path d="m15 18-6-6 6-6" /></Icon>;
+    const ChevronRight = (props) => <Icon {...props}><path d="m9 18 6-6-6-6" /></Icon>;
+    const X = (props) => <Icon {...props}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></Icon>;
+    const ArrowLeft = (props) => <Icon {...props}><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></Icon>;
+    const Download = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></Icon>;
+    const Upload = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" x2="12" y1="3" y2="15" /></Icon>;
+    const RefreshCw = (props) => <Icon {...props}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></Icon>;
+    const XCircle = (props) => <Icon {...props}><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></Icon>;
+    const CheckCircle2 = (props) => <Icon {...props}><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></Icon>;
 
-          return { 
-            ...t, 
-            doneDates: newDoneDates,
-            lastDone: isDoneToday ? '' : todayStr // 保持 lastDone 更新以防回滚版本
-          };
+
+    // --- 配置与工具 ---
+
+    const THEME_CONFIG = {
+      indigo: {
+        base: 'bg-indigo-600', hover: 'hover:bg-indigo-700', light: 'bg-indigo-50', 
+        text: 'text-indigo-600', textDark: 'text-indigo-900', border: 'border-indigo-200',
+        ring: 'ring-indigo-500', bar: 'bg-indigo-500', icon: 'text-indigo-500',
+        softBg: 'bg-indigo-100', activeBorder: 'border-indigo-500'
+      },
+      rose: {
+        base: 'bg-rose-600', hover: 'hover:bg-rose-700', light: 'bg-rose-50', 
+        text: 'text-rose-600', textDark: 'text-rose-900', border: 'border-rose-200',
+        ring: 'ring-rose-500', bar: 'bg-rose-500', icon: 'text-rose-500',
+        softBg: 'bg-rose-100', activeBorder: 'border-rose-500'
+      },
+      emerald: {
+        base: 'bg-emerald-600', hover: 'hover:bg-emerald-700', light: 'bg-emerald-50', 
+        text: 'text-emerald-600', textDark: 'text-emerald-900', border: 'border-emerald-200',
+        ring: 'ring-emerald-500', bar: 'bg-emerald-500', icon: 'text-emerald-500',
+        softBg: 'bg-emerald-100', activeBorder: 'border-emerald-500'
+      },
+      amber: {
+        base: 'bg-amber-600', hover: 'hover:bg-amber-700', light: 'bg-amber-50', 
+        text: 'text-amber-600', textDark: 'text-amber-900', border: 'border-amber-200',
+        ring: 'ring-amber-500', bar: 'bg-amber-500', icon: 'text-amber-500',
+        softBg: 'bg-amber-100', activeBorder: 'border-amber-500'
+      },
+      violet: {
+        base: 'bg-violet-600', hover: 'hover:bg-violet-700', light: 'bg-violet-50', 
+        text: 'text-violet-600', textDark: 'text-violet-900', border: 'border-violet-200',
+        ring: 'ring-violet-500', bar: 'bg-violet-500', icon: 'text-violet-500',
+        softBg: 'bg-violet-100', activeBorder: 'border-violet-500'
+      },
+      cyan: {
+        base: 'bg-cyan-600', hover: 'hover:bg-cyan-700', light: 'bg-cyan-50', 
+        text: 'text-cyan-600', textDark: 'text-cyan-900', border: 'border-cyan-200',
+        ring: 'ring-cyan-500', bar: 'bg-cyan-500', icon: 'text-cyan-500',
+        softBg: 'bg-cyan-100', activeBorder: 'border-cyan-500'
+      }
+    };
+
+    const THEME_KEYS = Object.keys(THEME_CONFIG);
+
+    const getTodayString = () => {
+      const date = new Date();
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const getDaysInMonth = (year, month) => {
+      const date = new Date(year, month, 1);
+      const days = [];
+      while (date.getMonth() === month) {
+        days.push(new Date(date));
+        date.setDate(date.getDate() + 1);
+      }
+      return days;
+    };
+
+    const INITIAL_DATA = {
+      users: ['默认用户'],
+      currentUser: '默认用户',
+      userData: {
+        '默认用户': {
+          theme: 'indigo',
+          tasks: [
+            { id: 1, text: '早起喝一杯水', doneDates: [] },
+            { id: 2, text: '阅读 30 分钟', doneDates: [] },
+            { id: 3, text: '运动锻炼', doneDates: [] }
+          ],
+          history: {} 
         }
-        return t;
+      }
+    };
+
+    const STORAGE_KEY = 'daily_loop_todo_standalone_v1';
+
+    function App() {
+      const [store, setStore] = useState(() => {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          return saved ? JSON.parse(saved) : INITIAL_DATA;
+        } catch (e) {
+          return INITIAL_DATA;
+        }
       });
 
-      return {
-        ...prev,
-        userData: {
-          ...prev.userData,
-          [prev.currentUser]: {
-            ...prev.userData[prev.currentUser],
-            tasks: updatedTasks
-          }
-        }
-      };
-    });
-  };
-
-  const updateTaskText = (taskId, newText) => {
-    if (!newText.trim()) return;
-    setStore(prev => {
-      const userTasks = prev.userData[prev.currentUser].tasks;
-      const updatedTasks = userTasks.map(t => 
-        t.id === taskId ? { ...t, text: newText } : t
-      );
-      return {
-        ...prev,
-        userData: {
-          ...prev.userData,
-          [prev.currentUser]: {
-            ...prev.userData[prev.currentUser],
-            tasks: updatedTasks
-          }
-        }
-      };
-    });
-    setEditingTaskId(null);
-  };
-
-  const addTask = (e) => {
-    e.preventDefault();
-    if (!newTaskText.trim()) return;
-
-    setStore(prev => {
-      const newTask = {
-        id: Date.now(),
-        text: newTaskText,
-        doneDates: [], // 新任务初始化空数组
-        lastDone: ''
-      };
-      const currentTasks = prev.userData[prev.currentUser].tasks || [];
-      return {
-        ...prev,
-        userData: {
-          ...prev.userData,
-          [prev.currentUser]: {
-            ...prev.userData[prev.currentUser],
-            tasks: [...currentTasks, newTask]
-          }
-        }
-      };
-    });
-    setNewTaskText('');
-  };
-
-  const deleteTask = (taskId) => {
-    setStore(prev => {
-      const updatedTasks = prev.userData[prev.currentUser].tasks.filter(t => t.id !== taskId);
-      return {
-        ...prev,
-        userData: {
-          ...prev.userData,
-          [prev.currentUser]: {
-            ...prev.userData[prev.currentUser],
-            tasks: updatedTasks
-          }
-        }
-      };
-    });
-  };
-
-  const renameUser = (oldName, newName) => {
-    if (!newName.trim() || newName === oldName) {
-      setEditingUser(null);
-      return;
-    }
-    if (store.users.includes(newName)) {
-      alert("该用户名已存在");
-      return;
-    }
-
-    setStore(prev => {
-      const newUsers = prev.users.map(u => u === oldName ? newName : u);
-      const newUserData = { ...prev.userData };
-      newUserData[newName] = newUserData[oldName];
-      delete newUserData[oldName];
+      const [view, setView] = useState('todo'); 
+      const [newTaskText, setNewTaskText] = useState('');
+      const [calendarDate, setCalendarDate] = useState(new Date());
+      const [editingTaskId, setEditingTaskId] = useState(null); 
+      const [editingUser, setEditingUser] = useState(null);
+      const [selectedDate, setSelectedDate] = useState(null); 
       
-      return {
-        ...prev,
-        users: newUsers,
-        currentUser: prev.currentUser === oldName ? newName : prev.currentUser,
-        userData: newUserData
-      };
-    });
-    setEditingUser(null);
-  };
+      const fileInputRef = useRef(null);
 
-  const addUser = (name) => {
-    if (!name || store.users.includes(name)) return;
-    
-    const nextThemeIndex = store.users.length % THEME_KEYS.length;
-    const newTheme = THEME_KEYS[nextThemeIndex];
+      useEffect(() => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+      }, [store]);
 
-    setStore(prev => ({
-      ...prev,
-      users: [...prev.users, name],
-      currentUser: name,
-      userData: {
-        ...prev.userData,
-        [name]: { tasks: [], history: {}, theme: newTheme }
-      }
-    }));
-    setView('todo');
-  };
+      const currentUserData = store.userData[store.currentUser] || { tasks: [], history: {}, theme: 'indigo' };
+      const currentTheme = THEME_CONFIG[currentUserData.theme] || THEME_CONFIG['indigo'];
+      const todayStr = getTodayString();
 
-  const switchUser = (name) => {
-    setStore(prev => ({ ...prev, currentUser: name }));
-    setView('todo');
-  };
+      useEffect(() => {
+        if (!store.currentUser) return;
 
-  const quickSwitchUser = (e) => {
-    e.stopPropagation();
-    const currentIndex = store.users.indexOf(store.currentUser);
-    const nextIndex = (currentIndex + 1) % store.users.length;
-    const nextUser = store.users[nextIndex];
-    setStore(prev => ({ ...prev, currentUser: nextUser }));
-    setView('todo');
-  };
+        const tasks = currentUserData.tasks || [];
+        if (tasks.length === 0) return;
 
-  const deleteUser = (name) => {
-    if (store.users.length <= 1) {
-      alert("至少保留一个账户");
-      return;
-    }
-    const confirm = window.confirm(`确定要删除账户 "${name}" 吗？`);
-    if (!confirm) return;
+        const completedCount = tasks.filter(t => {
+          const dates = t.doneDates || (t.lastDone ? [t.lastDone] : []);
+          return dates.includes(todayStr);
+        }).length;
 
-    setStore(prev => {
-      const newUsers = prev.users.filter(u => u !== name);
-      const newUserData = { ...prev.userData };
-      delete newUserData[name];
-      return {
-        ...prev,
-        users: newUsers,
-        currentUser: newUsers[0],
-        userData: newUserData
-      };
-    });
-  };
+        const ratio = completedCount / tasks.length;
 
-  // --- 导入导出 ---
-  const exportData = () => {
-    const dataStr = JSON.stringify(store, null, 2);
-    const blob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `daily_loop_backup_${getTodayString()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const importData = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const importedData = JSON.parse(event.target.result);
-        if (importedData.users && importedData.userData) {
-          if (window.confirm("这将覆盖当前所有数据，确定要导入吗？")) {
-            setStore(importedData);
-            alert("导入成功！");
-            setView('todo');
-          }
-        } else {
-          alert("文件格式不正确");
+        if (currentUserData.history?.[todayStr] !== ratio) {
+          setStore(prev => ({
+            ...prev,
+            userData: {
+              ...prev.userData,
+              [prev.currentUser]: {
+                ...prev.userData[prev.currentUser],
+                history: {
+                  ...(prev.userData[prev.currentUser].history || {}),
+                  [todayStr]: ratio
+                }
+              }
+            }
+          }));
         }
-      } catch (err) {
-        alert("文件解析失败");
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
+      }, [currentUserData.tasks, store.currentUser, todayStr]);
 
-  // --- Components ---
+      const toggleTask = (taskId) => {
+        setStore(prev => {
+          const userTasks = prev.userData[prev.currentUser].tasks;
+          const updatedTasks = userTasks.map(t => {
+            if (t.id === taskId) {
+              const currentDoneDates = t.doneDates || (t.lastDone ? [t.lastDone] : []);
+              const isDoneToday = currentDoneDates.includes(todayStr);
+              
+              let newDoneDates;
+              if (isDoneToday) {
+                newDoneDates = currentDoneDates.filter(d => d !== todayStr);
+              } else {
+                newDoneDates = [...currentDoneDates, todayStr];
+              }
 
-  const EditableText = ({ text, onSave, className, active }) => {
-    const [value, setValue] = useState(text);
-    const inputRef = useRef(null);
+              return { 
+                ...t, 
+                doneDates: newDoneDates,
+                lastDone: isDoneToday ? '' : todayStr
+              };
+            }
+            return t;
+          });
 
-    useEffect(() => {
-      if (active && inputRef.current) {
-        inputRef.current.focus();
-        inputRef.current.select();
-      }
-    }, [active]);
+          return {
+            ...prev,
+            userData: {
+              ...prev.userData,
+              [prev.currentUser]: {
+                ...prev.userData[prev.currentUser],
+                tasks: updatedTasks
+              }
+            }
+          };
+        });
+      };
 
-    const handleKeyDown = (e) => {
-      if (e.key === 'Enter') {
+      const updateTaskText = (taskId, newText) => {
+        if (!newText.trim()) return;
+        setStore(prev => {
+          const userTasks = prev.userData[prev.currentUser].tasks;
+          const updatedTasks = userTasks.map(t => 
+            t.id === taskId ? { ...t, text: newText } : t
+          );
+          return {
+            ...prev,
+            userData: {
+              ...prev.userData,
+              [prev.currentUser]: {
+                ...prev.userData[prev.currentUser],
+                tasks: updatedTasks
+              }
+            }
+          };
+        });
+        setEditingTaskId(null);
+      };
+
+      const addTask = (e) => {
         e.preventDefault();
-        onSave(value);
-      } else if (e.key === 'Escape') {
-        onSave(text);
-      }
-    };
+        if (!newTaskText.trim()) return;
 
-    if (active) {
+        setStore(prev => {
+          const newTask = {
+            id: Date.now(),
+            text: newTaskText,
+            doneDates: [],
+            lastDone: ''
+          };
+          const currentTasks = prev.userData[prev.currentUser].tasks || [];
+          return {
+            ...prev,
+            userData: {
+              ...prev.userData,
+              [prev.currentUser]: {
+                ...prev.userData[prev.currentUser],
+                tasks: [...currentTasks, newTask]
+              }
+            }
+          };
+        });
+        setNewTaskText('');
+      };
+
+      const deleteTask = (taskId) => {
+        setStore(prev => {
+          const updatedTasks = prev.userData[prev.currentUser].tasks.filter(t => t.id !== taskId);
+          return {
+            ...prev,
+            userData: {
+              ...prev.userData,
+              [prev.currentUser]: {
+                ...prev.userData[prev.currentUser],
+                tasks: updatedTasks
+              }
+            }
+          };
+        });
+      };
+
+      const renameUser = (oldName, newName) => {
+        if (!newName.trim() || newName === oldName) {
+          setEditingUser(null);
+          return;
+        }
+        if (store.users.includes(newName)) {
+          alert("该用户名已存在");
+          return;
+        }
+
+        setStore(prev => {
+          const newUsers = prev.users.map(u => u === oldName ? newName : u);
+          const newUserData = { ...prev.userData };
+          newUserData[newName] = newUserData[oldName];
+          delete newUserData[oldName];
+          
+          return {
+            ...prev,
+            users: newUsers,
+            currentUser: prev.currentUser === oldName ? newName : prev.currentUser,
+            userData: newUserData
+          };
+        });
+        setEditingUser(null);
+      };
+
+      const addUser = (name) => {
+        if (!name || store.users.includes(name)) return;
+        
+        const nextThemeIndex = store.users.length % THEME_KEYS.length;
+        const newTheme = THEME_KEYS[nextThemeIndex];
+
+        setStore(prev => ({
+          ...prev,
+          users: [...prev.users, name],
+          currentUser: name,
+          userData: {
+            ...prev.userData,
+            [name]: { tasks: [], history: {}, theme: newTheme }
+          }
+        }));
+        setView('todo');
+      };
+
+      const switchUser = (name) => {
+        setStore(prev => ({ ...prev, currentUser: name }));
+        setView('todo');
+      };
+
+      const quickSwitchUser = (e) => {
+        e.stopPropagation();
+        const currentIndex = store.users.indexOf(store.currentUser);
+        const nextIndex = (currentIndex + 1) % store.users.length;
+        const nextUser = store.users[nextIndex];
+        setStore(prev => ({ ...prev, currentUser: nextUser }));
+        setView('todo');
+      };
+
+      const deleteUser = (name) => {
+        if (store.users.length <= 1) {
+          alert("至少保留一个账户");
+          return;
+        }
+        const confirm = window.confirm(`确定要删除账户 "${name}" 吗？`);
+        if (!confirm) return;
+
+        setStore(prev => {
+          const newUsers = prev.users.filter(u => u !== name);
+          const newUserData = { ...prev.userData };
+          delete newUserData[name];
+          return {
+            ...prev,
+            users: newUsers,
+            currentUser: newUsers[0],
+            userData: newUserData
+          };
+        });
+      };
+
+      const exportData = () => {
+        const dataStr = JSON.stringify(store, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `daily_loop_backup_${getTodayString()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      };
+
+      const importData = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const importedData = JSON.parse(event.target.result);
+            if (importedData.users && importedData.userData) {
+              if (window.confirm("这将覆盖当前所有数据，确定要导入吗？")) {
+                setStore(importedData);
+                alert("导入成功！");
+                setView('todo');
+              }
+            } else {
+              alert("文件格式不正确");
+            }
+          } catch (err) {
+            alert("文件解析失败");
+          }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+      };
+
+      // --- Components ---
+
+      const EditableText = ({ text, onSave, className, active }) => {
+        const [value, setValue] = useState(text);
+        const inputRef = useRef(null);
+
+        useEffect(() => {
+          if (active && inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+          }
+        }, [active]);
+
+        const handleKeyDown = (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            onSave(value);
+          } else if (e.key === 'Escape') {
+            onSave(text);
+          }
+        };
+
+        if (active) {
+          return (
+            <input
+              ref={inputRef}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onBlur={() => onSave(value)}
+              onKeyDown={handleKeyDown}
+              onClick={(e) => e.stopPropagation()}
+              className={`bg-transparent outline-none border-b-2 border-white/50 w-full ${className}`}
+            />
+          );
+        }
+        return <span className={`truncate ${className}`}>{text}</span>;
+      };
+
+      const Header = () => (
+        <div className={`flex items-center justify-between p-4 ${currentTheme.base} text-white shadow-md transition-colors duration-300`}>
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div 
+              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-white/20 backdrop-blur-sm cursor-pointer hover:bg-white/30 transition-colors"
+              onClick={() => setView('users')}
+              title="管理用户"
+            >
+              <User size={16} />
+            </div>
+            
+            <div 
+              className="font-bold flex-1 min-w-0 cursor-text select-none"
+              onDoubleClick={() => setEditingUser(store.currentUser)}
+              title="双击修改用户名"
+            >
+              <EditableText 
+                active={editingUser === store.currentUser}
+                text={store.currentUser}
+                onSave={(newName) => renameUser(store.currentUser, newName)}
+                className="block"
+              />
+            </div>
+            
+            {store.users.length > 1 && (
+              <button 
+                onClick={quickSwitchUser}
+                className="flex-shrink-0 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                title="切换到下一个用户"
+              >
+                <RefreshCw size={14} />
+              </button>
+            )}
+          </div>
+
+          <div className="flex gap-2 flex-shrink-0 ml-2">
+            {view === 'calendar' ? (
+               <button onClick={() => setView('todo')} className="p-1.5 hover:bg-white/20 rounded transition-colors">
+                 <ArrowLeft size={20} />
+               </button>
+            ) : (
+              <button onClick={() => setView('calendar')} className="p-1.5 hover:bg-white/20 rounded transition-colors">
+                <Calendar size={20} />
+              </button>
+            )}
+          </div>
+        </div>
+      );
+
+      const TodoView = () => {
+        const tasks = currentUserData.tasks || [];
+        const completedCount = tasks.filter(t => {
+          const dates = t.doneDates || (t.lastDone ? [t.lastDone] : []);
+          return dates.includes(todayStr);
+        }).length;
+        const progress = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
+
+        return (
+          <div className="flex flex-col h-full bg-slate-50">
+            <div className="p-6 bg-white shadow-sm mb-2">
+              <div className="flex justify-between items-end mb-2">
+                <span className="text-gray-500 text-sm">{todayStr}</span>
+                <span className={`text-2xl font-bold ${currentTheme.text}`}>{progress}%</span>
+              </div>
+              <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-500 ease-out ${currentTheme.bar}`}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="text-xs text-center text-gray-400 mt-2">双击任务文字可修改，双击顶部用户名可重命名</p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3 pb-24">
+              {tasks.length === 0 && (
+                <div className="text-center text-gray-400 mt-10">
+                  还没有每日任务，<br/>在下方添加一个吧！
+                </div>
+              )}
+              
+              {tasks.map(task => {
+                const dates = task.doneDates || (task.lastDone ? [task.lastDone] : []);
+                const isDone = dates.includes(todayStr);
+                const isEditing = editingTaskId === task.id;
+
+                return (
+                  <div 
+                    key={task.id} 
+                    className={`group flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border transition-all duration-200 ${isDone ? 'bg-gray-50 border-gray-100' : `hover:shadow-md border-gray-100`}`}
+                  >
+                    <div className="flex items-center gap-3 flex-1 overflow-hidden">
+                      <div 
+                        className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer ${isDone ? `${currentTheme.base} ${currentTheme.activeBorder}` : 'border-gray-300 hover:border-gray-400'}`}
+                        onClick={() => toggleTask(task.id)}
+                      >
+                        {isDone && <Check size={14} className="text-white" />}
+                      </div>
+
+                      <div 
+                        className="flex-1 min-w-0"
+                        onDoubleClick={() => setEditingTaskId(task.id)}
+                      >
+                        {isEditing ? (
+                          <input 
+                            autoFocus
+                            defaultValue={task.text}
+                            onBlur={(e) => updateTaskText(task.id, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') updateTaskText(task.id, e.currentTarget.value);
+                              if (e.key === 'Escape') setEditingTaskId(null);
+                            }}
+                            className={`w-full bg-gray-100 px-2 py-1 rounded outline-none border-b-2 ${currentTheme.activeBorder}`}
+                          />
+                        ) : (
+                          <span 
+                            className={`block truncate select-none cursor-text ${isDone ? 'line-through text-gray-400' : 'text-gray-800'}`}
+                            title="双击修改"
+                          >
+                            {task.text}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {!isEditing && (
+                       <button 
+                        onClick={() => deleteTask(task.id)}
+                        className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-opacity p-2 ml-2"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <form onSubmit={addTask} className="absolute bottom-0 w-full p-4 bg-white border-t border-gray-100">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newTaskText}
+                  onChange={(e) => setNewTaskText(e.target.value)}
+                  placeholder="添加每日循环任务..."
+                  className={`flex-1 px-4 py-3 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 text-sm transition-shadow ${currentTheme.ring.replace('ring-', 'focus:ring-')}`}
+                />
+                <button 
+                  type="submit" 
+                  className={`w-12 h-12 ${currentTheme.base} text-white rounded-lg flex items-center justify-center ${currentTheme.hover} active:scale-95 transition-all`}
+                >
+                  <Plus size={24} />
+                </button>
+              </div>
+            </form>
+          </div>
+        );
+      };
+
+      const CalendarView = () => {
+        const year = calendarDate.getFullYear();
+        const month = calendarDate.getMonth();
+        const days = getDaysInMonth(year, month);
+        const history = currentUserData.history || {};
+
+        const changeMonth = (delta) => {
+          setCalendarDate(new Date(year, month + delta, 1));
+        };
+
+        const getColor = (dateStr) => {
+          const ratio = history[dateStr];
+          if (ratio === undefined) return 'bg-gray-100 text-gray-300';
+          if (ratio === 0) return 'bg-red-50 text-red-300';
+          if (ratio < 0.5) return 'bg-orange-100 text-orange-600'; 
+          if (ratio < 1.0) return `${currentTheme.light} ${currentTheme.text} opacity-70`; 
+          return `${currentTheme.base} text-white font-bold`; 
+        };
+
+        return (
+          <div className="h-full bg-white flex flex-col relative">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full">
+                <ChevronLeft size={20} className="text-gray-600" />
+              </button>
+              <h2 className="text-lg font-bold text-gray-800">
+                {year}年 {month + 1}月
+              </h2>
+              <button onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full">
+                <ChevronRight size={20} className="text-gray-600" />
+              </button>
+            </div>
+
+            <div className="flex-1 p-4">
+              <div className="grid grid-cols-7 gap-2 mb-2">
+                {['日','一','二','三','四','五','六'].map(d => (
+                  <div key={d} className="text-center text-xs text-gray-400 py-2">{d}</div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-2">
+                {Array(days[0].getDay()).fill(null).map((_, i) => (
+                  <div key={`empty-${i}`} />
+                ))}
+                
+                {days.map(date => {
+                  const dStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+                  const isToday = dStr === todayStr;
+                  return (
+                    <button 
+                      key={dStr} 
+                      onClick={() => setSelectedDate(dStr)}
+                      className={`aspect-square rounded-lg flex items-center justify-center text-sm relative transition-transform active:scale-95 ${getColor(dStr)} ${isToday ? `ring-2 ${currentTheme.ring} ring-offset-2` : ''}`}
+                    >
+                      {date.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <div className="mt-8 px-4 py-4 bg-gray-50 rounded-xl text-xs text-gray-500 space-y-2">
+                 <div className="flex items-center gap-2">
+                   <div className="w-3 h-3 rounded bg-gray-100"></div> <span>无记录</span>
+                 </div>
+                 <div className="flex items-center gap-2">
+                   <div className="w-3 h-3 rounded bg-orange-100"></div> <span>进行中</span>
+                 </div>
+                 <div className="flex items-center gap-2">
+                   <div className={`w-3 h-3 rounded ${currentTheme.base}`}></div> <span>全部完成</span>
+                 </div>
+              </div>
+            </div>
+
+            {selectedDate && (
+              <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] z-50 flex items-center justify-center p-6 animate-in fade-in duration-200" onClick={() => setSelectedDate(null)}>
+                <div className="bg-white w-full max-h-[70%] rounded-2xl shadow-xl flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                  <div className={`p-4 ${currentTheme.base} text-white flex justify-between items-center`}>
+                    <span className="font-bold text-lg">{selectedDate}</span>
+                    <button onClick={() => setSelectedDate(null)} className="p-1 hover:bg-white/20 rounded-full">
+                      <X size={20} />
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                    {currentUserData.tasks.length === 0 ? (
+                      <div className="text-center text-gray-400 py-4">无任务数据</div>
+                    ) : (
+                      currentUserData.tasks.map(task => {
+                        const dates = task.doneDates || (task.lastDone ? [task.lastDone] : []);
+                        const doneOnDate = dates.includes(selectedDate);
+                        return (
+                          <div key={task.id} className="flex items-center gap-3 p-2 border-b border-gray-50 last:border-0">
+                            {doneOnDate ? (
+                              <CheckCircle2 className={`${currentTheme.text} flex-shrink-0`} size={20} />
+                            ) : (
+                              <XCircle className="text-gray-300 flex-shrink-0" size={20} />
+                            )}
+                            <span className={`text-sm ${doneOnDate ? 'text-gray-800 font-medium' : 'text-gray-400'}`}>
+                              {task.text}
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                  <div className="p-3 bg-gray-50 text-center text-xs text-gray-400">
+                    显示的是当前任务列表在该日期的完成状态
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      };
+
+      const UsersView = () => {
+        const [nameInput, setNameInput] = useState('');
+
+        return (
+          <div className="h-full bg-slate-50 flex flex-col">
+            <div className="p-4 bg-white border-b border-gray-100 flex items-center gap-2">
+              <button onClick={() => setView('todo')} className="p-2 -ml-2 text-gray-600">
+                 <X size={20} />
+              </button>
+              <h2 className="font-bold text-lg">账户管理</h2>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {store.users.map(user => {
+                const uThemeKey = store.userData[user]?.theme || 'indigo';
+                const uTheme = THEME_CONFIG[uThemeKey];
+                const isEditing = editingUser === user;
+                
+                return (
+                  <div 
+                    key={user}
+                    onClick={() => switchUser(user)}
+                    className={`p-4 rounded-xl flex items-center justify-between cursor-pointer border transition-colors ${user === store.currentUser ? `${uTheme.light} ${uTheme.border}` : 'bg-white border-gray-100 hover:border-gray-300'}`}
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white ${uTheme.base}`}>
+                        {user.charAt(0).toUpperCase()}
+                      </div>
+                      <div 
+                         className="flex-1 min-w-0"
+                         onDoubleClick={(e) => {
+                           e.stopPropagation();
+                           setEditingUser(user);
+                         }}
+                         title="双击修改"
+                      >
+                        {isEditing ? (
+                          <input 
+                            autoFocus
+                            defaultValue={user}
+                            onBlur={(e) => renameUser(user, e.target.value)}
+                            onKeyDown={(e) => {
+                              if(e.key==='Enter') renameUser(user, e.currentTarget.value);
+                              if(e.key==='Escape') setEditingUser(null);
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm outline-none"
+                          />
+                        ) : (
+                          <>
+                            <div className={`font-medium truncate ${user === store.currentUser ? uTheme.textDark : 'text-gray-700'}`}>{user}</div>
+                            {user === store.currentUser && <div className={`text-xs ${uTheme.text}`}>当前账户</div>}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {store.users.length > 1 && !isEditing && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); deleteUser(user); }}
+                        className="p-2 text-gray-300 hover:text-red-500"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="px-4 py-2">
+               <div className="grid grid-cols-2 gap-3 mb-4">
+                 <button 
+                    onClick={exportData}
+                    className="flex items-center justify-center gap-2 p-3 bg-white border border-gray-200 rounded-lg text-gray-600 text-sm hover:bg-gray-50 active:scale-95 transition-transform"
+                 >
+                    <Download size={16} /> 备份数据
+                 </button>
+                 <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center justify-center gap-2 p-3 bg-white border border-gray-200 rounded-lg text-gray-600 text-sm hover:bg-gray-50 active:scale-95 transition-transform"
+                 >
+                    <Upload size={16} /> 恢复备份
+                 </button>
+                 <input 
+                   type="file" 
+                   ref={fileInputRef} 
+                   onChange={importData} 
+                   className="hidden" 
+                   accept=".json"
+                 />
+               </div>
+            </div>
+
+            <div className="p-4 bg-white border-t border-gray-100">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  placeholder="新账户名称..."
+                  className={`flex-1 px-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 text-sm ${currentTheme.ring.replace('ring-', 'focus:ring-')}`}
+                />
+                <button 
+                  onClick={() => { addUser(nameInput); setNameInput(''); }}
+                  disabled={!nameInput.trim()}
+                  className={`px-4 ${currentTheme.base} text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm hover:opacity-90 active:scale-95 transition-all`}
+                >
+                  新建
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      // 为了在桌面浏览器全屏居中显示，我们包装一个容器
       return (
-        <input
-          ref={inputRef}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onBlur={() => onSave(value)}
-          onKeyDown={handleKeyDown}
-          onClick={(e) => e.stopPropagation()}
-          className={`bg-transparent outline-none border-b-2 border-white/50 w-full ${className}`}
-        />
+        <div className="flex justify-center items-center min-h-screen bg-gray-200 p-4">
+          <div className="relative bg-white shadow-2xl overflow-hidden flex flex-col"
+               style={{ width: '320px', height: '80vh', maxHeight: '1000px', borderRadius: '20px' }}>
+            {view !== 'users' && <Header />}
+            <div className="flex-1 relative overflow-hidden">
+              {view === 'todo' && <TodoView />}
+              {view === 'calendar' && <CalendarView />}
+              {view === 'users' && <UsersView />}
+            </div>
+          </div>
+        </div>
       );
     }
-    return <span className={`truncate ${className}`}>{text}</span>;
-  };
 
-  const Header = () => (
-    <div className={`flex items-center justify-between p-4 ${currentTheme.base} text-white shadow-md transition-colors duration-300`}>
-      <div className="flex items-center gap-3 overflow-hidden">
-        <div 
-          className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-white/20 backdrop-blur-sm cursor-pointer hover:bg-white/30 transition-colors"
-          onClick={() => setView('users')}
-          title="管理用户"
-        >
-          <User size={16} />
-        </div>
-        
-        <div 
-          className="font-bold flex-1 min-w-0 cursor-text select-none"
-          onDoubleClick={() => setEditingUser(store.currentUser)}
-          title="双击修改用户名"
-        >
-          <EditableText 
-            active={editingUser === store.currentUser}
-            text={store.currentUser}
-            onSave={(newName) => renameUser(store.currentUser, newName)}
-            className="block"
-          />
-        </div>
-        
-        {store.users.length > 1 && (
-          <button 
-            onClick={quickSwitchUser}
-            className="flex-shrink-0 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-            title="切换到下一个用户"
-          >
-            <RefreshCw size={14} />
-          </button>
-        )}
-      </div>
-
-      <div className="flex gap-2 flex-shrink-0 ml-2">
-        {view === 'calendar' ? (
-           <button onClick={() => setView('todo')} className="p-1.5 hover:bg-white/20 rounded transition-colors">
-             <ArrowLeft size={20} />
-           </button>
-        ) : (
-          <button onClick={() => setView('calendar')} className="p-1.5 hover:bg-white/20 rounded transition-colors">
-            <Calendar size={20} />
-          </button>
-        )}
-      </div>
-    </div>
-  );
-
-  const TodoView = () => {
-    const tasks = currentUserData.tasks || [];
-    // 兼容性读取
-    const completedCount = tasks.filter(t => {
-      const dates = t.doneDates || (t.lastDone ? [t.lastDone] : []);
-      return dates.includes(todayStr);
-    }).length;
-    const progress = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
-
-    return (
-      <div className="flex flex-col h-full bg-slate-50">
-        <div className="p-6 bg-white shadow-sm mb-2">
-          <div className="flex justify-between items-end mb-2">
-            <span className="text-gray-500 text-sm">{todayStr}</span>
-            <span className={`text-2xl font-bold ${currentTheme.text}`}>{progress}%</span>
-          </div>
-          <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-            <div 
-              className={`h-full transition-all duration-500 ease-out ${currentTheme.bar}`}
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <p className="text-xs text-center text-gray-400 mt-2">双击任务文字可修改，双击顶部用户名可重命名</p>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3 pb-24">
-          {tasks.length === 0 && (
-            <div className="text-center text-gray-400 mt-10">
-              还没有每日任务，<br/>在下方添加一个吧！
-            </div>
-          )}
-          
-          {tasks.map(task => {
-            const dates = task.doneDates || (task.lastDone ? [task.lastDone] : []);
-            const isDone = dates.includes(todayStr);
-            const isEditing = editingTaskId === task.id;
-
-            return (
-              <div 
-                key={task.id} 
-                className={`group flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border transition-all duration-200 ${isDone ? 'bg-gray-50 border-gray-100' : `hover:shadow-md border-gray-100`}`}
-              >
-                <div className="flex items-center gap-3 flex-1 overflow-hidden">
-                  <div 
-                    className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer ${isDone ? `${currentTheme.base} ${currentTheme.activeBorder}` : 'border-gray-300 hover:border-gray-400'}`}
-                    onClick={() => toggleTask(task.id)}
-                  >
-                    {isDone && <Check size={14} className="text-white" />}
-                  </div>
-
-                  <div 
-                    className="flex-1 min-w-0"
-                    onDoubleClick={() => setEditingTaskId(task.id)}
-                  >
-                    {isEditing ? (
-                      <input 
-                        autoFocus
-                        defaultValue={task.text}
-                        onBlur={(e) => updateTaskText(task.id, e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') updateTaskText(task.id, e.currentTarget.value);
-                          if (e.key === 'Escape') setEditingTaskId(null);
-                        }}
-                        className={`w-full bg-gray-100 px-2 py-1 rounded outline-none border-b-2 ${currentTheme.activeBorder}`}
-                      />
-                    ) : (
-                      <span 
-                        className={`block truncate select-none cursor-text ${isDone ? 'line-through text-gray-400' : 'text-gray-800'}`}
-                        title="双击修改"
-                      >
-                        {task.text}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                
-                {!isEditing && (
-                   <button 
-                    onClick={() => deleteTask(task.id)}
-                    className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-opacity p-2 ml-2"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <form onSubmit={addTask} className="absolute bottom-0 w-full p-4 bg-white border-t border-gray-100">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newTaskText}
-              onChange={(e) => setNewTaskText(e.target.value)}
-              placeholder="添加每日循环任务..."
-              className={`flex-1 px-4 py-3 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 text-sm transition-shadow ${currentTheme.ring.replace('ring-', 'focus:ring-')}`}
-            />
-            <button 
-              type="submit" 
-              className={`w-12 h-12 ${currentTheme.base} text-white rounded-lg flex items-center justify-center ${currentTheme.hover} active:scale-95 transition-all`}
-            >
-              <Plus size={24} />
-            </button>
-          </div>
-        </form>
-      </div>
-    );
-  };
-
-  const CalendarView = () => {
-    const year = calendarDate.getFullYear();
-    const month = calendarDate.getMonth();
-    const days = getDaysInMonth(year, month);
-    const history = currentUserData.history || {};
-
-    const changeMonth = (delta) => {
-      setCalendarDate(new Date(year, month + delta, 1));
-    };
-
-    const getColor = (dateStr) => {
-      const ratio = history[dateStr];
-      if (ratio === undefined) return 'bg-gray-100 text-gray-300';
-      if (ratio === 0) return 'bg-red-50 text-red-300';
-      if (ratio < 0.5) return 'bg-orange-100 text-orange-600'; 
-      if (ratio < 1.0) return `${currentTheme.light} ${currentTheme.text} opacity-70`; 
-      return `${currentTheme.base} text-white font-bold`; 
-    };
-
-    return (
-      <div className="h-full bg-white flex flex-col relative">
-        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-          <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full">
-            <ChevronLeft size={20} className="text-gray-600" />
-          </button>
-          <h2 className="text-lg font-bold text-gray-800">
-            {year}年 {month + 1}月
-          </h2>
-          <button onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full">
-            <ChevronRight size={20} className="text-gray-600" />
-          </button>
-        </div>
-
-        <div className="flex-1 p-4">
-          <div className="grid grid-cols-7 gap-2 mb-2">
-            {['日','一','二','三','四','五','六'].map(d => (
-              <div key={d} className="text-center text-xs text-gray-400 py-2">{d}</div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-2">
-            {Array(days[0].getDay()).fill(null).map((_, i) => (
-              <div key={`empty-${i}`} />
-            ))}
-            
-            {days.map(date => {
-              const dStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-              const isToday = dStr === todayStr;
-              return (
-                <button 
-                  key={dStr} 
-                  onClick={() => setSelectedDate(dStr)}
-                  className={`aspect-square rounded-lg flex items-center justify-center text-sm relative transition-transform active:scale-95 ${getColor(dStr)} ${isToday ? `ring-2 ${currentTheme.ring} ring-offset-2` : ''}`}
-                >
-                  {date.getDate()}
-                </button>
-              );
-            })}
-          </div>
-          
-          <div className="mt-8 px-4 py-4 bg-gray-50 rounded-xl text-xs text-gray-500 space-y-2">
-             <div className="flex items-center gap-2">
-               <div className="w-3 h-3 rounded bg-gray-100"></div> <span>无记录</span>
-             </div>
-             <div className="flex items-center gap-2">
-               <div className="w-3 h-3 rounded bg-orange-100"></div> <span>进行中</span>
-             </div>
-             <div className="flex items-center gap-2">
-               <div className={`w-3 h-3 rounded ${currentTheme.base}`}></div> <span>全部完成</span>
-             </div>
-          </div>
-        </div>
-
-        {/* 详情弹窗 */}
-        {selectedDate && (
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] z-50 flex items-center justify-center p-6 animate-in fade-in duration-200" onClick={() => setSelectedDate(null)}>
-            <div className="bg-white w-full max-h-[70%] rounded-2xl shadow-xl flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-              <div className={`p-4 ${currentTheme.base} text-white flex justify-between items-center`}>
-                <span className="font-bold text-lg">{selectedDate}</span>
-                <button onClick={() => setSelectedDate(null)} className="p-1 hover:bg-white/20 rounded-full">
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {currentUserData.tasks.length === 0 ? (
-                  <div className="text-center text-gray-400 py-4">无任务数据</div>
-                ) : (
-                  currentUserData.tasks.map(task => {
-                    const dates = task.doneDates || (task.lastDone ? [task.lastDone] : []);
-                    const doneOnDate = dates.includes(selectedDate);
-                    return (
-                      <div key={task.id} className="flex items-center gap-3 p-2 border-b border-gray-50 last:border-0">
-                        {doneOnDate ? (
-                          <CheckCircle2 className={`${currentTheme.text} flex-shrink-0`} size={20} />
-                        ) : (
-                          <XCircle className="text-gray-300 flex-shrink-0" size={20} />
-                        )}
-                        <span className={`text-sm ${doneOnDate ? 'text-gray-800 font-medium' : 'text-gray-400'}`}>
-                          {task.text}
-                        </span>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-              <div className="p-3 bg-gray-50 text-center text-xs text-gray-400">
-                显示的是当前任务列表在该日期的完成状态
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const UsersView = () => {
-    const [nameInput, setNameInput] = useState('');
-
-    return (
-      <div className="h-full bg-slate-50 flex flex-col">
-        <div className="p-4 bg-white border-b border-gray-100 flex items-center gap-2">
-          <button onClick={() => setView('todo')} className="p-2 -ml-2 text-gray-600">
-             <X size={20} />
-          </button>
-          <h2 className="font-bold text-lg">账户管理</h2>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {store.users.map(user => {
-            const uThemeKey = store.userData[user]?.theme || 'indigo';
-            const uTheme = THEME_CONFIG[uThemeKey];
-            const isEditing = editingUser === user;
-            
-            return (
-              <div 
-                key={user}
-                onClick={() => switchUser(user)}
-                className={`p-4 rounded-xl flex items-center justify-between cursor-pointer border transition-colors ${user === store.currentUser ? `${uTheme.light} ${uTheme.border}` : 'bg-white border-gray-100 hover:border-gray-300'}`}
-              >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white ${uTheme.base}`}>
-                    {user.charAt(0).toUpperCase()}
-                  </div>
-                  <div 
-                     className="flex-1 min-w-0"
-                     onDoubleClick={(e) => {
-                       e.stopPropagation();
-                       setEditingUser(user);
-                     }}
-                     title="双击修改"
-                  >
-                    {isEditing ? (
-                      <input 
-                        autoFocus
-                        defaultValue={user}
-                        onBlur={(e) => renameUser(user, e.target.value)}
-                        onKeyDown={(e) => {
-                          if(e.key==='Enter') renameUser(user, e.currentTarget.value);
-                          if(e.key==='Escape') setEditingUser(null);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm outline-none"
-                      />
-                    ) : (
-                      <>
-                        <div className={`font-medium truncate ${user === store.currentUser ? uTheme.textDark : 'text-gray-700'}`}>{user}</div>
-                        {user === store.currentUser && <div className={`text-xs ${uTheme.text}`}>当前账户</div>}
-                      </>
-                    )}
-                  </div>
-                </div>
-                {store.users.length > 1 && !isEditing && (
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); deleteUser(user); }}
-                    className="p-2 text-gray-300 hover:text-red-500"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="px-4 py-2">
-           <div className="grid grid-cols-2 gap-3 mb-4">
-             <button 
-                onClick={exportData}
-                className="flex items-center justify-center gap-2 p-3 bg-white border border-gray-200 rounded-lg text-gray-600 text-sm hover:bg-gray-50 active:scale-95 transition-transform"
-             >
-                <Download size={16} /> 备份数据
-             </button>
-             <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center justify-center gap-2 p-3 bg-white border border-gray-200 rounded-lg text-gray-600 text-sm hover:bg-gray-50 active:scale-95 transition-transform"
-             >
-                <Upload size={16} /> 恢复备份
-             </button>
-             <input 
-               type="file" 
-               ref={fileInputRef} 
-               onChange={importData} 
-               className="hidden" 
-               accept=".json"
-             />
-           </div>
-        </div>
-
-        <div className="p-4 bg-white border-t border-gray-100">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={nameInput}
-              onChange={(e) => setNameInput(e.target.value)}
-              placeholder="新账户名称..."
-              className={`flex-1 px-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 text-sm ${currentTheme.ring.replace('ring-', 'focus:ring-')}`}
-            />
-            <button 
-              onClick={() => { addUser(nameInput); setNameInput(''); }}
-              disabled={!nameInput.trim()}
-              className={`px-4 ${currentTheme.base} text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm hover:opacity-90 active:scale-95 transition-all`}
-            >
-              新建
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-200 p-4 font-sans">
-      <div 
-        className="relative bg-white shadow-2xl overflow-hidden flex flex-col transition-all duration-300"
-        style={{ width: '320px', height: '1000px', borderRadius: '20px' }}
-      >
-        {view !== 'users' && <Header />}
-        <div className="flex-1 relative overflow-hidden">
-          {view === 'todo' && <TodoView />}
-          {view === 'calendar' && <CalendarView />}
-          {view === 'users' && <UsersView />}
-        </div>
-      </div>
-    </div>
-  );
-}
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
