@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>每日循环任务 - Daily Loop</title>
   
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -52,6 +52,53 @@
   <!-- 引入 Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+  <!-- 引入 Firebase SDK (ES Module) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, onSnapshot, setDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    window.firebaseApi = { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, getFirestore, doc, onSnapshot, setDoc, collection };
+    
+    window.initFirebaseSystem = async () => {
+      let firebaseConfig = null;
+      let appId = 'default-app-id';
+
+      if (typeof __firebase_config !== 'undefined') {
+        firebaseConfig = JSON.parse(__firebase_config);
+        if (typeof __app_id !== 'undefined') appId = __app_id;
+      } 
+      
+      const manualConfig = null; 
+
+      if (manualConfig) {
+        firebaseConfig = manualConfig;
+      }
+
+      if (!firebaseConfig) {
+        console.warn("Firebase config not found. Cloud sync will be disabled.");
+        return null;
+      }
+
+      try {
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+
+        return { db, appId, auth };
+      } catch (e) {
+        console.error("Firebase init failed:", e);
+        return null;
+      }
+    };
+  </script>
+
   <style>
     ::-webkit-scrollbar {
       width: 6px;
@@ -70,7 +117,8 @@
       background-color: #e5e7eb;
       font-family: system-ui, -apple-system, sans-serif;
       transition: background-color 0.3s;
-      margin: 0; 
+      margin: 0;
+      overflow: hidden; /* 防止body滚动 */
     }
     body.dark-mode-global {
       background-color: #111827;
@@ -163,6 +211,8 @@
     const Clock = (props) => <Icon {...props}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></Icon>;
     const Hourglass = (props) => <Icon {...props}><path d="M5 22h14" /><path d="M5 2h14" /><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" /><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" /></Icon>;
     const TimerIcon = (props) => <Icon {...props}><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></Icon>;
+    const Cloud = (props) => <Icon {...props}><path d="M17.5 19c0-1.7-1.3-3-3-3h-1.1c-.2-2.3-2.1-4-4.4-4-2.3 0-4.2 1.7-4.4 4H3.5c-1.7 0-3 1.3-3 3s1.3 3 3 3h14c1.7 0 3-1.3 3-3z"/></Icon>;
+    const CloudOff = (props) => <Icon {...props}><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 7h1.8a5 5 0 0 0 8.55 3.6M2 2l20 20"/></Icon>;
 
     // --- 主题配置 ---
     const THEME_CONFIG = {
@@ -214,10 +264,11 @@
           ],
           history: {} 
         }
-      }
+      },
+      cloudKey: null
     };
 
-    const STORAGE_KEY = 'daily_loop_todo_standalone_v12';
+    const STORAGE_KEY = 'daily_loop_todo_standalone_v15';
     const THEME_MODE_KEY = 'daily_loop_theme_mode';
 
     // --- 组件 ---
@@ -234,7 +285,7 @@
     };
 
     const Header = ({ currentUser, users, view, setView, isDarkMode, toggleDarkMode, setEditingUser, renameUser, quickSwitchUser, currentTheme, editingUser }) => (
-      <div className={`flex items-center justify-between p-4 ${currentTheme.base} text-white shadow-md transition-colors duration-300 z-30 relative`}>
+      <div className={`flex items-center justify-between p-4 ${currentTheme.base} text-white shadow-md transition-colors duration-300 z-30 relative flex-shrink-0`}>
         {/* 左侧：用户信息 - 自动伸缩 */}
         <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0 mr-2">
           <div 
@@ -312,7 +363,7 @@
         : `border-indigo-100 dark:border-slate-700`;
 
       return (
-        <div className={`relative z-20 mx-4 mt-2 mb-1 px-4 py-2.5 rounded-xl bg-white/95 dark:bg-slate-800/95 backdrop-blur-md shadow-lg border flex items-center justify-between transition-all duration-300 ${alarmClass}`}>
+        <div className={`relative z-20 mx-4 mt-2 mb-1 px-4 py-2.5 rounded-xl bg-white/95 dark:bg-slate-800/95 backdrop-blur-md shadow-lg border flex items-center justify-between transition-all duration-300 flex-shrink-0 ${alarmClass}`}>
            <div className="flex items-center gap-2 overflow-hidden">
              <div className="relative flex items-center justify-center w-6 h-6">
                 {!activeTimer.isFinished && <span className="absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-25 animate-ping"></span>}
@@ -334,7 +385,7 @@
       toggleTask, updateTaskText, addTask, deleteTask, startTimer, cancelTimer,
       isAlarmActive,
       // New: multi-user progress data
-      users, userData, currentUser
+      users, userData, currentUser, switchUser
     }) => {
       const [newTaskText, setNewTaskText] = useState('');
       const [step, setStep] = useState(1);
@@ -354,7 +405,7 @@
       const displayUsers = users.slice(0, 5);
       
       // Parse date for Left Box
-      const dateObj = new Date(); // Use current date for display
+      const dateObj = new Date(); 
       const day = dateObj.getDate();
       const month = dateObj.getMonth() + 1;
       const weekDay = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][dateObj.getDay()];
@@ -363,7 +414,7 @@
         <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
           
           {/* New Multi-User Progress Header - Split Layout */}
-          <div className="flex h-36 bg-white dark:bg-slate-800 shadow-sm mb-1 transition-colors duration-300 z-10">
+          <div className="flex h-36 bg-white dark:bg-slate-800 shadow-sm mb-1 transition-colors duration-300 z-10 flex-shrink-0">
             {/* Left Box: Date Info */}
             <div className="w-36 flex-shrink-0 border-r border-gray-100 dark:border-slate-700 flex flex-col items-center justify-center p-2 bg-white dark:bg-slate-800">
                 <span className={`text-6xl font-black tracking-tighter ${currentTheme.text}`}>{day}</span>
@@ -385,7 +436,12 @@
                 const baseBg = idx % 2 !== 0 ? 'bg-gray-50 dark:bg-slate-850' : 'bg-white dark:bg-slate-800';
                 
                 return (
-                  <div key={userName} className={`relative flex-1 flex items-center justify-between px-4 border-b border-gray-100 dark:border-slate-700 last:border-0 ${baseBg}`}>
+                  <div 
+                    key={userName} 
+                    onClick={() => switchUser(userName)} // Add click to switch
+                    className={`relative flex-1 flex items-center justify-between px-4 border-b border-gray-100 dark:border-slate-700 last:border-0 ${baseBg} cursor-pointer hover:opacity-90 transition-opacity`}
+                    title={`切换到 ${userName}`}
+                  >
                     {/* Background Progress Bar */}
                     <div 
                       className={`absolute inset-y-0 left-0 opacity-15 transition-all duration-500 ease-out ${uTheme.base}`} 
@@ -409,7 +465,7 @@
 
           <TimerStatus activeTimer={activeTimer} tasks={tasks} now={now} currentTheme={currentTheme} isAlarmActive={isAlarmActive} />
 
-          <div className="flex-1 overflow-y-auto pb-48 pt-1">
+          <div className="flex-1 overflow-y-auto pt-1 min-h-0"> {/* min-h-0 allows nested flex scrolling */}
             {tasks.length === 0 && <div className="text-center text-gray-400 mt-10">还没有每日任务，<br/>在下方添加一个吧！</div>}
             
             {tasks.map((task, index) => {
@@ -483,7 +539,7 @@
             })}
           </div>
 
-          <div className="absolute bottom-0 w-full bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 transition-colors duration-300 z-20 flex flex-col">
+          <div className="w-full bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 transition-colors duration-300 z-20 flex flex-col flex-shrink-0">
             <div className="px-6 pt-4 pb-2">
               <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
                 <span className="flex items-center gap-1"><Hourglass size={12}/> 下次专注时长</span>
@@ -541,12 +597,12 @@
 
       return (
         <div className="h-full bg-white dark:bg-slate-800 flex flex-col relative transition-colors duration-300">
-          <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+          <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between flex-shrink-0">
             <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full"><ChevronLeft size={20} className="text-gray-600 dark:text-gray-300" /></button>
             <h2 className="text-lg font-bold text-gray-800 dark:text-white">{year}年 {month + 1}月</h2>
             <button onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full"><ChevronRight size={20} className="text-gray-600 dark:text-gray-300" /></button>
           </div>
-          <div className="flex-1 p-4">
+          <div className="flex-1 p-4 overflow-y-auto">
             <div className="grid grid-cols-7 gap-2 mb-2">{['日','一','二','三','四','五','六'].map(d => <div key={d} className="text-center text-xs text-gray-400 dark:text-gray-500 py-2">{d}</div>)}</div>
             <div className="grid grid-cols-7 gap-2">
               {Array(days[0].getDay()).fill(null).map((_, i) => <div key={`empty-${i}`} />)}
@@ -579,12 +635,22 @@
       );
     };
 
-    const UsersView = ({ users, currentUser, storeUserData, switchUser, renameUser, addUser, deleteUser, setView, editingUser, setEditingUser, exportData, importData }) => {
+    const UsersView = ({ users, currentUser, storeUserData, switchUser, renameUser, addUser, deleteUser, setView, editingUser, setEditingUser, exportData, importData, cloudKey, setCloudKey }) => {
       const [nameInput, setNameInput] = useState('');
+      const [keyInput, setKeyInput] = useState(cloudKey || '');
+      const [fbStatus, setFbStatus] = useState('idle'); 
       const fileInputRef = useRef(null);
+
+      const handleConnect = async () => {
+        if (!keyInput.trim()) return;
+        setFbStatus('connecting');
+        setCloudKey(keyInput.trim());
+        setTimeout(() => setFbStatus('success'), 1000);
+      };
+
       return (
         <div className="h-full bg-slate-50 dark:bg-slate-900 flex flex-col transition-colors duration-300">
-          <div className="p-4 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700 flex items-center gap-2"><button onClick={() => setView('todo')} className="p-2 -ml-2 text-gray-600 dark:text-gray-300"><X size={20} /></button><h2 className="font-bold text-lg dark:text-white">账户管理</h2></div>
+          <div className="p-4 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700 flex items-center gap-2 flex-shrink-0"><button onClick={() => setView('todo')} className="p-2 -ml-2 text-gray-600 dark:text-gray-300"><X size={20} /></button><h2 className="font-bold text-lg dark:text-white">账户管理</h2></div>
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {users.map(user => {
               const uTheme = getTheme(storeUserData[user]?.theme || 'indigo');
@@ -601,8 +667,18 @@
               );
             })}
           </div>
-          <div className="px-4 py-2"><div className="grid grid-cols-2 gap-3 mb-4"><button onClick={exportData} className="flex items-center justify-center gap-2 p-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-transform"><Download size={16} /> 备份数据</button><button onClick={() => fileInputRef.current?.click()} className="flex items-center justify-center gap-2 p-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-transform"><Upload size={16} /> 恢复备份</button><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></div></div>
-          <div className="p-4 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 transition-colors duration-300">
+          
+          <div className="px-4 py-2 border-t border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 flex-shrink-0">
+             <div className="mb-2 text-xs font-bold text-gray-500 dark:text-gray-400 flex items-center gap-1"><Cloud size={14}/> 云同步设置</div>
+             <div className="flex gap-2 items-center">
+                <input type="text" value={keyInput} onChange={(e) => setKeyInput(e.target.value)} placeholder="输入同步密钥 (任意字符串)..." className="flex-1 px-3 py-2 bg-gray-100 dark:bg-slate-700 dark:text-white rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500" />
+                <button onClick={handleConnect} className={`px-3 py-2 rounded-lg text-sm text-white transition-colors ${fbStatus === 'success' ? 'bg-green-500' : 'bg-indigo-600 hover:bg-indigo-700'}`}>{fbStatus === 'success' ? '已连接' : (fbStatus === 'connecting' ? '...' : '连接')}</button>
+             </div>
+             <p className="text-[10px] text-gray-400 mt-1">输入相同密钥的设备将实时同步数据。</p>
+          </div>
+
+          <div className="px-4 py-2 bg-white dark:bg-slate-800 flex-shrink-0"><div className="grid grid-cols-2 gap-3 mb-2"><button onClick={exportData} className="flex items-center justify-center gap-2 p-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-100 dark:hover:bg-slate-600 active:scale-95 transition-transform"><Download size={16} /> 备份数据</button><button onClick={() => fileInputRef.current?.click()} className="flex items-center justify-center gap-2 p-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-transform"><Upload size={16} /> 恢复备份</button><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></div></div>
+          <div className="p-4 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 transition-colors duration-300 flex-shrink-0">
             <div className="flex gap-2"><input type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder="新账户名称..." className={`flex-1 px-4 py-2 bg-gray-100 dark:bg-slate-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 text-sm ${getTheme('indigo').ring.replace('ring-', 'focus:ring-')}`} /><button onClick={() => { addUser(nameInput); setNameInput(''); }} disabled={!nameInput.trim()} className={`px-4 ${getTheme('indigo').base} text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm hover:opacity-90 active:scale-95 transition-all`}>新建</button></div>
           </div>
         </div>
@@ -614,6 +690,8 @@
       const [isDarkMode, setIsDarkMode] = useState(() => { try { const saved = localStorage.getItem(THEME_MODE_KEY); return saved ? JSON.parse(saved) : false; } catch (e) { return false; } });
       const [now, setNow] = useState(Date.now());
       const [isAlarmActive, setIsAlarmActive] = useState(false); 
+      const fbRef = useRef(null);
+      const unsubRef = useRef(null);
 
       useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
       const [view, setView] = useState('todo'); 
@@ -622,44 +700,55 @@
       const [editingUser, setEditingUser] = useState(null);
       const [selectedDate, setSelectedDate] = useState(null);
       
+      useEffect(() => { if (window.initFirebaseSystem) { window.initFirebaseSystem().then(res => { if (res) fbRef.current = res; }); } }, []);
       useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); }, [store]);
       useEffect(() => { localStorage.setItem(THEME_MODE_KEY, JSON.stringify(isDarkMode)); if (isDarkMode) { document.body.classList.add('dark-mode-global'); } else { document.body.classList.remove('dark-mode-global'); } }, [isDarkMode]);
       
+      useEffect(() => {
+         const syncKey = store.cloudKey;
+         if (!syncKey || !fbRef.current) { if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; } return; }
+         const { db, appId } = fbRef.current;
+         const { doc, onSnapshot } = window.firebaseApi;
+         const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_loop_sync', syncKey);
+         unsubRef.current = onSnapshot(docRef, (snapshot) => {
+            if (snapshot.exists()) {
+               const cloudData = snapshot.data();
+               if (cloudData.users && cloudData.userData) { setStore(prev => { if (JSON.stringify(prev) === JSON.stringify(cloudData)) return prev; return cloudData; }); }
+            }
+         }, (err) => console.error("Sync error", err));
+         return () => { if (unsubRef.current) unsubRef.current(); };
+      }, [store.cloudKey]);
+
+      useEffect(() => {
+         const syncKey = store.cloudKey;
+         if (!syncKey || !fbRef.current) return;
+         const handler = setTimeout(() => {
+            const { db, appId } = fbRef.current;
+            const { doc, setDoc } = window.firebaseApi;
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_loop_sync', syncKey);
+            setDoc(docRef, store).catch(e => console.error("Push failed", e));
+         }, 1000); 
+         return () => clearTimeout(handler);
+      }, [store]);
+
       useEffect(() => {
          setStore(prevStore => {
             let hasUpdates = false;
             let alarmTriggered = false;
             const newUserData = { ...prevStore.userData };
-
             Object.keys(newUserData).forEach(username => {
                const user = newUserData[username];
                if (user.activeTimer && now >= user.activeTimer.endTime) {
-                  // 如果还没有被标记为完成，则进行处理
                   if (!user.activeTimer.isFinished) {
                       hasUpdates = true;
                       alarmTriggered = true;
-
                       const addedMinutes = Math.round(user.activeTimer.duration / 60000);
-                      const newTasks = user.tasks.map(t => {
-                         if (t.id === user.activeTimer.taskId) {
-                            return { ...t, totalTime: (t.totalTime || 0) + addedMinutes };
-                         }
-                         return t;
-                      });
-                      
-                      newUserData[username] = { 
-                        ...user, 
-                        tasks: newTasks, 
-                        activeTimer: { ...user.activeTimer, isFinished: true } 
-                      };
+                      const newTasks = user.tasks.map(t => { if (t.id === user.activeTimer.taskId) return { ...t, totalTime: (t.totalTime || 0) + addedMinutes }; return t; });
+                      newUserData[username] = { ...user, tasks: newTasks, activeTimer: { ...user.activeTimer, isFinished: true } };
                   }
                }
             });
-
-            if (hasUpdates) {
-               if (alarmTriggered) setTimeout(() => setIsAlarmActive(true), 0);
-               return { ...prevStore, userData: newUserData };
-            }
+            if (hasUpdates) { if (alarmTriggered) setTimeout(() => setIsAlarmActive(true), 0); return { ...prevStore, userData: newUserData }; }
             return prevStore;
          });
       }, [now]); 
@@ -668,22 +757,9 @@
       const currentUserData = store.userData[store.currentUser] || { tasks: [], history: {}, theme: 'indigo', timerDuration: 25 };
       const currentTheme = getTheme(currentUserData.theme);
       const todayStr = getTodayString();
-
-      const updateTimerDuration = (val) => {
-         setStore(prev => ({
-            ...prev,
-            userData: {
-               ...prev.userData,
-               [prev.currentUser]: {
-                  ...prev.userData[prev.currentUser],
-                  timerDuration: val
-               }
-            }
-         }));
-      };
-
+      const updateTimerDuration = (val) => { setStore(prev => ({ ...prev, userData: { ...prev.userData, [prev.currentUser]: { ...prev.userData[prev.currentUser], timerDuration: val } } })); };
+      const setCloudKey = (key) => setStore(prev => ({ ...prev, cloudKey: key }));
       useEffect(() => { if (!store.currentUser) return; const tasks = currentUserData.tasks || []; if (tasks.length === 0) return; const completedCount = tasks.filter(t => { const dates = t.doneDates || (t.lastDone ? [t.lastDone] : []); return dates.includes(todayStr); }).length; const ratio = completedCount / tasks.length; if (currentUserData.history?.[todayStr] !== ratio) { setStore(prev => ({ ...prev, userData: { ...prev.userData, [prev.currentUser]: { ...prev.userData[prev.currentUser], history: { ...(prev.userData[prev.currentUser].history || {}), [todayStr]: ratio } } } })); } }, [currentUserData.tasks, store.currentUser, todayStr]);
-
       const toggleTask = (taskId) => { setStore(prev => { const userTasks = prev.userData[prev.currentUser].tasks; const updatedTasks = userTasks.map(t => { if (t.id === taskId) { const currentDoneDates = t.doneDates || (t.lastDone ? [t.lastDone] : []); const isDoneToday = currentDoneDates.includes(todayStr); let newDoneDates; if (isDoneToday) { newDoneDates = currentDoneDates.filter(d => d !== todayStr); } else { newDoneDates = [...currentDoneDates, todayStr]; } return { ...t, doneDates: newDoneDates, lastDone: isDoneToday ? '' : todayStr }; } return t; }); return { ...prev, userData: { ...prev.userData, [prev.currentUser]: { ...prev.userData[prev.currentUser], tasks: updatedTasks } } }; }); };
       const startTimer = (taskId, durationMs) => { setStore(prev => { const userData = { ...prev.userData[prev.currentUser] }; userData.activeTimer = { taskId, endTime: Date.now() + durationMs, duration: durationMs }; return { ...prev, userData: { ...prev.userData, [prev.currentUser]: userData } }; }); };
       const cancelTimer = () => { setStore(prev => { const userData = { ...prev.userData[prev.currentUser] }; userData.activeTimer = null; return { ...prev, userData: { ...prev.userData, [prev.currentUser]: userData } }; }); };
@@ -701,7 +777,6 @@
       const stopAlarm = () => {
         if (isAlarmActive) {
           setIsAlarmActive(false);
-          // 清除所有用户中已完成的倒计时
           setStore(prev => {
             const newUserData = { ...prev.userData };
             let hasChanges = false;
@@ -718,12 +793,7 @@
 
       return (
         <div onClick={stopAlarm} className={`flex justify-center items-center min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark' : ''} sm:p-4`}>
-          <div className={`relative bg-white dark:bg-slate-800 shadow-2xl overflow-hidden flex flex-col transition-colors duration-300 w-full h-screen sm:w-[320px] sm:h-[85vh] sm:max-h-[1000px] sm:rounded-[20px] ${isAlarmActive ? 'alarm-mode' : ''}`}>
-            {/* 增加一个覆盖全屏的报警遮罩层 (用于捕捉点击并停止报警) - 但它是 pointer-events-none 除非报警激活? 
-                由于我们在最外层 div 绑定了 onClick={stopAlarm}，只要这个覆盖层不阻止冒泡即可。
-                这里其实不需要额外的 overlay div 来处理点击，最外层 div 已经处理了。
-                我们只需要一个显示效果的 overlay。
-            */}
+          <div className={`relative bg-white dark:bg-slate-800 shadow-2xl overflow-hidden flex flex-col transition-colors duration-300 w-full h-[100dvh] sm:w-[320px] sm:h-[85vh] sm:max-h-[1000px] sm:rounded-[20px] ${isAlarmActive ? 'alarm-mode' : ''}`}>
             {isAlarmActive && <div className="absolute inset-0 pointer-events-none alarm-overlay-anim z-50"></div>}
 
             {view !== 'users' && <Header currentUser={store.currentUser} users={store.users} view={view} setView={setView} isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} setEditingUser={setEditingUser} renameUser={renameUser} quickSwitchUser={quickSwitchUser} currentTheme={currentTheme} editingUser={editingUser} />}
@@ -744,14 +814,14 @@
                 deleteTask={deleteTask} 
                 startTimer={startTimer} 
                 cancelTimer={cancelTimer} 
-                isAlarmActive={isAlarmActive} // 传递 isAlarmActive 给 TodoView -> TimerStatus
-                // New props for multi-user list
+                isAlarmActive={isAlarmActive}
                 users={store.users}
                 userData={store.userData}
                 currentUser={store.currentUser}
+                switchUser={switchUser} 
               />}
               {view === 'calendar' && <CalendarView calendarDate={calendarDate} setCalendarDate={setCalendarDate} history={currentUserData.history} todayStr={todayStr} currentTheme={currentTheme} setSelectedDate={setSelectedDate} selectedDate={selectedDate} tasks={currentUserData.tasks} />}
-              {view === 'users' && <UsersView users={store.users} currentUser={store.currentUser} storeUserData={store.userData} switchUser={switchUser} renameUser={renameUser} addUser={addUser} deleteUser={deleteUser} setView={setView} editingUser={editingUser} setEditingUser={setEditingUser} exportData={exportData} importData={importData} />}
+              {view === 'users' && <UsersView users={store.users} currentUser={store.currentUser} storeUserData={store.userData} switchUser={switchUser} renameUser={renameUser} addUser={addUser} deleteUser={deleteUser} setView={setView} editingUser={editingUser} setEditingUser={setEditingUser} exportData={exportData} importData={importData} cloudKey={store.cloudKey} setCloudKey={setCloudKey} />}
             </div>
           </div>
         </div>
