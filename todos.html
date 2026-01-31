@@ -271,7 +271,7 @@
       cloudKey: null
     };
 
-    const STORAGE_KEY = 'daily_loop_todo_standalone_v15';
+    const STORAGE_KEY = 'daily_loop_todo_standalone_v16';
     const THEME_MODE_KEY = 'daily_loop_theme_mode';
 
     // --- 组件 ---
@@ -289,7 +289,7 @@
 
     const Header = ({ currentUser, users, view, setView, isDarkMode, toggleDarkMode, setEditingUser, renameUser, quickSwitchUser, currentTheme, editingUser }) => (
       <div className={`flex items-center justify-between p-4 ${currentTheme.base} text-white shadow-md transition-colors duration-300 z-30 relative flex-shrink-0 pt-[calc(1rem+env(safe-area-inset-top))]`}>
-        {/* 左侧：用户信息 */}
+        {/* 左侧：用户信息 - 自动伸缩 */}
         <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0 mr-2">
           <div 
             className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-white/20 backdrop-blur-sm cursor-pointer hover:bg-white/30 transition-colors"
@@ -313,7 +313,7 @@
           </div>
         </div>
 
-        {/* 右侧：功能按钮组 */}
+        {/* 右侧：功能按钮组 - 固定位置 */}
         <div className="flex gap-2 flex-shrink-0 items-center">
           <button 
             onClick={toggleDarkMode}
@@ -575,7 +575,6 @@
       );
     };
 
-    // CalendarView and UsersView remain unchanged...
     const CalendarView = ({ calendarDate, setCalendarDate, history, todayStr, currentTheme, setSelectedDate, selectedDate, tasks }) => {
       const year = calendarDate.getFullYear();
       const month = calendarDate.getMonth();
@@ -631,7 +630,17 @@
 
     const UsersView = ({ users, currentUser, storeUserData, switchUser, renameUser, addUser, deleteUser, setView, editingUser, setEditingUser, exportData, importData, cloudKey, setCloudKey }) => {
       const [nameInput, setNameInput] = useState('');
+      const [keyInput, setKeyInput] = useState(cloudKey || '');
+      const [fbStatus, setFbStatus] = useState('idle'); 
       const fileInputRef = useRef(null);
+
+      const handleConnect = async () => {
+        if (!keyInput.trim()) return;
+        setFbStatus('connecting');
+        setCloudKey(keyInput.trim());
+        setTimeout(() => setFbStatus('success'), 1000);
+      };
+      
       return (
         <div className="h-full bg-slate-50 dark:bg-slate-900 flex flex-col transition-colors duration-300">
           <div className="p-4 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700 flex items-center gap-2 flex-shrink-0 pt-[calc(1rem+env(safe-area-inset-top))]"><button onClick={() => setView('todo')} className="p-2 -ml-2 text-gray-600 dark:text-gray-300"><X size={20} /></button><h2 className="font-bold text-lg dark:text-white">账户管理</h2></div>
@@ -670,7 +679,6 @@
     };
 
     function App() {
-      // ... same App logic ...
       const [store, setStore] = useState(() => { try { const saved = localStorage.getItem(STORAGE_KEY); return saved ? JSON.parse(saved) : INITIAL_DATA; } catch (e) { return INITIAL_DATA; } });
       const [isDarkMode, setIsDarkMode] = useState(() => { try { const saved = localStorage.getItem(THEME_MODE_KEY); return saved ? JSON.parse(saved) : false; } catch (e) { return false; } });
       const [now, setNow] = useState(Date.now());
@@ -688,7 +696,6 @@
       useEffect(() => { if (window.initFirebaseSystem) { window.initFirebaseSystem().then(res => { if (res) fbRef.current = res; }); } }, []);
       useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); }, [store]);
       
-      // Update the logic to apply the 'dark' class to document.documentElement
       useEffect(() => { 
         localStorage.setItem(THEME_MODE_KEY, JSON.stringify(isDarkMode)); 
         if (isDarkMode) { 
@@ -792,7 +799,29 @@
 
             {view !== 'users' && <Header currentUser={store.currentUser} users={store.users} view={view} setView={setView} isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} setEditingUser={setEditingUser} renameUser={renameUser} quickSwitchUser={quickSwitchUser} currentTheme={currentTheme} editingUser={editingUser} />}
             <div className="flex-1 relative overflow-hidden">
-              {view === 'todo' && <TodoView tasks={currentUserData.tasks} todayStr={todayStr} currentTheme={currentTheme} activeTimer={currentUserData.activeTimer} now={now} timerDuration={currentUserData.timerDuration || 25} updateTimerDuration={updateTimerDuration} editingTaskId={editingTaskId} setEditingTaskId={setEditingTaskId} toggleTask={toggleTask} updateTaskText={updateTaskText} addTask={addTask} deleteTask={deleteTask} startTimer={startTimer} cancelTimer={cancelTimer} isAlarmActive={isAlarmActive} users={store.users} userData={store.userData} currentUser={store.currentUser} switchUser={switchUser} />}
+              {view === 'todo' && <TodoView 
+                tasks={currentUserData.tasks} 
+                todayStr={todayStr} 
+                currentTheme={currentTheme} 
+                activeTimer={currentUserData.activeTimer} 
+                now={now} 
+                timerDuration={currentUserData.timerDuration || 25} 
+                updateTimerDuration={updateTimerDuration} 
+                editingTaskId={editingTaskId} 
+                setEditingTaskId={setEditingTaskId} 
+                toggleTask={toggleTask} 
+                updateTaskText={updateTaskText} 
+                addTask={addTask} 
+                deleteTask={deleteTask} 
+                startTimer={startTimer} 
+                cancelTimer={cancelTimer} 
+                isAlarmActive={isAlarmActive} // 传递 isAlarmActive 给 TodoView -> TimerStatus
+                // New props for multi-user list
+                users={store.users}
+                userData={store.userData}
+                currentUser={store.currentUser}
+                switchUser={switchUser} 
+              />}
               {view === 'calendar' && <CalendarView calendarDate={calendarDate} setCalendarDate={setCalendarDate} history={currentUserData.history} todayStr={todayStr} currentTheme={currentTheme} setSelectedDate={setSelectedDate} selectedDate={selectedDate} tasks={currentUserData.tasks} />}
               {view === 'users' && <UsersView users={store.users} currentUser={store.currentUser} storeUserData={store.userData} switchUser={switchUser} renameUser={renameUser} addUser={addUser} deleteUser={deleteUser} setView={setView} editingUser={editingUser} setEditingUser={setEditingUser} exportData={exportData} importData={importData} cloudKey={store.cloudKey} setCloudKey={setCloudKey} />}
             </div>
