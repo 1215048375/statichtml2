@@ -11,7 +11,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
-      darkMode: 'class', // 配置为手动控制 class
+      darkMode: 'class',
       theme: {
         extend: {
           colors: {
@@ -181,6 +181,15 @@
     .alarm-status-anim {
       animation: status-bar-pulse 1.5s linear infinite;
     }
+    
+    /* Toggle Switch Style */
+    .toggle-checkbox:checked {
+      right: 0;
+      border-color: #68D391;
+    }
+    .toggle-checkbox:checked + .toggle-label {
+      background-color: #68D391;
+    }
   </style>
 </head>
 <body>
@@ -216,6 +225,7 @@
     const TimerIcon = (props) => <Icon {...props}><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></Icon>;
     const Cloud = (props) => <Icon {...props}><path d="M17.5 19c0-1.7-1.3-3-3-3h-1.1c-.2-2.3-2.1-4-4.4-4-2.3 0-4.2 1.7-4.4 4H3.5c-1.7 0-3 1.3-3 3s1.3 3 3 3h14c1.7 0 3-1.3 3-3z"/></Icon>;
     const CloudOff = (props) => <Icon {...props}><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 7h1.8a5 5 0 0 0 8.55 3.6M2 2l20 20"/></Icon>;
+    const Save = (props) => <Icon {...props}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></Icon>;
 
     // --- 主题配置 ---
     const THEME_CONFIG = {
@@ -271,8 +281,9 @@
       cloudKey: null
     };
 
-    const STORAGE_KEY = 'daily_loop_todo_standalone_v16';
+    const STORAGE_KEY = 'daily_loop_todo_standalone_v17';
     const THEME_MODE_KEY = 'daily_loop_theme_mode';
+    const AUTO_BACKUP_KEY = 'daily_loop_auto_backup_enabled';
 
     // --- 组件 ---
 
@@ -628,7 +639,7 @@
       );
     };
 
-    const UsersView = ({ users, currentUser, storeUserData, switchUser, renameUser, addUser, deleteUser, setView, editingUser, setEditingUser, exportData, importData, cloudKey, setCloudKey }) => {
+    const UsersView = ({ users, currentUser, storeUserData, switchUser, renameUser, addUser, deleteUser, setView, editingUser, setEditingUser, exportData, importData, cloudKey, setCloudKey, isAutoBackup, setIsAutoBackup }) => {
       const [nameInput, setNameInput] = useState('');
       const [keyInput, setKeyInput] = useState(cloudKey || '');
       const [fbStatus, setFbStatus] = useState('idle'); 
@@ -670,7 +681,21 @@
              <p className="text-[10px] text-gray-400 mt-1">输入相同密钥的设备将实时同步数据。</p>
           </div>
 
-          <div className="px-4 py-2 bg-white dark:bg-slate-800 flex-shrink-0"><div className="grid grid-cols-2 gap-3 mb-2"><button onClick={exportData} className="flex items-center justify-center gap-2 p-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-100 dark:hover:bg-slate-600 active:scale-95 transition-transform"><Download size={16} /> 备份数据</button><button onClick={() => fileInputRef.current?.click()} className="flex items-center justify-center gap-2 p-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-transform"><Upload size={16} /> 恢复备份</button><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></div></div>
+          <div className="px-4 py-2 bg-white dark:bg-slate-800 flex-shrink-0 space-y-2">
+            <div className="flex items-center justify-between mb-2 px-1">
+              <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">每小时自动下载备份</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer toggle-checkbox" checked={isAutoBackup} onChange={() => setIsAutoBackup(!isAutoBackup)} />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 toggle-label"></div>
+              </label>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={exportData} className="flex items-center justify-center gap-2 p-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-100 dark:hover:bg-slate-600 active:scale-95 transition-transform"><Download size={16} /> 备份数据</button>
+              <button onClick={() => fileInputRef.current?.click()} className="flex items-center justify-center gap-2 p-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 active:scale-95 transition-transform"><Upload size={16} /> 恢复备份</button>
+              <input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" />
+            </div>
+          </div>
           <div className="p-4 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 transition-colors duration-300 flex-shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))]">
             <div className="flex gap-2"><input type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder="新账户名称..." className={`flex-1 px-4 py-2 bg-gray-100 dark:bg-slate-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 text-sm ${getTheme('indigo').ring.replace('ring-', 'focus:ring-')}`} /><button onClick={() => { addUser(nameInput); setNameInput(''); }} disabled={!nameInput.trim()} className={`px-4 ${getTheme('indigo').base} text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm hover:opacity-90 active:scale-95 transition-all`}>新建</button></div>
           </div>
@@ -681,10 +706,12 @@
     function App() {
       const [store, setStore] = useState(() => { try { const saved = localStorage.getItem(STORAGE_KEY); return saved ? JSON.parse(saved) : INITIAL_DATA; } catch (e) { return INITIAL_DATA; } });
       const [isDarkMode, setIsDarkMode] = useState(() => { try { const saved = localStorage.getItem(THEME_MODE_KEY); return saved ? JSON.parse(saved) : false; } catch (e) { return false; } });
+      const [isAutoBackup, setIsAutoBackup] = useState(() => { try { const saved = localStorage.getItem(AUTO_BACKUP_KEY); return saved ? JSON.parse(saved) : false; } catch (e) { return false; } });
       const [now, setNow] = useState(Date.now());
       const [isAlarmActive, setIsAlarmActive] = useState(false); 
       const fbRef = useRef(null);
       const unsubRef = useRef(null);
+      const storeRef = useRef(store); // Keep ref for interval
 
       useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
       const [view, setView] = useState('todo'); 
@@ -694,16 +721,41 @@
       const [selectedDate, setSelectedDate] = useState(null);
       
       useEffect(() => { if (window.initFirebaseSystem) { window.initFirebaseSystem().then(res => { if (res) fbRef.current = res; }); } }, []);
-      useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); }, [store]);
+      
+      useEffect(() => { 
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); 
+        storeRef.current = store; // Update ref on store change
+      }, [store]);
       
       useEffect(() => { 
         localStorage.setItem(THEME_MODE_KEY, JSON.stringify(isDarkMode)); 
-        if (isDarkMode) { 
-          document.documentElement.classList.add('dark');
-        } else { 
-          document.documentElement.classList.remove('dark');
-        } 
+        if (isDarkMode) { document.documentElement.classList.add('dark'); } else { document.documentElement.classList.remove('dark'); } 
       }, [isDarkMode]);
+
+      useEffect(() => {
+        localStorage.setItem(AUTO_BACKUP_KEY, JSON.stringify(isAutoBackup));
+      }, [isAutoBackup]);
+
+      // Auto Backup Interval
+      useEffect(() => {
+        if (!isAutoBackup) return;
+        const interval = setInterval(() => {
+            const dataStr = JSON.stringify(storeRef.current, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const now = new Date();
+            const timeStr = `${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}`;
+            a.download = `daily_loop_auto_backup_${getTodayString()}_${timeStr}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            console.log("Auto backup triggered");
+        }, 3600 * 1000); // 1 hour
+        return () => clearInterval(interval);
+      }, [isAutoBackup]);
       
       useEffect(() => {
          const syncKey = store.cloudKey;
@@ -815,15 +867,14 @@
                 deleteTask={deleteTask} 
                 startTimer={startTimer} 
                 cancelTimer={cancelTimer} 
-                isAlarmActive={isAlarmActive} // 传递 isAlarmActive 给 TodoView -> TimerStatus
-                // New props for multi-user list
+                isAlarmActive={isAlarmActive} 
                 users={store.users}
                 userData={store.userData}
                 currentUser={store.currentUser}
                 switchUser={switchUser} 
               />}
               {view === 'calendar' && <CalendarView calendarDate={calendarDate} setCalendarDate={setCalendarDate} history={currentUserData.history} todayStr={todayStr} currentTheme={currentTheme} setSelectedDate={setSelectedDate} selectedDate={selectedDate} tasks={currentUserData.tasks} />}
-              {view === 'users' && <UsersView users={store.users} currentUser={store.currentUser} storeUserData={store.userData} switchUser={switchUser} renameUser={renameUser} addUser={addUser} deleteUser={deleteUser} setView={setView} editingUser={editingUser} setEditingUser={setEditingUser} exportData={exportData} importData={importData} cloudKey={store.cloudKey} setCloudKey={setCloudKey} />}
+              {view === 'users' && <UsersView users={store.users} currentUser={store.currentUser} storeUserData={store.userData} switchUser={switchUser} renameUser={renameUser} addUser={addUser} deleteUser={deleteUser} setView={setView} editingUser={editingUser} setEditingUser={setEditingUser} exportData={exportData} importData={importData} cloudKey={store.cloudKey} setCloudKey={setCloudKey} isAutoBackup={isAutoBackup} setIsAutoBackup={setIsAutoBackup} />}
             </div>
           </div>
         </div>
