@@ -372,6 +372,102 @@
   }
   @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
 
+  /* ---------- compact layout for short phones ---------- */
+  /*
+     Portrait phones such as iPhone 8 Plus have plenty of width but limited
+     usable height once Safari's bars are visible.  Compress vertically first
+     instead of making the whole UI tiny.
+  */
+  @media (max-height: 760px) and (orientation: portrait) {
+    #app {
+      padding-top: 6px;
+      padding-bottom: 12px;
+    }
+
+    #sound {
+      top: 8px; right: 10px;
+      width: 40px; height: 40px;
+      font-size: 19px;
+    }
+
+    .mascot {
+      width: min(31vw, 118px);
+      margin-top: 0;
+    }
+
+    .counter {
+      margin-top: 4px;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .dots { gap: 5px; }
+    .dot { width: 19px; height: 19px; font-size: 11px; }
+
+    .stage {
+      margin: 7px 0 4px;
+      min-height: 94px;
+    }
+
+    .cookie {
+      border-radius: 42px;
+      padding: 12px 12px 14px;
+      box-shadow: inset 0 0 0 5px var(--cookie-edge), 0 5px 0 var(--cookie-edge);
+    }
+
+    .equation {
+      font-size: clamp(40px, 11vw, 54px);
+      line-height: 1.08;
+    }
+
+    .slot {
+      border-radius: 14px;
+      box-shadow: inset 0 -4px 0 rgba(74,38,16,.25);
+    }
+
+    .feedback {
+      min-height: 1.55em;
+      margin: 2px 0 6px;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .keypad {
+      max-width: 360px;
+      gap: 7px 9px;
+    }
+
+    .key {
+      min-height: 51px;
+      border-radius: 18px;
+      font-size: 28px;
+      box-shadow: 0 4px 0 var(--key-edge);
+    }
+    .key.del { box-shadow: 0 4px 0 var(--del-edge); }
+    .key.go  { box-shadow: 0 4px 0 var(--ok-edge); font-size: 23px; }
+
+    /* Start/end pages also gain a little headroom without looking cramped. */
+    h1 { margin-top: 8px; }
+    .lead { margin-bottom: 14px; }
+    .name-row { margin-bottom: 14px; }
+    .link-btn { margin-top: 12px; }
+  }
+
+  /* Extra-tight mode for browsers whose visible viewport drops below ~650px. */
+  @media (max-height: 650px) and (orientation: portrait) {
+    #app { padding-top: 3px; padding-bottom: 8px; }
+    .mascot { width: min(27vw, 98px); }
+    .counter { margin-top: 1px; font-size: 17px; }
+    .dot { width: 17px; height: 17px; font-size: 10px; }
+    .stage { margin: 5px 0 2px; min-height: 80px; }
+    .cookie { padding: 9px 10px 11px; border-radius: 36px; }
+    .equation { font-size: clamp(36px, 10vw, 48px); }
+    .feedback { margin: 1px 0 4px; font-size: 17px; }
+    .keypad { gap: 6px 8px; }
+    .key { min-height: 45px; font-size: 25px; border-radius: 16px; }
+    .key.go { font-size: 21px; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .eyes, .mascot, .cookie, .slot.nudge { animation: none !important; }
     .cookie.eaten { animation: none !important; opacity: 0; }
