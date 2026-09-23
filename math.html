@@ -517,7 +517,7 @@
   <!-- START -->
   <section class="screen" id="start">
     <h1>乘法小怪兽</h1>
-    <p class="lead">小怪兽肚子饿啦！算对乘法题，就能喂它吃饼干。每次 10 题。</p>
+    <p class="lead">小怪兽肚子饿啦！算对乘法、填空和整数除法题，就能喂它吃饼干。每次 10 题。</p>
     <div class="name-row">
       <label for="nameInput">你的名字</label>
       <input class="name-input" id="nameInput" type="text" maxlength="8" placeholder="小朋友" autocomplete="off">
@@ -534,7 +534,7 @@
     <div class="stage">
       <div class="cookie" id="cookie">
         <div class="equation" aria-live="polite">
-          <span id="qa">0</span><span>×</span><span id="qb">0</span><span>=</span><span class="slot empty" id="slot">?</span>
+          <span id="qa">0</span><span id="qop">×</span><span id="qb">0</span><span>=</span><span id="qr">0</span>
         </div>
       </div>
     </div>
@@ -590,7 +590,7 @@
   var el = {
     mascot: $('#mascot'), start: $('#start'), play: $('#play'), end: $('#end'),
     counter: $('#counter'), dots: $('#dots'), cookie: $('#cookie'),
-    qa: $('#qa'), qb: $('#qb'), slot: $('#slot'), feedback: $('#feedback'),
+    qa: $('#qa'), qb: $('#qb'), qr: $('#qr'), qop: $('#qop'), slot: null, feedback: $('#feedback'),
     keypad: $('#keypad'), sound: $('#sound'),
     endTitle: $('#endTitle'), endScore: $('#endScore'), endDots: $('#endDots'),
     endTime: $('#endTime'), review: $('#review'), wrongList: $('#wrongList'),
@@ -734,9 +734,42 @@
       var j = Math.floor(Math.random() * (i + 1));
       var t = pool[i]; pool[i] = pool[j]; pool[j] = t;
     }
-    return pool.slice(0, TOTAL).map(function (p) {
-      return Math.random() < 0.5 ? [p[0], p[1]] : [p[1], p[0]];              // randomise the order
+
+    // 每轮固定混合：3 普通乘法 + 2 右侧填空 + 2 左侧填空 + 3 整数除法
+    var kinds = ['product', 'product', 'product', 'right', 'right', 'left', 'left', 'division', 'division', 'division'];
+    for (i = kinds.length - 1; i > 0; i--) {
+      var kj = Math.floor(Math.random() * (i + 1));
+      var kt = kinds[i]; kinds[i] = kinds[kj]; kinds[kj] = kt;
+    }
+
+    return pool.slice(0, TOTAL).map(function (p, qi) {
+      var a = p[0], b = p[1];
+      if (Math.random() < 0.5) { var tmp = a; a = b; b = tmp; }             // randomise factor order
+      var q = { a: a, b: b, product: a * b, kind: kinds[qi] };
+      if (q.kind === 'division') {
+        // 由乘法表反推，保证整除；被除数最大 9×9=81。
+        if (Math.random() < 0.5) {
+          q.divisor = a;
+          q.quotient = b;
+        } else {
+          q.divisor = b;
+          q.quotient = a;
+        }
+      }
+      return q;
     });
+  }
+
+  function questionAnswer(q) {
+    if (q.kind === 'division') return q.quotient;
+    return q.kind === 'left' ? q.a : q.kind === 'right' ? q.b : q.product;
+  }
+
+  function questionReview(q) {
+    if (q.kind === 'division') return q.product + ' ÷ ' + q.divisor + ' = ' + q.quotient;
+    if (q.kind === 'left')  return '? × ' + q.b + ' = ' + q.product + '（? = ' + q.a + '）';
+    if (q.kind === 'right') return q.a + ' × ? = ' + q.product + '（? = ' + q.b + '）';
+    return q.a + ' × ' + q.b + ' = ' + q.product;
   }
 
   function renderDots(container, withNow) {
@@ -768,8 +801,26 @@
   function loadQuestion() {
     input = ''; tries = 0; locked = false;
     el.keypad.classList.remove('locked');
-    el.qa.textContent = Q[idx][0];
-    el.qb.textContent = Q[idx][1];
+
+    var q = Q[idx];
+    [el.qa, el.qb, el.qr].forEach(function (n) { n.className = ''; });
+
+    if (q.kind === 'division') {
+      el.qop.textContent = '÷';
+      el.qa.textContent = q.product;
+      el.qb.textContent = q.divisor;
+      el.qr.textContent = q.quotient;
+      el.slot = el.qr;
+    } else {
+      el.qop.textContent = '×';
+      el.qa.textContent = q.a;
+      el.qb.textContent = q.b;
+      el.qr.textContent = q.product;
+      if (q.kind === 'left') el.slot = el.qa;
+      else if (q.kind === 'right') el.slot = el.qb;
+      else el.slot = el.qr;
+    }
+
     el.counter.textContent = '第 ' + (idx + 1) + ' / ' + TOTAL + ' 题';
     el.feedback.textContent = pick(ASK);
     el.cookie.classList.remove('eaten');
@@ -801,7 +852,7 @@
       el.slot.classList.remove('nudge'); void el.slot.offsetWidth; el.slot.classList.add('nudge');
       return;
     }
-    var a = Q[idx][0], b = Q[idx][1], answer = a * b;
+    var q = Q[idx], answer = questionAnswer(q);
 
     if (parseInt(input, 10) === answer) {
       locked = true;
@@ -826,7 +877,7 @@
         locked = true;
         el.keypad.classList.add('locked');
         results[idx] = 'miss';
-        wrongs.push(a + ' × ' + b + ' = ' + answer);
+        wrongs.push(questionReview(q));
         input = String(answer);
         updateSlot();
         el.slot.classList.add('reveal');
